@@ -189,3 +189,28 @@ export async function uploadDocument(formData: FormData) {
   revalidatePath('/notebook');
   return data;
 }
+
+/**
+ * Fetches a single notebook by ID.
+ */
+export async function getNotebook(id: string) {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data, error } = await supabase
+    .from('notebooks')
+    .select('*')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (error) {
+    console.error("Error fetching notebook:", error.message);
+    return null;
+  }
+
+  return data;
+}

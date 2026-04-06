@@ -104,25 +104,17 @@ export function BlockCard({
                   <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                     <span className="text-blue-500">◆</span> Data Logic (Sources)
                   </div>
-                  <div className="grid grid-cols-2 gap-3 mt-4">
-                    <button onClick={() => onToggleSource("static")} className={`p-4 border rounded-xl flex flex-col items-start gap-2 text-left transition-all ${block.sources.includes("static") ? "border-blue-400 bg-blue-50 text-blue-900 shadow-sm" : "border-zinc-200 bg-white hover:border-blue-200 hover:bg-blue-50/30"}`}>
+                  <div className="mt-4">
+                    <button onClick={() => onToggleSource("static")} className={`w-full p-4 border rounded-xl flex items-center gap-3 text-left transition-all ${block.sources.includes("static") ? "border-blue-400 bg-blue-50 text-blue-900 shadow-sm" : "border-zinc-200 bg-white hover:border-blue-200 hover:bg-blue-50/30"}`}>
                       <span className="text-xl">🗄️</span>
-                      <div><div className="text-sm font-semibold">Workspace Library</div><div className="text-[10px] opacity-70 mt-0.5">Connect existing folders</div></div>
+                      <div><div className="text-sm font-semibold">Workspace Library</div><div className="text-[10px] opacity-70 mt-0.5">Upload and query documents for this block</div></div>
                     </button>
-                    <button onClick={() => onToggleSource("user_upload")} className={`p-4 border rounded-xl flex flex-col items-start gap-2 text-left transition-all ${block.sources.includes("user_upload") ? "border-blue-400 bg-blue-50 text-blue-900 shadow-sm" : "border-zinc-200 bg-white hover:border-blue-200 hover:bg-blue-50/30"}`}>
-                      <span className="text-xl">📄</span>
-                      <div><div className="text-sm font-semibold">User Upload Zone</div><div className="text-[10px] opacity-70 mt-0.5">Let users drop files</div></div>
-                    </button>
-                  </div>
-                  {block.sources.includes("user_upload") && (
-                    <div className="mt-3 p-4 bg-zinc-50 border border-zinc-200 rounded-xl animate-in fade-in slide-in-from-top-2">
-                      <label className="text-xs font-semibold text-zinc-700 mb-2 block">Accepted Data Formats</label>
-                      <div className="flex gap-2 w-full">
-                        <button onClick={() => onToggleUploadFormat("pdf")} className={`flex-1 px-3 py-2 text-xs font-semibold rounded transition-colors ${block.uploadFormats?.includes("pdf") ? "bg-zinc-800 text-white shadow-sm" : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100"}`}>PDF Documents</button>
-                        <button onClick={() => onToggleUploadFormat("spreadsheet")} className={`flex-1 px-3 py-2 text-xs font-semibold rounded transition-colors ${block.uploadFormats?.includes("spreadsheet") ? "bg-zinc-800 text-white shadow-sm" : "bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-100"}`}>Spreadsheets</button>
+                    {block.sources.includes("static") && (
+                      <div className="mt-3 animate-in fade-in slide-in-from-top-2">
+                        <FileUploader blockId={block.id} inputKey="documents" acceptedFormats={["pdf", "spreadsheet"]} />
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="p-6 border border-zinc-200 bg-zinc-50 rounded-xl text-center shadow-sm">

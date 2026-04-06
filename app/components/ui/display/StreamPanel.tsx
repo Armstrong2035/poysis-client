@@ -14,9 +14,7 @@ export function StreamPanel({ blockId, outputKey }: StreamPanelProps) {
   const isStreaming = block?.status === "streaming";
   const content = block ? (block.outputs[outputKey as keyof typeof block.outputs] as string) : undefined;
 
-  const MOCK_CONTENT = `Based on the provided documents, I have synthesized an answer for you.\n\nThe initial findings suggest that the integration is fully compatible with standard pipelines. Please refer to the documentation for more configuration details.`;
-  
-  const activeContent = (!block || (!content && !isStreaming)) ? MOCK_CONTENT : content;
+  const activeContent = content;
 
   return (
     <div className="w-full p-6 md:p-8 rounded-xl border border-zinc-200 bg-white shadow-sm transition-all duration-300">
@@ -38,9 +36,14 @@ export function StreamPanel({ blockId, outputKey }: StreamPanelProps) {
       </div>
       
       <div className="text-zinc-700 leading-relaxed text-sm whitespace-pre-wrap">
-        {activeContent || <span className="text-zinc-400 italic">Reading source documents...</span>}
-        
-        {/* Render a pulsing text cursor to simulate streaming chunk reception */}
+        {block?.status === 'error' ? (
+          <span className="text-red-500 italic">Something went wrong. Check that the worker is running and the notebook has ingested documents.</span>
+        ) : activeContent ? (
+          activeContent
+        ) : (
+          <span className="text-zinc-400 italic">Waiting for a question...</span>
+        )}
+
         {isStreaming && (
           <span className="inline-block w-1.5 h-4 ml-1 bg-zinc-400 animate-pulse align-middle" />
         )}

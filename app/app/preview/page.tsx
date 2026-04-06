@@ -7,22 +7,58 @@ import { SearchBar } from "../../components/ui/input/SearchBar";
 import { StreamPanel } from "../../components/ui/display/StreamPanel";
 import { SourceAccordion } from "../../components/ui/display/SourceAccordion";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useHydrated } from "../../hooks/useHydrated";
+import { useSearchParams } from "next/navigation";
+import { getNotebook } from "../../lib/actions";
 
-
-export default function PreviewPage() {
-  const { activeBlocks } = useNotebookStore();
+function PreviewContent() {
+  const { activeBlocks, name, hydrateStore } = useNotebookStore();
   const hydrated = useHydrated();
+  const searchParams = useSearchParams();
   const [showShareModal, setShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const notebookId = searchParams.get("id");
+
+  useEffect(() => {
+    async function loadNotebook() {
+      if (!notebookId) return;
+      
+      // Only fetch if we don't have blocks yet, or we explicitly want to refresh
+      if (activeBlocks.length === 0) {
+        setLoading(true);
+        try {
+          const data = await getNotebook(notebookId);
+          if (data) {
+            hydrateStore(data.config, data.name);
+          }
+        } catch (err) {
+          console.error("Failed to load preview:", err);
+        } finally {
+          setLoading(false);
+        }
+      }
+    }
+    loadNotebook();
+  }, [notebookId, activeBlocks.length, hydrateStore]);
 
   const handleCopy = () => {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (!hydrated) return null;
+  if (!hydrated || loading) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent animate-spin rounded-full"></div>
+          <p className="text-zinc-500 font-medium animate-pulse">Igniting Engine...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-zinc-900 font-sans selection:bg-blue-100 flex flex-col items-center justify-center p-4 md:p-8">
@@ -32,7 +68,7 @@ export default function PreviewPage() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-400/5 blur-[120px]"></div>
       </div>
 
-      {/* Main Preview Container - "The Copilot" */}
+      {/* Main Preview Container */}
       <div className="w-full max-w-2xl bg-white rounded-[32px] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] border border-zinc-200/50 overflow-hidden flex flex-col z-10 animate-in fade-in zoom-in-95 duration-700 h-[85vh] md:h-[800px] relative">
         
         {/* Deployment Status Banner */}
@@ -48,7 +84,7 @@ export default function PreviewPage() {
               <div className="w-3 h-3 bg-white rounded-md"></div>
             </div>
             <div>
-              <h1 className="font-bold text-lg tracking-tight">Poysis Copilot</h1>
+              <h1 className="font-bold text-lg tracking-tight">{name || "Poysis Copilot"}</h1>
               <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Active Engine</span>
@@ -76,7 +112,7 @@ export default function PreviewPage() {
                 <p className="font-bold text-zinc-900">No Logic Defined</p>
                 <p className="text-sm text-zinc-500">Go back to the builder to add blocks.</p>
               </div>
-              <Link href="/notebook" className="text-sm font-bold text-blue-600 hover:underline">Return to Builder</Link>
+              <Link href={`/notebook?id=${notebookId || ""}`} className="text-sm font-bold text-blue-600 hover:underline">Return to Builder</Link>
             </div>
           ) : (
             <div className="max-w-xl mx-auto space-y-16 py-8">
@@ -140,7 +176,7 @@ export default function PreviewPage() {
 
       {/* Builder Shortcut (Preview Mode Only) */}
       <Link 
-        href="/notebook" 
+        href={`/notebook?id=${notebookId || ""}`}
         className="mt-8 px-6 py-2.5 bg-zinc-900 text-white rounded-full text-xs font-bold shadow-xl hover:bg-zinc-800 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center gap-2 z-20 group"
       >
         <span className="group-hover:rotate-12 transition-transform">🛠️</span> Return to Builder
@@ -157,7 +193,7 @@ export default function PreviewPage() {
                  </div>
                  
                  <p className="text-sm text-zinc-500 mb-6 leading-relaxed">
-                   Your copilot environment is live. Anyone with this link can interact with your logic blocks.
+                    Your copilot environment is live. Anyone with this link can interact with your logic blocks.
                  </p>
                  
                  <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-4 flex items-center justify-between gap-4 mb-8">
@@ -183,5 +219,13 @@ export default function PreviewPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function PreviewPage() {
+  return (
+    <Suspense>
+      <PreviewContent />
+    </Suspense>
   );
 }

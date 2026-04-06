@@ -31,18 +31,10 @@ export default async function NotebookPage({
 
   const { data: notebook } = await query.maybeSingle();
 
-  // Fetch workspace memory (documents) for THIS user
-  const { data: documents } = await supabase
-    .from('documents')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
-
   return (
-    <NotebookClient 
+    <NotebookClient
       id={id || notebook?.id}
-      initialData={notebook} 
-      workspaceDocuments={documents || []} 
+      initialData={notebook}
       user={user}
     />
   );

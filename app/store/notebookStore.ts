@@ -5,16 +5,18 @@ interface NotebookState {
   // --- 1. REGISTRIES ---
   // A dictionary of all the logic nodes operating on this canvas
   blocks: Record<string, ComputeBlock>;
-  
+
   // A dictionary of the visual components (used by the builder UI)
   uiComponents: Record<string, UIComponentBinding>;
 
   // --- 2. BUILDER TOPOLOGY ---
   name: string;
+  notebookId: string | null;
   activeBlocks: ActiveBlock[];
 
   // --- 3. ACTIONS ---
   setName: (name: string) => void;
+  setNotebookId: (id: string) => void;
   setInputValue: (blockId: string, inputKey: string, value: any) => void;
   executeBlock: (blockId: string) => Promise<void>;
 
@@ -70,6 +72,7 @@ export const useNotebookStore = create<NotebookState>()(
       },
 
       name: 'Untitled Notebook',
+      notebookId: null,
       activeBlocks: [],
 
       addBlock: (blockTypeId: string) => set((state: NotebookState) => {
@@ -117,6 +120,8 @@ export const useNotebookStore = create<NotebookState>()(
       }),
 
       setName: (name: string) => set({ name }),
+
+      setNotebookId: (id: string) => set({ notebookId: id }),
 
       renameBlock: (id: string, newName: string) => set((state: NotebookState) => ({
         activeBlocks: state.activeBlocks.map((b: ActiveBlock) => b.id === id ? { ...b, name: newName } : b)
@@ -254,50 +259,131 @@ export const useNotebookStore = create<NotebookState>()(
       executeBlock: async (blockId: string) => {
         const state = get();
         const block = state.blocks[blockId];
-        
+        const notebookId = state.notebookId;
+
         if (!block || block.status === 'streaming') return;
+        if (!notebookId) {
+          console.error(`[executeBlock] notebookId not set — cannot execute block ${blockId}`);
+          return;
+        }
 
-        // 1. Resolve Dynamic Inputs (The "{{ variable }}" binding happens here)
         const resolvedInputs = state.resolveInputs(blockId);
+        const query = resolvedInputs.query as string;
+        if (!query?.trim()) return;
 
-        // 2. React by setting status to streaming
+        // Set streaming status, clear previous outputs
         set((s: NotebookState) => ({
           blocks: {
             ...s.blocks,
-            [blockId]: { 
-              ...block, 
+            [blockId]: {
+              ...s.blocks[blockId],
               status: 'streaming',
-              currentInputs: resolvedInputs 
-            }
-          }
+              currentInputs: resolvedInputs,
+              outputs: { ...s.blocks[blockId].outputs, stream: '', sources: [] },
+            },
+          },
         }));
 
-        // 3. Mocking execution
-        if (block.type === 'retrieval') {
-          await new Promise(resolve => setTimeout(resolve, 800));
-          
+        const activeBlock = state.activeBlocks.find((b) => b.id === blockId);
+        const outputStyle = activeBlock?.outputStyle;
+
+        try {
+          if (outputStyle === 'result') {
+            // ── Semantic Search ──────────────────────────────────────────
+            const res = await fetch('/api/worker/search', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ notebook_id: notebookId, query, limit: 5, min_score: 0.5 }),
+            });
+            const data = await res.json();
+            const sources = (data.results ?? []).map((r: any) => ({
+              file: r.id,
+              score: r.score,
+              snippet: r.text,
+            }));
+            set((s: NotebookState) => ({
+              blocks: {
+                ...s.blocks,
+                [blockId]: {
+                  ...s.blocks[blockId],
+                  status: 'complete',
+                  outputs: { ...s.blocks[blockId].outputs, sources },
+                },
+              },
+            }));
+          } else {
+            // ── Streaming RAG (looped | agent) ───────────────────────────
+            const SENTINEL = '\n\n__SOURCES__';
+
+            const res = await fetch('/api/worker/ask', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ notebook_id: notebookId, query, stream: true }),
+            });
+
+            if (!res.body) throw new Error('No response body from worker');
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+
+              // Hide sentinel and everything after it while streaming
+              const sentinelIdx = buffer.indexOf(SENTINEL);
+              const displayText = sentinelIdx !== -1 ? buffer.slice(0, sentinelIdx) : buffer;
+
+              set((s: NotebookState) => ({
+                blocks: {
+                  ...s.blocks,
+                  [blockId]: {
+                    ...s.blocks[blockId],
+                    outputs: { ...s.blocks[blockId].outputs, stream: displayText },
+                  },
+                },
+              }));
+            }
+
+            // Parse final answer + sources after stream ends
+            const sentinelIdx = buffer.indexOf(SENTINEL);
+            const answer = sentinelIdx !== -1 ? buffer.slice(0, sentinelIdx) : buffer;
+            let sources: any[] = [];
+            if (sentinelIdx !== -1) {
+              try {
+                sources = JSON.parse(buffer.slice(sentinelIdx + SENTINEL.length));
+              } catch {
+                sources = [];
+              }
+            }
+
+            set((s: NotebookState) => ({
+              blocks: {
+                ...s.blocks,
+                [blockId]: {
+                  ...s.blocks[blockId],
+                  status: 'complete',
+                  outputs: { ...s.blocks[blockId].outputs, stream: answer, sources },
+                },
+              },
+            }));
+          }
+        } catch (err) {
+          console.error(`[executeBlock] Failed for block ${blockId}:`, err);
           set((s: NotebookState) => ({
             blocks: {
               ...s.blocks,
-              [blockId]: {
-                ...s.blocks[blockId],
-                status: 'complete',
-                outputs: {
-                  ...s.blocks[blockId].outputs,
-                  stream: `You asked: "${resolvedInputs.query || ""}". \nSynthesized response.`,
-                  sources: [
-                    { file: "manual.pdf", score: 0.95, snippet: "The dataflow model is core to the notebook architecture." },
-                    { file: "config.json", score: 0.88, snippet: "All blocks are persisted to a JSON configuration file." }
-                  ]
-                }
-              }
-            }
+              [blockId]: { ...s.blocks[blockId], status: 'error' },
+            },
           }));
         }
       },
 
       resetStore: () => {
-         set({ activeBlocks: [], blocks: {}, uiComponents: {}, name: 'Untitled Notebook' });
+        set({ activeBlocks: [], blocks: {}, uiComponents: {}, name: 'Untitled Notebook', notebookId: null });
       },
 
       hydrateStore: (data: any, notebookName?: string) => {

@@ -1,14 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useNotebookStore } from "../../store/notebookStore";
 import { useHydrated } from "../../hooks/useHydrated";
-import { saveNotebook, uploadDocument } from "../../lib/actions";
+import { saveNotebook } from "../../lib/actions";
 import type { User } from "@supabase/supabase-js";
 
 import { NotebookSidebar } from "../../components/notebook/NotebookSidebar";
-import { NotebookToolbar } from "../../components/notebook/NotebookToolbar";
 import { AppComposer } from "../../components/notebook/AppComposer";
 import { BlockPickerModal } from "../../components/notebook/BlockPickerModal";
 import { ConfigHubModal } from "../../components/notebook/ConfigHubModal";
@@ -17,12 +15,10 @@ import { BlockCard } from "../../components/notebook/BlockCard";
 interface NotebookClientProps {
   id?: string;
   initialData?: any;
-  workspaceDocuments: any[];
   user: User;
 }
 
-export default function NotebookClient({ id, initialData, workspaceDocuments, user }: NotebookClientProps) {
-  const router = useRouter();
+export default function NotebookClient({ id, initialData, user }: NotebookClientProps) {
   const hydrated = useHydrated();
 
   const {
@@ -42,12 +38,12 @@ export default function NotebookClient({ id, initialData, workspaceDocuments, us
     resetStore,
     uiComponents,
     hydrateStore,
+    setNotebookId,
   } = useNotebookStore();
 
   // UI state
   const [notebookTitle, setNotebookTitle] = useState(initialData?.name || "Untitled Notebook");
   const [isSaving, setIsSaving] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showBlockPicker, setShowBlockPicker] = useState(false);
   const [showConfigHub, setShowConfigHub] = useState(false);
@@ -56,11 +52,13 @@ export default function NotebookClient({ id, initialData, workspaceDocuments, us
 
   // Hydrate store from server data on mount
   useEffect(() => {
+    const notebookId = id || initialData?.id;
+    if (notebookId) setNotebookId(notebookId);
     if (initialData?.config) {
       hydrateStore(initialData.config, initialData.name);
       setLastSaved(new Date(initialData.updated_at || initialData.created_at));
     }
-  }, [initialData, hydrateStore]);
+  }, [initialData, hydrateStore, id, setNotebookId]);
 
   // ── Handlers ──────────────────────────────────────────────────────────
 
@@ -74,24 +72,6 @@ export default function NotebookClient({ id, initialData, workspaceDocuments, us
       console.error("Save failed:", err);
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 50 * 1024 * 1024) { alert("File size exceeds the 50MB limit."); return; }
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      await uploadDocument(formData);
-      router.refresh();
-    } catch (err) {
-      console.error("Upload failed:", err);
-      alert("Upload failed. Make sure you have created a 'documents' bucket in Supabase Storage.");
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -109,30 +89,24 @@ export default function NotebookClient({ id, initialData, workspaceDocuments, us
   if (!hydrated) return null;
 
   return (
-    <div className="flex min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-zinc-200 relative">
+    <div className="flex h-screen overflow-hidden bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-zinc-200 relative">
       {/* Dot Grid Background */}
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px] opacity-60 z-0"></div>
 
       {/* Left Sidebar */}
       <NotebookSidebar
         user={user}
-        workspaceDocuments={workspaceDocuments}
-        isUploading={isUploading}
-        onUpload={handleUpload}
         onConfigOpen={() => setShowConfigHub(true)}
+        notebookTitle={notebookTitle}
+        isSaving={isSaving}
+        lastSaved={lastSaved}
+        onTitleChange={setNotebookTitle}
+        onSave={handleSave}
       />
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto relative flex flex-col">
-        <NotebookToolbar
-          notebookTitle={notebookTitle}
-          isSaving={isSaving}
-          lastSaved={lastSaved}
-          onTitleChange={setNotebookTitle}
-          onSave={handleSave}
-        />
-
-        <div className="max-w-3xl mx-auto px-6 py-20 md:py-28 w-full">
+        <div className="max-w-3xl mx-auto px-6 pt-6 pb-20 w-full">
           {/* Document Header */}
           <div className="mb-16">
             <input
@@ -191,7 +165,7 @@ export default function NotebookClient({ id, initialData, workspaceDocuments, us
       </div>
 
       {/* Right Panel: App Composer */}
-      <AppComposer activeBlocks={activeBlocks} />
+      <AppComposer activeBlocks={activeBlocks} onShiftElement={shiftElementRank} notebookId={id || initialData?.id} />
 
       {/* Modals */}
       {showConfigHub && (

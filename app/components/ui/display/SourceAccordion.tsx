@@ -7,23 +7,24 @@ interface SourceAccordionProps {
   outputKey: string;
   layout?: "list" | "grid";
   theme?: "card" | "box";
+  hiddenWhenEmpty?: boolean;
 }
 
-export function SourceAccordion({ blockId, outputKey, layout = "list", theme = "card" }: SourceAccordionProps) {
+export function SourceAccordion({ blockId, outputKey, layout = "list", theme = "card", hiddenWhenEmpty = false }: SourceAccordionProps) {
   const block = useNotebookStore((state) => state.blocks[blockId]);
 
-  // Read explicitly from the 'sources' array definition we added to RetrievalOutputs
   const sources = block ? (block.outputs[outputKey as keyof typeof block.outputs] as Array<{ file: string; score: number; snippet?: string }>) : undefined;
+  const hasSources = sources && sources.length > 0;
 
-  // Provide realistic mock data if the store isn't populated or no queries have run.
-  // This ensures the App Composer always has a live preview of the layout options.
-  const activeSources = (!block || !sources || sources.length === 0) 
-    ? [
+  if (hiddenWhenEmpty && !hasSources) return null;
+
+  const activeSources = hasSources
+    ? sources
+    : [
         { file: "employee_handbook_2025.pdf", score: 0.94, snippet: "The company policy dictates all deployments must pass through..." },
         { file: "q1_revenue_metrics.csv", score: 0.86, snippet: "Row 42: Q1 Revenue hit a record high of 2.1M driven by growth." },
-        { file: "architecture_v2.md", score: 0.72, snippet: "The updated microservices architecture utilizes isolated containers." }
-      ]
-    : sources;
+        { file: "architecture_v2.md", score: 0.72, snippet: "The updated microservices architecture utilizes isolated containers." },
+      ];
 
   return (
     <div className="w-full mt-6 animate-in fade-in slide-in-from-bottom-2">

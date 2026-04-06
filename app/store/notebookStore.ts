@@ -1,23 +1,46 @@
 import { create } from 'zustand';
-import { ActiveBlock, ComputeBlock, UIComponentBinding, RetrievalBlock } from '../types/canvas';
+import { ActiveBlock, ComputeBlock, UIComponentBinding, ChatMessage, AppTheme } from '../types/canvas';
+
+// --- Block defaults by type ---
+const BLOCK_DEFAULTS: Record<string, { name: string; slug: string; uploadFormats?: string[]; outputs: Record<string, any> }> = {
+  chat: {
+    name: 'Chat',
+    slug: 'chat_block',
+    uploadFormats: ['pdf', 'spreadsheet'],
+    outputs: { stream: '', sources: [], history: [] },
+  },
+  search: {
+    name: 'Search',
+    slug: 'search_block',
+    uploadFormats: ['spreadsheet'],
+    outputs: { sources: [] },
+  },
+  generate: {
+    name: 'Generate',
+    slug: 'generate_block',
+    outputs: { stream: '', history: [] },
+  },
+};
 
 interface NotebookState {
   // --- 1. REGISTRIES ---
-  // A dictionary of all the logic nodes operating on this canvas
   blocks: Record<string, ComputeBlock>;
-
-  // A dictionary of the visual components (used by the builder UI)
   uiComponents: Record<string, UIComponentBinding>;
 
   // --- 2. BUILDER TOPOLOGY ---
   name: string;
   notebookId: string | null;
   activeBlocks: ActiveBlock[];
+  activePreviewBlockId: string | null;
+  appScreens: string[]; // Ordered list of block IDs explicitly added to the App Composer
+  theme: AppTheme;
 
   // --- 3. ACTIONS ---
   setName: (name: string) => void;
   setNotebookId: (id: string) => void;
   setInputValue: (blockId: string, inputKey: string, value: any) => void;
+  setActivePreviewBlock: (blockId: string | null) => void;
+  setTheme: (theme: Partial<AppTheme>) => void;
   executeBlock: (blockId: string) => Promise<void>;
 
   // Builder Methods
@@ -27,72 +50,61 @@ interface NotebookState {
   removeBlock: (id: string) => void;
   toggleSource: (id: string, type: string) => void;
   toggleUploadFormat: (id: string, format: string) => void;
-  setInputInterface: (id: string, intf: "chat" | "search" | "none") => void;
-  setOutputStyle: (id: string, style: "looped" | "result" | "agent") => void;
-  setResultConfig: (id: string, key: "layout" | "style", value: "list" | "grid" | "card" | "box") => void;
-  shiftElementRank: (blockId: string, index: number, direction: 'up' | 'down') => void;
+  setChainingTarget: (blockId: string, target: { blockId: string; inputKey: string } | undefined) => void;
   setTemplatedInput: (blockId: string, inputKey: string, template: string) => void;
   resolveInputs: (blockId: string) => Record<string, any>;
   resetStore: () => void;
   hydrateStore: (data: any, notebookName?: string) => void;
+
+  // App Screen Management
+  addToApp: (blockId: string) => void;
+  removeFromApp: (blockId: string) => void;
+  reorderAppScreens: (screens: string[]) => void;
 }
 
 
 export const useNotebookStore = create<NotebookState>()(
     (set, get) => ({
-      blocks: {
-        // We are seeding the store with an initial Retrieval Block to test out the architecture
-        'retrieval_1': {
-          id: 'retrieval_1',
-          type: 'retrieval',
-          status: 'idle',
-          stateSettings: { namespace: 'default_workspace' }, // Hardcoded static config
-          inputBindings: {
-            query: { type: 'user_generated', componentId: 'chat_input_1' } // Resolving the 'Where'
-          },
-          triggers: [
-            { type: 'manual', componentId: 'chat_input_1' } // Runs when Chat is submitted
-          ],
-          currentInputs: {
-            query: "" // Updates live dynamically as user types
-          },
-          outputs: {
-            stream: "",
-            sources: []
-          }
-        } as RetrievalBlock
-      },
-      
-      uiComponents: {
-        'chat_input_1': {
-          id: 'chat_input_1',
-          type: 'chat_input',
-          boundToInput: { blockId: 'retrieval_1', inputKey: 'query' }
-        }
-      },
+      // Start clean — no seed blocks
+      blocks: {},
+      uiComponents: {},
 
       name: 'Untitled Notebook',
       notebookId: null,
       activeBlocks: [],
+      activePreviewBlockId: null,
+      appScreens: [],
+      theme: {
+        primaryColor: '#000000',
+        backgroundColor: '#F8FAFC',
+        borderRadius: '12px',
+        borderWidth: '1px',
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
+        fontFamily: 'font-sans',
+        appLabel: 'Poysis Copilot',
+        showBanner: true,
+      },
 
       addBlock: (blockTypeId: string) => set((state: NotebookState) => {
+        const defaults = BLOCK_DEFAULTS[blockTypeId];
+        if (!defaults) {
+          console.warn(`[addBlock] Unknown block type: ${blockTypeId}`);
+          return state;
+        }
+
         const newId = `${blockTypeId}_${Date.now()}`;
-        const baseSlug = blockTypeId === "prompt_wrapper" ? "ai_engine" : "retrieval_node";
-        const existingCount = state.activeBlocks.filter(b => b.slug.startsWith(baseSlug)).length;
-        const slug = existingCount > 0 ? `${baseSlug}_${existingCount + 1}` : baseSlug;
+        const existingCount = state.activeBlocks.filter(b => b.blockTypeId === blockTypeId).length;
+        const slug = existingCount > 0 ? `${defaults.slug}_${existingCount + 1}` : defaults.slug;
         
         // 1. Add to the visual builder stack
         const newActiveBlock: ActiveBlock = { 
           id: newId, 
           blockTypeId, 
-          name: blockTypeId === "prompt_wrapper" ? "AI Engine" : "Knowledge Base", 
+          name: defaults.name, 
           slug,
           expanded: true, 
           sources: [], 
-          uploadFormats: ["pdf", "spreadsheet"], 
-          uiOrder: ["source", "input", "output"], 
-          inputInterface: null, 
-          outputStyle: null 
+          uploadFormats: defaults.uploadFormats,
         };
 
         // 2. Add to the logical compute dictionary
@@ -104,10 +116,7 @@ export const useNotebookStore = create<NotebookState>()(
           inputBindings: {},
           triggers: [],
           currentInputs: {},
-          outputs: {
-            stream: "",
-            sources: []
-          }
+          outputs: { ...defaults.outputs },
         };
 
         return {
@@ -123,6 +132,12 @@ export const useNotebookStore = create<NotebookState>()(
 
       setNotebookId: (id: string) => set({ notebookId: id }),
 
+      setActivePreviewBlock: (blockId: string | null) => set({ activePreviewBlockId: blockId }),
+
+      setTheme: (theme: Partial<AppTheme>) => set((s: NotebookState) => ({
+        theme: { ...s.theme, ...theme }
+      })),
+
       renameBlock: (id: string, newName: string) => set((state: NotebookState) => ({
         activeBlocks: state.activeBlocks.map((b: ActiveBlock) => b.id === id ? { ...b, name: newName } : b)
       })),
@@ -132,7 +147,8 @@ export const useNotebookStore = create<NotebookState>()(
       })),
 
       removeBlock: (id: string) => set((state: NotebookState) => ({
-        activeBlocks: state.activeBlocks.filter((b: ActiveBlock) => b.id !== id)
+        activeBlocks: state.activeBlocks.filter((b: ActiveBlock) => b.id !== id),
+        appScreens: state.appScreens.filter(sid => sid !== id),
       })),
 
       toggleSource: (id: string, type: string) => set((state: NotebookState) => ({
@@ -148,38 +164,14 @@ export const useNotebookStore = create<NotebookState>()(
       toggleUploadFormat: (id: string, format: string) => set((state: NotebookState) => ({
         activeBlocks: state.activeBlocks.map((b: ActiveBlock) => {
           if (b.id !== id) return b;
-          const formats = b.uploadFormats || ["pdf", "spreadsheet"];
+          const formats = b.uploadFormats || [];
           const has = formats.includes(format);
           return { ...b, uploadFormats: has ? formats.filter((f: string) => f !== format) : [...formats, format] };
         })
       })),
 
-      setInputInterface: (id: string, intf: "chat" | "search" | "none") => set((state: NotebookState) => ({
-        activeBlocks: state.activeBlocks.map((b: ActiveBlock) => b.id === id ? { ...b, inputInterface: intf } : b)
-      })),
-
-      setOutputStyle: (id: string, style: "looped" | "result" | "agent") => set((state: NotebookState) => ({
-        activeBlocks: state.activeBlocks.map((b: ActiveBlock) => b.id === id ? { ...b, outputStyle: style } : b)
-      })),
-
-      setResultConfig: (id: string, key: "layout" | "style", value: "list" | "grid" | "card" | "box") => set((state: NotebookState) => ({
-        activeBlocks: state.activeBlocks.map((b: ActiveBlock) => {
-          if (b.id !== id) return b;
-          return { ...b, [key === "layout" ? "resultLayout" : "resultStyle"]: value };
-        })
-      })),
-
-      shiftElementRank: (blockId: string, index: number, direction: 'up' | 'down') => set((state: NotebookState) => ({
-        activeBlocks: state.activeBlocks.map((b: ActiveBlock) => {
-          if (b.id !== blockId) return b;
-          const newOrder = [...(b.uiOrder || ["source", "input", "output"])];
-          if (direction === 'up' && index > 0) {
-            [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
-          } else if (direction === 'down' && index < newOrder.length - 1) {
-            [newOrder[index + 1], newOrder[index]] = [newOrder[index], newOrder[index + 1]];
-          }
-          return { ...b, uiOrder: newOrder };
-        })
+      setChainingTarget: (blockId: string, target: { blockId: string; inputKey: string } | undefined) => set((state: NotebookState) => ({
+        activeBlocks: state.activeBlocks.map((b: ActiveBlock) => b.id === blockId ? { ...b, chainingTarget: target } : b)
       })),
 
       setInputValue: (blockId: string, inputKey: string, value: any) => set((state: NotebookState) => {
@@ -227,7 +219,6 @@ export const useNotebookStore = create<NotebookState>()(
 
          const resolved: Record<string, any> = { ...block.currentInputs };
 
-         // Resolve any templated strings or dynamic bindings
          Object.entries(block.inputBindings).forEach(([key, resolver]) => {
             if (!resolver) return;
             
@@ -239,7 +230,6 @@ export const useNotebookStore = create<NotebookState>()(
                   }
                   break;
                case 'templated':
-                  // Simple regex parser for {{ slug.property }}
                   resolved[key] = (resolver as any).template.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_: string, match: string) => {
                      const [slug, outputKey] = match.split('.');
                      const targetBlockConfig = state.activeBlocks.find(b => b.slug === slug);
@@ -271,25 +261,23 @@ export const useNotebookStore = create<NotebookState>()(
         const query = resolvedInputs.query as string;
         if (!query?.trim()) return;
 
-        // Set streaming status, clear previous outputs
-        set((s: NotebookState) => ({
-          blocks: {
-            ...s.blocks,
-            [blockId]: {
-              ...s.blocks[blockId],
-              status: 'streaming',
-              currentInputs: resolvedInputs,
-              outputs: { ...s.blocks[blockId].outputs, stream: '', sources: [] },
+        const blockType = block.type; // "chat" | "search" | "generate"
+
+        // ── SEARCH — single-shot semantic lookup ─────────────────────────
+        if (blockType === 'search') {
+          set((s: NotebookState) => ({
+            blocks: {
+              ...s.blocks,
+              [blockId]: {
+                ...s.blocks[blockId],
+                status: 'streaming',
+                currentInputs: resolvedInputs,
+                outputs: { ...s.blocks[blockId].outputs, sources: [] },
+              },
             },
-          },
-        }));
+          }));
 
-        const activeBlock = state.activeBlocks.find((b) => b.id === blockId);
-        const outputStyle = activeBlock?.outputStyle;
-
-        try {
-          if (outputStyle === 'result') {
-            // ── Semantic Search ──────────────────────────────────────────
+          try {
             const res = await fetch('/api/worker/search', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -311,66 +299,129 @@ export const useNotebookStore = create<NotebookState>()(
                 },
               },
             }));
-          } else {
-            // ── Streaming RAG (looped | agent) ───────────────────────────
-            const SENTINEL = '\n\n__SOURCES__';
+          } catch (err) {
+            console.error(`[executeBlock] Search failed for block ${blockId}:`, err);
+            set((s: NotebookState) => ({
+              blocks: {
+                ...s.blocks,
+                [blockId]: { ...s.blocks[blockId], status: 'error' },
+              },
+            }));
+          }
+          return;
+        }
 
-            const res = await fetch('/api/worker/ask', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ notebook_id: notebookId, query, stream: true }),
-            });
+        // ── CHAT / GENERATE — conversational streaming ────────────────────
+        const userMessage: ChatMessage = {
+          id: `msg_${Date.now()}_user`,
+          role: 'user',
+          content: query,
+          timestamp: Date.now(),
+        };
 
-            if (!res.body) throw new Error('No response body from worker');
+        const prevHistory = (block.outputs as any).history || [];
 
-            const reader = res.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
+        set((s: NotebookState) => ({
+          blocks: {
+            ...s.blocks,
+            [blockId]: {
+              ...s.blocks[blockId],
+              status: 'streaming',
+              currentInputs: resolvedInputs,
+              outputs: {
+                ...s.blocks[blockId].outputs,
+                stream: '',
+                ...(blockType === 'chat' ? { sources: [] } : {}),
+                history: [...prevHistory, userMessage],
+              },
+            },
+          },
+        }));
 
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
+        try {
+          const SENTINEL = '\n\n__SOURCES__';
 
-              buffer += decoder.decode(value, { stream: true });
+          // Chat hits the RAG endpoint; Generate hits the same endpoint but could be extended later
+          const instructions = resolvedInputs.instructions;
+          const res = await fetch('/api/worker/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              notebook_id: notebookId, 
+              query, 
+              stream: true,
+              instructions // Pass the templated system prompt to the worker
+            }),
+          });
 
-              // Hide sentinel and everything after it while streaming
-              const sentinelIdx = buffer.indexOf(SENTINEL);
-              const displayText = sentinelIdx !== -1 ? buffer.slice(0, sentinelIdx) : buffer;
+          if (!res.body) throw new Error('No response body from worker');
 
-              set((s: NotebookState) => ({
-                blocks: {
-                  ...s.blocks,
-                  [blockId]: {
-                    ...s.blocks[blockId],
-                    outputs: { ...s.blocks[blockId].outputs, stream: displayText },
-                  },
-                },
-              }));
-            }
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
 
-            // Parse final answer + sources after stream ends
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
             const sentinelIdx = buffer.indexOf(SENTINEL);
-            const answer = sentinelIdx !== -1 ? buffer.slice(0, sentinelIdx) : buffer;
-            let sources: any[] = [];
-            if (sentinelIdx !== -1) {
-              try {
-                sources = JSON.parse(buffer.slice(sentinelIdx + SENTINEL.length));
-              } catch {
-                sources = [];
-              }
-            }
+            const displayText = sentinelIdx !== -1 ? buffer.slice(0, sentinelIdx) : buffer;
 
             set((s: NotebookState) => ({
               blocks: {
                 ...s.blocks,
                 [blockId]: {
                   ...s.blocks[blockId],
-                  status: 'complete',
-                  outputs: { ...s.blocks[blockId].outputs, stream: answer, sources },
+                  outputs: { ...s.blocks[blockId].outputs, stream: displayText },
                 },
               },
             }));
           }
+
+          // Parse final answer + sources
+          const sentinelIdx = buffer.indexOf(SENTINEL);
+          const answer = sentinelIdx !== -1 ? buffer.slice(0, sentinelIdx) : buffer;
+          let sources: any[] = [];
+          if (sentinelIdx !== -1) {
+            try {
+              sources = JSON.parse(buffer.slice(sentinelIdx + SENTINEL.length));
+            } catch {
+              sources = [];
+            }
+          }
+
+          const assistantMessage: ChatMessage = {
+            id: `msg_${Date.now()}_assistant`,
+            role: 'assistant',
+            content: answer,
+            ...(blockType === 'chat' ? { sources } : {}),
+            timestamp: Date.now(),
+          };
+
+          set((s: NotebookState) => {
+            const currentHistory = (s.blocks[blockId].outputs as any).history || [];
+            const activeBlock = s.activeBlocks.find(b => b.id === blockId);
+            const chainingTarget = activeBlock?.chainingTarget;
+            return {
+              blocks: {
+                ...s.blocks,
+                [blockId]: {
+                  ...s.blocks[blockId],
+                  status: 'complete',
+                  outputs: {
+                    ...s.blocks[blockId].outputs,
+                    stream: '',
+                    ...(blockType === 'chat' ? { sources } : {}),
+                    history: [...currentHistory, assistantMessage],
+                  },
+                },
+              },
+              // Automatic screen handoff: advance Composer to chained block
+              ...(chainingTarget ? { activePreviewBlockId: chainingTarget.blockId } : {}),
+            };
+          });
         } catch (err) {
           console.error(`[executeBlock] Failed for block ${blockId}:`, err);
           set((s: NotebookState) => ({
@@ -382,8 +433,38 @@ export const useNotebookStore = create<NotebookState>()(
         }
       },
 
+      // --- APP SCREEN MANAGEMENT ---
+      addToApp: (blockId: string) => set((s: NotebookState) => {
+        if (s.appScreens.includes(blockId)) return s;
+        return { appScreens: [...s.appScreens, blockId] };
+      }),
+
+      removeFromApp: (blockId: string) => set((s: NotebookState) => ({
+        appScreens: s.appScreens.filter(id => id !== blockId)
+      })),
+
+      reorderAppScreens: (screens: string[]) => set({ appScreens: screens }),
+
       resetStore: () => {
-        set({ activeBlocks: [], blocks: {}, uiComponents: {}, name: 'Untitled Notebook', notebookId: null });
+        set({
+           activeBlocks: [],
+           blocks: {},
+           uiComponents: {},
+           name: 'Untitled Notebook',
+           notebookId: null,
+           activePreviewBlockId: null,
+           appScreens: [],
+           theme: {
+              primaryColor: '#000000',
+              backgroundColor: '#F8FAFC',
+              borderRadius: '12px',
+              borderWidth: '1px',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
+              fontFamily: 'font-sans',
+              appLabel: 'Poysis Copilot',
+              showBanner: true,
+           }
+        });
       },
 
       hydrateStore: (data: any, notebookName?: string) => {
@@ -392,10 +473,19 @@ export const useNotebookStore = create<NotebookState>()(
           name: notebookName || 'Untitled Notebook',
           activeBlocks: data.activeBlocks || [],
           blocks: data.blocks || {},
-          uiComponents: data.uiComponents || {}
+          uiComponents: data.uiComponents || {},
+          appScreens: data.appScreens || [],
+          theme: data.theme || {
+              primaryColor: '#000000',
+              backgroundColor: '#F8FAFC',
+              borderRadius: '12px',
+              borderWidth: '1px',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
+              fontFamily: 'font-sans',
+              appLabel: 'Poysis Copilot',
+              showBanner: true,
+          }
         });
       }
     })
 );
-
-

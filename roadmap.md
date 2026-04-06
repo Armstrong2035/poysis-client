@@ -19,3 +19,8 @@
 - [ ] Replace mock `executeBlock` DAG logic in `useNotebookStore` with active REST/WebSocket calls to the Poysis Worker tier.
 - [ ] Wire up real file ingestions (FileUploader -> LlamaParse pipeline).
 - [ ] Implement database persistence for Canvas States (saving/loading templates).
+
+## 4. Specialized Intelligence Blocks (V2)
+- [ ] **Diagnosis Block:** A guided conversation engine using an empath/doctor model. Designed to arrive at the core of a user's intent through clinical-style discovery.
+  - **Use Cases:** Guided onboarding, complex triage, needs-assessment for high-ticket commerce.
+  - **UI:** Multi-turn chat with structured "Discovery Progress" indicators.

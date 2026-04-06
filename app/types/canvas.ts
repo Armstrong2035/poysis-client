@@ -27,7 +27,7 @@ export type TriggerCondition =
 // A generic compute block
 export interface ComputeBlock<TInputs = Record<string, any>, TOutputs = Record<string, any>> {
   id: string;
-  type: "retrieval" | "classifier" | "recommendation"; // Block type
+  type: "chat" | "search" | "generate" | "classifier" | "recommendation";
   status: "idle" | "loading" | "streaming" | "complete" | "error";
   
   // Configuration Triad
@@ -47,19 +47,54 @@ export interface DocumentValue {
   uri?: string; // e.g. blob URL or base64 representation
 }
 
-// Specific definition for the Retrieval Block
-export interface RetrievalInputs {
-  query: string;
-  documents?: DocumentValue[]; // For when the creator allows on-the-fly user uploads
+// --- Chat Message (shared across conversational blocks) ---
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  sources?: Array<{ file: string; score: number; snippet?: string }>;
+  timestamp: number;
 }
 
-export interface RetrievalOutputs {
-  stream: string;
+// --- Block-Specific Input/Output Types ---
+
+// Chat: Conversational RAG over documents
+export interface ChatInputs {
+  query: string;
+  documents?: DocumentValue[];
+}
+
+export interface ChatOutputs {
+  stream: string; // Live streaming buffer for current response
+  sources: Array<{ file: string; score: number; snippet?: string }>;
+  history: ChatMessage[];
+}
+
+export type ChatBlock = ComputeBlock<ChatInputs, ChatOutputs> & { type: "chat" };
+
+// Search: Semantic search over structured data
+export interface SearchInputs {
+  query: string;
+}
+
+export interface SearchOutputs {
   sources: Array<{ file: string; score: number; snippet?: string }>;
 }
 
-// Helper specific type for TS
-export type RetrievalBlock = ComputeBlock<RetrievalInputs, RetrievalOutputs> & { type: "retrieval" };
+export type SearchBlock = ComputeBlock<SearchInputs, SearchOutputs> & { type: "search" };
+
+// Generate: Pure LLM completion (no knowledge base)
+export interface GenerateInputs {
+  query: string;
+}
+
+export interface GenerateOutputs {
+  stream: string;
+  history: ChatMessage[];
+}
+
+export type GenerateBlock = ComputeBlock<GenerateInputs, GenerateOutputs> & { type: "generate" };
 
 // --- 4. UI REGISTRY (The Presentation Nodes) ---
 
@@ -70,7 +105,20 @@ export interface UIComponentBinding {
   boundToOutput?: { blockId: string; outputKey: string }; // Where the UI reads from
 }
 
-// --- 5. BUILDER STATE TYPES ---
+// --- 5. APP THEME (The Branding Engine) ---
+
+export interface AppTheme {
+  primaryColor: string;
+  backgroundColor: string;
+  borderRadius: string;  // e.g. "0px", "12px", "24px"
+  borderWidth: string;   // e.g. "0px", "1px", "2px"
+  boxShadow: string;     // Tailwind shadow-xs, shadow-md, etc.
+  fontFamily: string;    // "Inter" | "Playfair Display" | "JetBrains Mono"
+  appLabel: string;
+  showBanner: boolean;
+}
+
+// --- 6. BUILDER STATE TYPES ---
 
 export interface ActiveBlock {
   id: string;
@@ -80,10 +128,5 @@ export interface ActiveBlock {
   expanded: boolean;
   sources: string[];
   uploadFormats?: string[];
-  uiOrder?: ("source" | "input" | "output")[];
-  inputInterface: "chat" | "search" | "none" | null;
-  outputStyle: "looped" | "result" | "agent" | null;
-  resultLayout?: "list" | "grid";
-  resultStyle?: "card" | "box";
+  chainingTarget?: { blockId: string; inputKey: string }; // Pipes output to another block
 }
-

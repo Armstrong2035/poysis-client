@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "../utils/supabase/server";
+import { createClient as createPublicClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -69,6 +70,41 @@ export async function renameNotebook(id: string, name: string) {
 
   revalidatePath('/workspace');
   revalidatePath('/', 'layout');
+}
+
+/**
+ * Silent version of createNotebook that returns the data instead of redirecting.
+ * Used for background bootstrapping during ingestion.
+ */
+export async function initializeNotebook(config: any) {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { name, ...rest } = config;
+
+  console.log(`>>> [SERVER ACTION] Initializing notebook with name: "${name}"`);
+
+  const { data, error } = await supabase
+    .from('notebooks')
+    .insert({ 
+      user_id: user.id,
+      name: name || 'Untitled Notebook',
+      config: rest
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error initializing notebook:", error.message);
+    throw new Error(error.message);
+  }
+
+  revalidatePath('/workspace');
+  revalidatePath('/');
+  return data;
 }
 
 /**
@@ -191,7 +227,7 @@ export async function uploadDocument(formData: FormData) {
 }
 
 /**
- * Fetches a single notebook by ID.
+ * Fetches a single notebook by ID (authenticated — for the builder).
  */
 export async function getNotebook(id: string) {
   const cookieStore = await cookies();
@@ -213,4 +249,58 @@ export async function getNotebook(id: string) {
   }
 
   return data;
+}
+
+/**
+ * Fetches a notebook's public config by ID (NO auth required).
+ * Used by the /preview page and embed widget so end-users can view
+ * shared copilots without logging in.
+ *
+ * Returns only the fields needed to render the preview — never exposes
+ * user_id or other sensitive columns.
+ */
+export async function getPublicNotebook(id: string) {
+  const supabase = createPublicClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
+  );
+
+  const { data, error } = await supabase
+    .from('notebooks')
+    .select('id, name, config')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error("Error fetching public notebook:", error.message);
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * Deletes a notebook by ID.
+ */
+export async function deleteNotebook(id: string) {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { error } = await supabase
+    .from('notebooks')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error("Error deleting notebook:", error.message);
+    throw new Error(error.message);
+  }
+
+  revalidatePath('/workspace');
+  revalidatePath('/');
+  return redirect('/workspace');
 }

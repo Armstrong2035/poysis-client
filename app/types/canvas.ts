@@ -38,6 +38,7 @@ export interface ComputeBlock<TInputs = Record<string, any>, TOutputs = Record<s
   // Live Data
   currentInputs: Partial<TInputs>; // Evaluated inputs right before execution
   outputs: Partial<TOutputs>;      // The emitted results
+  uiConfig?: UIConfig;             // Visual layout configuration
 }
 
 export interface DocumentValue {
@@ -120,6 +121,20 @@ export interface AppTheme {
 
 // --- 6. BUILDER STATE TYPES ---
 
+export interface LayoutComponent {
+  id: string;
+  type: "title" | "paragraph" | "list" | "divider" | "kv-pair" | "image" | "button" | "price" | "link" | "chip";
+  content: string; // Template string: "The price is {{item.price}}"
+  action?: "route" | "link"; // Only for buttons/links
+  className?: string; // Optional styling overrides
+}
+
+export interface UIConfig {
+  mode: "direct" | "custom";
+  layout: LayoutComponent[];
+  sampleData?: string; // Mock JSON for the builder preview
+}
+
 export interface ActiveBlock {
   id: string;
   blockTypeId: string;
@@ -129,4 +144,5 @@ export interface ActiveBlock {
   sources: string[];
   uploadFormats?: string[];
   chainingTarget?: { blockId: string; inputKey: string }; // Pipes output to another block
+  uiConfig?: UIConfig; // Persistence for the Interface Builder
 }

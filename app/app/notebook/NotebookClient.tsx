@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNotebookStore } from "../../store/notebookStore";
 import { useHydrated } from "../../hooks/useHydrated";
 import { saveNotebook } from "../../lib/actions";
@@ -39,6 +39,8 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
     addToApp,
     removeFromApp,
     theme,
+    setStateSetting,
+    setBlockUIConfig,
   } = useNotebookStore();
 
   // UI state
@@ -52,15 +54,65 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
 
   const selectedBlock = activeBlocks.find(b => b.id === selectedBlockId) || null;
 
-  // Hydrate store from server data on mount
+  // ── Hydration & Save Guard ────────────────
+  const [isHydrationComplete, setIsHydrationComplete] = useState(false);
+  const hasHydratedForId = useRef<string | null>(null);
+
   useEffect(() => {
     const notebookId = id || initialData?.id;
-    if (notebookId) setNotebookId(notebookId);
+    // Only hydrate if we haven't already done so for this specific notebook ID
+    if (notebookId && hasHydratedForId.current === notebookId) return;
+
+    if (notebookId) {
+      setNotebookId(notebookId);
+      hasHydratedForId.current = notebookId;
+    }
+
     if (initialData?.config) {
       hydrateStore(initialData.config, initialData.name);
       setLastSaved(new Date(initialData.updated_at || initialData.created_at));
+      // Give the store a moment to propagate before we allow auto-saves
+      setTimeout(() => setIsHydrationComplete(true), 100);
+    } else {
+      // If there's no initial data, we're likely in a 'new' state
+      setIsHydrationComplete(true);
     }
-  }, [initialData, hydrateStore, id, setNotebookId]);
+    // We intentionally only run this on mount/ID change to avoid overwriting 
+    // local state when revalidatePath triggers a background prop update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, initialData?.id]);
+
+  // ── Debounced auto-save (2s after last store change) ────────────────
+  // ── Debounced auto-save (2s after last store change) ────────────────
+  useEffect(() => {
+    // ONLY save after we've finished the initial hydration
+    if (!isHydrationComplete) return;
+
+    const targetId = id || initialData?.id;
+    if (!targetId) return;
+
+    const timer = setTimeout(async () => {
+      setIsSaving(true);
+      try {
+        await saveNotebook(targetId, {
+          name: notebookTitle,
+          activeBlocks,
+          blocks,
+          uiComponents,
+          appScreens,
+          theme,
+        });
+        setLastSaved(new Date());
+      } catch (err) {
+        console.error("Auto-save failed:", err);
+      } finally {
+        setIsSaving(false);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBlocks, blocks, uiComponents, appScreens, theme, notebookTitle, isHydrationComplete]);
 
   // ── Handlers ──────────────────────────────────────────────────────────
 
@@ -197,6 +249,8 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
           onToggleSource={(type) => toggleSource(selectedBlock.id, type)}
           onSetChainingTarget={(target) => setChainingTarget(selectedBlock.id, target)}
           onSetTemplatedInput={(key, tpl) => setTemplatedInput(selectedBlock.id, key, tpl)}
+          onSetStateSetting={(key, val) => setStateSetting(selectedBlock.id, key, val)}
+          onSetUIConfig={(cfg) => setBlockUIConfig(selectedBlock.id, cfg)}
         />
       )}
 

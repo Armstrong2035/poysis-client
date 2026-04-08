@@ -24,3 +24,28 @@
 - [ ] **Diagnosis Block:** A guided conversation engine using an empath/doctor model. Designed to arrive at the core of a user's intent through clinical-style discovery.
   - **Use Cases:** Guided onboarding, complex triage, needs-assessment for high-ticket commerce.
   - **UI:** Multi-turn chat with structured "Discovery Progress" indicators.
+- [ ] **Onboarding Block:** A structured multi-step form/survey block that collects user information and feeds it into downstream blocks as variables.
+  - **Use Cases:** New user intake, preference capture, product recommendation quizzes.
+  - **UI:** Step-by-step card flow with progress indicator. Output is a named variable bag passed to subsequent blocks.
+
+## 5. Artifacts (V2)
+**Objective:** Allow AI blocks to produce rich, persistent secondary outputs alongside the conversational thread — similar to Claude's artifact panel or ChatGPT Canvas.
+
+### Design Decisions (Settled)
+- **Who configures it:** The Poysis builder, via an "Output Mode" setting on any block in `BlockDetailPanel`.
+- **Options:** `Chat` (default), `Artifact — Document`, `Artifact — Code`, `Artifact — Diagram`.
+- **No triggers for MVP:** Output mode alone determines rendering. Triggers are a v3 consideration.
+- **Persistence:** TBD — ephemeral per-session first, Supabase persistence in a later pass.
+
+### Open Questions Before Implementation
+- Who is the primary consumer — end-user or builder?
+- What artifact types are highest priority (reports, summaries, code, diagrams)?
+- Should artifacts persist across sessions for the end-user?
+
+### Action Items
+- [ ] Add "Output Mode" selector to `BlockDetailPanel` (alongside model selector).
+- [ ] Update `executeBlock` in the store to route output to `artifacts` array vs. chat `history` based on mode.
+- [ ] Build `ArtifactPanel` component for rendering `code`, `markdown`, `mermaid`, `html` types.
+- [ ] Update `preview/page.tsx` and `AppComposer.tsx` with split-view layout when artifact is active.
+- [ ] Update block system prompt instructions to use the correct output format per mode.
+

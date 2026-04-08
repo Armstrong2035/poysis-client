@@ -19,7 +19,7 @@ type UploadedDoc = {
 type UploadState = "idle" | "uploading" | "error";
 
 export function FileUploader({ blockId, inputKey, acceptedFormats = ["pdf", "spreadsheet"] }: FileUploaderProps) {
-  const { setInputValue, blocks, notebookId } = useNotebookStore();
+  const { setInputValue, blocks, notebookId, executeInitialSample, bootstrapNotebook } = useNotebookStore();
   const block = blocks[blockId];
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadState, setUploadState] = useState<UploadState>("idle");
@@ -38,13 +38,11 @@ export function FileUploader({ blockId, inputKey, acceptedFormats = ["pdf", "spr
     const file = e.target.files?.[0];
     if (!file) return;
 
+    console.log("[FileUploader] handleFileChange triggered:", file.name, "NotebookId:", notebookId);
+
     if (file.size > 50 * 1024 * 1024) {
       setErrorMsg("File exceeds 50MB limit.");
-      return;
-    }
-
-    if (!notebookId) {
-      setErrorMsg("Notebook not saved yet — save the notebook first.");
+      setUploadState("error");
       return;
     }
 
@@ -52,8 +50,23 @@ export function FileUploader({ blockId, inputKey, acceptedFormats = ["pdf", "spr
     setErrorMsg(null);
 
     try {
+      // ── SILENT BOOTSTRAP ──────────────────────────────────────────────────
+      // If the notebook hasn't been saved yet, bootstrap it in the background
+      let targetNotebookId = notebookId;
+      if (!targetNotebookId) {
+        console.log("[FileUploader] No notebookId found. Silent bootstrap initiated...");
+        try {
+          targetNotebookId = await bootstrapNotebook();
+        } catch (bootstrapErr) {
+          throw new Error("Failed to initialize project before upload. Please try a manual save.");
+        }
+      }
+
+      if (!targetNotebookId) throw new Error("Could not obtain a valid Project ID.");
+      // ──────────────────────────────────────────────────────────────────────
+
       const formData = new FormData();
-      formData.append("notebook_id", notebookId);
+      formData.append("notebook_id", targetNotebookId);
       formData.append("file", file);
 
       const res = await fetch("/api/worker/ingest-file", {
@@ -77,6 +90,18 @@ export function FileUploader({ blockId, inputKey, acceptedFormats = ["pdf", "spr
 
       setInputValue(blockId, inputKey, [...existingDocs, newDoc]);
       setUploadState("idle");
+
+      // Auto-Sample (Non-blocking): If this is the first document, trigger a silent retrieval 
+      // so the Blueprint Designer has immediate data to work with.
+      if (existingDocs.length === 0) {
+        console.log("[FileUploader] First ingestion complete. Triggering auto-sample retrieval...");
+        try {
+          // Fire and forget, don't await to avoid blocking UI state update
+          executeInitialSample(blockId);
+        } catch (sampleErr) {
+          console.error("[FileUploader] Auto-sample failed, but upload succeeded:", sampleErr);
+        }
+      }
     } catch (err: any) {
       console.error("[FileUploader] Ingestion error:", err);
       setErrorMsg(err.message ?? "Upload failed.");

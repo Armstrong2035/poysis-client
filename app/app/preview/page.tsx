@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useState, useEffect, Suspense } from "react";
 import { useHydrated } from "../../hooks/useHydrated";
 import { useSearchParams } from "next/navigation";
-import { getNotebook } from "../../lib/actions";
+// getPublicNotebook removed — now fetched via /api/notebook/public
 
 function PreviewContent() {
   const { activeBlocks, hydrateStore, activePreviewBlockId, setActivePreviewBlock, setNotebookId, theme, appScreens } = useNotebookStore();
@@ -25,12 +25,15 @@ function PreviewContent() {
   useEffect(() => {
     async function loadNotebook() {
       if (!notebookId) return;
-      if (notebookId) setNotebookId(notebookId);
+      setNotebookId(notebookId);
+      // Only fetch if the store is empty (fresh load or direct URL hit)
       if (activeBlocks.length === 0) {
         setLoading(true);
         try {
-          const data = await getNotebook(notebookId);
-          if (data) hydrateStore(data.config, data.name);
+          const res = await fetch(`/api/notebook/public?id=${notebookId}`);
+          if (!res.ok) throw new Error(`Failed to fetch notebook: ${res.status}`);
+          const data = await res.json();
+          if (data?.config) hydrateStore(data.config, data.name);
         } catch (err) {
           console.error("Failed to load preview:", err);
         } finally {

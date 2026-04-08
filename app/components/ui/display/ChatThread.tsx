@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useNotebookStore } from "../../../store/notebookStore";
-import type { ChatMessage } from "../../../types/canvas";
+import { LayoutRenderer } from "./LayoutRenderer";
+import type { ChatMessage, UIConfig } from "../../../types/canvas";
 
 interface ChatThreadProps {
   blockId: string;
@@ -20,7 +21,16 @@ export function ChatThread({ blockId }: ChatThreadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const block = useNotebookStore((state) => state.blocks[blockId]);
-  const { setInputValue, executeBlock } = useNotebookStore();
+  const activeBlock = useNotebookStore((state) => state.activeBlocks.find(b => b.id === blockId));
+  const { setInputValue, executeBlock, setActivePreviewBlock } = useNotebookStore();
+
+  const handleAction = (action: string, metadata: any) => {
+    if (action === 'route' && activeBlock?.chainingTarget) {
+      setActivePreviewBlock(activeBlock.chainingTarget.blockId);
+    } else if (action === 'link' && typeof metadata === 'string') {
+      window.open(metadata, '_blank');
+    }
+  };
 
   const isStreaming = block?.status === "streaming";
   const history: ChatMessage[] = (block?.outputs as any)?.history || [];
@@ -61,14 +71,24 @@ export function ChatThread({ blockId }: ChatThreadProps) {
             {msg.role === "user" ? (
               <UserBubble content={msg.content} />
             ) : (
-              <AssistantBubble content={msg.content} sources={msg.sources} />
+              <AssistantBubble 
+                content={msg.content} 
+                sources={msg.sources} 
+                uiConfig={block?.uiConfig} 
+                onAction={handleAction}
+              />
             )}
           </div>
         ))}
 
         {/* Live streaming bubble (current response in progress) */}
         {isStreaming && liveStream && (
-          <AssistantBubble content={liveStream} streaming />
+          <AssistantBubble 
+            content={liveStream} 
+            streaming 
+            uiConfig={block?.uiConfig}
+            onAction={handleAction}
+          />
         )}
 
         {/* Streaming indicator before any text arrives */}
@@ -80,6 +100,25 @@ export function ChatThread({ blockId }: ChatThreadProps) {
               <div className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-bounce [animation-delay:0.3s]" />
             </div>
             <span className="text-[10px] text-zinc-400 font-medium">Thinking…</span>
+          </div>
+        )}
+
+        {/* Error state */}
+        {block?.status === "error" && (
+          <div className="flex flex-col items-center gap-3 py-4 px-3 animate-in fade-in duration-300">
+            <div className="w-full bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-3">
+              <span className="text-lg shrink-0">⚠️</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-bold text-red-700">Something went wrong</div>
+                <div className="text-[10px] text-red-500 mt-0.5">The AI worker didn't respond. Check your connection and try again.</div>
+              </div>
+              <button
+                onClick={() => executeBlock(blockId)}
+                className="shrink-0 px-3 py-1.5 text-[10px] font-bold text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -148,20 +187,48 @@ function AssistantBubble({
   content,
   sources,
   streaming,
+  uiConfig,
+  onAction,
 }: {
   content: string;
   sources?: Array<{ file: string; score: number; snippet?: string }>;
   streaming?: boolean;
+  uiConfig?: UIConfig;
+  onAction?: (action: string, metadata: any) => void;
 }) {
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const hasSources = sources && sources.length > 0;
+
+  // Card Formatter Rendering Logic
+  const renderContent = () => {
+    if (uiConfig?.layout && uiConfig.layout.length > 0 && !streaming) {
+       try {
+         const parsed = JSON.parse(content);
+         return <LayoutRenderer layout={uiConfig.layout} data={parsed} onAction={onAction} />;
+       } catch (e) {
+         // Fallback to direct rendering if not valid JSON
+         return (
+           <div className="whitespace-pre-wrap">{content}</div>
+         );
+       }
+    }
+    
+    return (
+       <div className="whitespace-pre-wrap">
+         {content}
+         {streaming && (
+           <span className="inline-block w-1.5 h-4 ml-0.5 animate-pulse align-middle rounded-sm" style={{ backgroundColor: 'var(--primary-color)' }} />
+         )}
+       </div>
+    );
+  };
 
   return (
     <div className="flex justify-start">
       <div className="max-w-[90%]">
         {/* Response text */}
         <div 
-          className="text-zinc-800 text-sm px-4 py-3 shadow-sm leading-relaxed whitespace-pre-wrap transition-all"
+          className="text-zinc-800 text-sm px-4 py-3 shadow-sm leading-relaxed transition-all"
           style={{ 
             backgroundColor: 'rgba(0, 0, 0, 0.03)',
             borderRadius: 'var(--radius)',
@@ -169,10 +236,7 @@ function AssistantBubble({
             borderBottomLeftRadius: '2px'
           }}
         >
-          {content}
-          {streaming && (
-            <span className="inline-block w-1.5 h-4 ml-0.5 animate-pulse align-middle rounded-sm" style={{ backgroundColor: 'var(--primary-color)' }} />
-          )}
+          {renderContent()}
         </div>
 
         {/* Inline cited sources (collapsed by default) */}

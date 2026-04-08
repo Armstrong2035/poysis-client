@@ -4,6 +4,7 @@ import { SearchBar } from "../ui/input/SearchBar";
 import { SourceAccordion } from "../ui/display/SourceAccordion";
 import { ChatThread } from "../ui/display/ChatThread";
 import { ThemeCustomizer } from "./ThemeCustomizer";
+import { BlueprintDesigner } from "./BlueprintDesigner";
 import type { ActiveBlock } from "../../types/canvas";
 import { useNotebookStore } from "../../store/notebookStore";
 import Link from "next/link";
@@ -31,6 +32,8 @@ export function AppComposer({ activeBlocks, notebookId, isVisible, onToggle }: A
     addToApp,
     removeFromApp,
     reorderAppScreens,
+    selectedBlockId,
+    setSelectedBlockId,
   } = useNotebookStore();
 
   const [activeTab, setActiveTab] = useState<"screens" | "design">("screens");
@@ -123,7 +126,7 @@ export function AppComposer({ activeBlocks, notebookId, isVisible, onToggle }: A
           <div className="flex-1 border-l border-zinc-200/80 bg-white flex flex-row h-screen overflow-hidden sticky top-0">
 
             {/* ─── Column 1: Editor (Screens & Design) ─── */}
-            <div className="w-[300px] 2xl:w-[380px] flex flex-col border-r border-zinc-100 bg-[#FAFAFA] shrink-0">
+            <div className="w-[300px] 2xl:w-[380px] flex flex-col border-r border-zinc-100 bg-[#FAFAFA] shrink-0 overflow-hidden">
               {/* Header */}
               <div className="px-5 pt-5 pb-4 border-b border-zinc-200/80 bg-white shrink-0 space-y-3">
                 <div className="flex items-center justify-between">
@@ -168,26 +171,45 @@ export function AppComposer({ activeBlocks, notebookId, isVisible, onToggle }: A
                   )}
                 </div>
 
-                {/* Tab bar (Left Column) */}
-                <div className="flex bg-zinc-100 p-1 rounded-xl">
-                  <button
-                    onClick={() => setActiveTab("screens")}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === "screens" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
-                  >
-                    🛠️ App Screens
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("design")}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === "design" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
-                  >
-                    🎨 Design
-                  </button>
-                </div>
+                {!selectedBlockId && (
+                  <div className="flex bg-zinc-100 p-1 rounded-xl">
+                    <button
+                      onClick={() => setActiveTab("screens")}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === "screens" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
+                    >
+                      🛠️ App Screens
+                    </button>
+                    <button
+                      onClick={() => setActiveTab("design")}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === "design" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
+                    >
+                      🎨 Design
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Scrollable Editor Content */}
-              <div className="flex-1 overflow-y-auto">
-                {activeTab === "design" ? (
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {selectedBlockId ? (
+                   <div className="h-full flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
+                      <div className="px-5 py-3 bg-zinc-900 flex items-center justify-between shadow-lg relative z-20">
+                         <div className="flex items-center gap-2">
+                            <span className="text-sm">📐</span>
+                            <span className="text-[10px] font-black text-white uppercase tracking-widest leading-none">Blueprint Designer</span>
+                         </div>
+                         <button 
+                           onClick={() => setSelectedBlockId(null)}
+                           className="text-[10px] font-black text-white/50 hover:text-white transition-all flex items-center gap-1 group"
+                         >
+                           ✕ <span className="group-hover:translate-x-0.5 transition-transform text-[9px]">BACK TO APP</span>
+                         </button>
+                      </div>
+                      <div className="flex-1 overflow-hidden">
+                         <BlueprintDesigner blockId={selectedBlockId} />
+                      </div>
+                   </div>
+                ) : activeTab === "design" ? (
                   <div className="p-5 animate-in fade-in slide-in-from-left-2 duration-300">
                     <ThemeCustomizer />
                   </div>
@@ -257,8 +279,6 @@ export function AppComposer({ activeBlocks, notebookId, isVisible, onToggle }: A
                       </button>
                       {showAddMenu && (
                         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-xl shadow-xl z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-                          {/* If no screens yet, any block can be the first screen freely.
-                              If screens exist, subsequent blocks must have a handoff. */}
                           {appScreens.length === 0
                             ? notInApp.map(block => (
                                 <button
@@ -318,8 +338,7 @@ export function AppComposer({ activeBlocks, notebookId, isVisible, onToggle }: A
               {/* iPhone Frame Wrapper — Fluid and robustly centered */}
               <div className="flex-1 p-8 overflow-y-auto bg-zinc-50/50">
                 <div className="min-h-full w-full flex items-center justify-center">
-                  {(
-                    /* Outer phone body */
+                    {/* Outer phone body */}
                     <div className="relative shrink-0 shadow-2xl" style={{ width: 248, height: 530, margin: '20px 0' }}>
                     {/* Volume buttons (left) */}
                     <div className="absolute -left-[3.5px] top-[90px] w-[3.5px] h-5 bg-zinc-700 rounded-l-sm shadow-sm" />
@@ -453,7 +472,6 @@ export function AppComposer({ activeBlocks, notebookId, isVisible, onToggle }: A
                       </div>
                     </div>
                     </div>
-                  )}
                 </div>
               </div>
             </div>

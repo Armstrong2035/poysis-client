@@ -1,6 +1,7 @@
 "use client";
 
 import { useNotebookStore } from "../../../store/notebookStore";
+import { LayoutRenderer } from "./LayoutRenderer";
 
 interface SourceAccordionProps {
   blockId: string;
@@ -12,6 +13,16 @@ interface SourceAccordionProps {
 
 export function SourceAccordion({ blockId, outputKey, layout = "list", theme = "card", hiddenWhenEmpty = false }: SourceAccordionProps) {
   const block = useNotebookStore((state) => state.blocks[blockId]);
+  const activeBlock = useNotebookStore((state) => state.activeBlocks.find(b => b.id === blockId));
+  const { setActivePreviewBlock, selectedBlockId } = useNotebookStore();
+
+  const handleAction = (action: string, metadata: any) => {
+    if (action === 'route' && activeBlock?.chainingTarget) {
+      setActivePreviewBlock(activeBlock.chainingTarget.blockId);
+    } else if (action === 'link' && typeof metadata === 'string') {
+      window.open(metadata, '_blank');
+    }
+  };
 
   const sources = block ? (block.outputs[outputKey as keyof typeof block.outputs] as Array<{ file: string; score: number; snippet?: string }>) : undefined;
   const hasSources = sources && sources.length > 0;
@@ -25,6 +36,20 @@ export function SourceAccordion({ blockId, outputKey, layout = "list", theme = "
         { file: "q1_revenue_metrics.csv", score: 0.86, snippet: "Row 42: Q1 Revenue hit a record high of 2.1M driven by growth." },
         { file: "architecture_v2.md", score: 0.72, snippet: "The updated microservices architecture utilizes isolated containers." },
       ];
+
+  // If a formatter is defined, use the LayoutRenderer
+  if (block?.uiConfig?.layout && block.uiConfig.layout.length > 0) {
+    return (
+      <div className="w-full mt-6 animate-in fade-in slide-in-from-bottom-2">
+        <LayoutRenderer 
+          layout={block.uiConfig.layout} 
+          data={activeSources} 
+          onAction={handleAction} 
+          limit={selectedBlockId === blockId ? 1 : undefined}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full mt-6 animate-in fade-in slide-in-from-bottom-2">

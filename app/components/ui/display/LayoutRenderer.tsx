@@ -43,7 +43,7 @@ export function LayoutRenderer({ layout, data, onAction, limit }: LayoutRenderer
       {dataItems.map((item, itemIdx) => (
         <div key={itemIdx} className="w-full bg-white border border-zinc-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
           {layout.map((component) => {
-            const content = substitute(component.content, item);
+            const content = substitute(component.content, { item });
 
             switch (component.type) {
               case "image":

@@ -52,7 +52,7 @@ export default function Home() {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full justify-center">
-            <Link href="/notebook" className="h-14 flex items-center justify-center px-8 rounded-full bg-black text-white font-medium hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/10 transition-all duration-300 w-full sm:w-auto text-base">
+            <Link href="/login" className="h-14 flex items-center justify-center px-8 rounded-full bg-black text-white font-medium hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/10 transition-all duration-300 w-full sm:w-auto text-base">
               Start Building for Free
             </Link>
             <Link href="#demo" className="h-14 flex items-center justify-center px-8 rounded-full bg-white text-zinc-800 border border-zinc-200 font-medium hover:bg-zinc-50 hover:border-zinc-300 transition-all w-full sm:w-auto text-base shadow-sm">
@@ -257,7 +257,7 @@ export default function Home() {
         <p className="text-xl text-zinc-500 mb-10 max-w-2xl mx-auto">
           Stop paying developers to build AI infrastructure that already exists. Design your first intelligent Notebook today.
         </p>
-        <Link href="/notebook" className="inline-flex h-14 items-center justify-center px-10 rounded-full bg-black text-white font-medium hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/10 transition-all duration-300 text-lg">
+        <Link href="/login" className="inline-flex h-14 items-center justify-center px-10 rounded-full bg-black text-white font-medium hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/10 transition-all duration-300 text-lg">
           Try Poysis Now
         </Link>
       </section>

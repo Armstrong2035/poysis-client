@@ -25,7 +25,7 @@ export async function login(formData: FormData) {
   }
 
   // Redirect to workspace after successful login
-  return redirect("/notebook");
+  return redirect("/workspace");
 }
 
 /**

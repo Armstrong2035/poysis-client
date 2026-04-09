@@ -283,24 +283,27 @@ export async function getPublicNotebook(id: string) {
  * Deletes a notebook by ID.
  */
 export async function deleteNotebook(id: string) {
+  console.log(`>>> [deleteNotebook] Called with id: "${id}"`);
+
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  console.log(`>>> [deleteNotebook] User: ${user?.id ?? "null"} | Auth error: ${authError?.message ?? "none"}`);
+
   if (!user) throw new Error("Unauthorized");
 
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from('notebooks')
-    .delete()
+    .delete({ count: 'exact' })
     .eq('id', id)
     .eq('user_id', user.id);
 
-  if (error) {
-    console.error("Error deleting notebook:", error.message);
-    throw new Error(error.message);
-  }
+  console.log(`>>> [deleteNotebook] Result — error: ${error?.message ?? "none"} | rows affected: ${count}`);
+
+  if (error) throw new Error(error.message);
+  if (count === 0) throw new Error(`RLS_BLOCK: 0 rows deleted for id=${id} user=${user.id}`);
 
   revalidatePath('/workspace');
   revalidatePath('/');
-  return redirect('/workspace');
 }

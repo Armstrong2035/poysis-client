@@ -2,12 +2,26 @@ import { create } from 'zustand';
 import { ActiveBlock, ComputeBlock, UIComponentBinding, ChatMessage, AppTheme } from '../types/canvas';
 import { initializeNotebook } from '../lib/actions';
 
+const SYSTEM_FIELDS = new Set(["source", "row_index", "notebook_id", "source_file"]);
+
+function mapSearchResult(r: any) {
+  const rowData = Object.fromEntries(
+    Object.entries(r.metadata || {}).filter(([key]) => !SYSTEM_FIELDS.has(key))
+  );
+  return {
+    file: r.metadata?.source_file || "Unknown Source",
+    score: r.score,
+    snippet: r.text,
+    ...rowData,
+  };
+}
+
 // --- Block defaults by type ---
 const BLOCK_DEFAULTS: Record<string, { name: string; slug: string; uploadFormats?: string[]; outputs: Record<string, any> }> = {
   chat: {
     name: 'Chat',
     slug: 'chat_block',
-    uploadFormats: ['pdf', 'spreadsheet'],
+    uploadFormats: ['pdf'],
     outputs: { stream: '', sources: [], history: [] },
   },
   search: {
@@ -341,11 +355,7 @@ export const useNotebookStore = create<NotebookState>()(
 
             const data = await res.json();
             console.log(`[executeBlock] Search results for ${blockId}:`, data.results);
-            const sources = (data.results ?? []).map((r: any) => ({
-              file: r.id,
-              score: r.score,
-              snippet: r.text,
-            }));
+            const sources = (data.results ?? []).map(mapSearchResult);
             set((s: NotebookState) => ({
               blocks: {
                 ...s.blocks,
@@ -510,6 +520,9 @@ export const useNotebookStore = create<NotebookState>()(
         const notebookId = state.notebookId;
         const sampleQuery = "Provide a representative overview/sample of this data.";
 
+        // Give Pinecone a moment to make freshly ingested vectors queryable
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
         // For simplicity, we trigger a search if it's a search block, or a chat for others
         if (block.type === 'search') {
            try {
@@ -521,15 +534,20 @@ export const useNotebookStore = create<NotebookState>()(
              if (res.ok) {
                const data = await res.json();
                console.log(`[executeInitialSample] Sample results for ${blockId}:`, data.results);
-               const sources = (data.results ?? []).map((r: any) => ({
-                 file: r.metadata?.source_file || "Unknown Source",
-                 score: r.score,
-                 snippet: r.text || "",
-                 ...r.metadata
-               }));
+               const sources = (data.results ?? []).map(mapSearchResult);
                set((s: NotebookState) => ({
                  blocks: { ...s.blocks, [blockId]: { ...s.blocks[blockId], outputs: { ...s.blocks[blockId].outputs, sources } } }
                }));
+               // Persist the first result as sampleData so the Formatter has schema on reload
+               if (sources.length > 0) {
+                 set((s: NotebookState) => ({
+                   activeBlocks: s.activeBlocks.map(b =>
+                     b.id === blockId
+                       ? { ...b, uiConfig: { mode: 'direct', layout: [], ...(b.uiConfig || {}), sampleData: JSON.stringify(sources[0]) } }
+                       : b
+                   ),
+                 }));
+               }
              }
            } catch (e) {
              console.error("[executeInitialSample] Search failed:", e);

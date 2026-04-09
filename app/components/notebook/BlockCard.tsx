@@ -20,9 +20,9 @@ const BLOCK_EMOJI: Record<string, string> = {
 };
 
 const BLOCK_SUBTITLE: Record<string, string> = {
-  chat: "Chat with documents",
-  search: "Structured data lookup",
-  generate: "Direct AI completion",
+  chat: "Let your users chat with your knowledge base. E.g. FAQs.",
+  search: "Let your users search through your structured data. E.g. Product Catalog.",
+  generate: "Generate a response directly from AI. No knowledge base required.",
 };
 
 const BLOCK_COLOR: Record<string, string> = {
@@ -47,7 +47,20 @@ export function BlockCard({ block, blocks, allBlocks, isInApp, appHasScreens, on
   const hasSystemPrompt = !!(blocks[block.id]?.inputBindings?.instructions as any)?.template;
   const hasSources = block.sources.length > 0;
   const hasChaining = !!block.chainingTarget;
+  const hasFormatter = !!(blocks[block.id]?.uiConfig?.layout?.length > 0);
   const chainTarget = allBlocks.find(b => b.id === block.chainingTarget?.blockId);
+
+  // What's expected per block type but not yet configured
+  const missing: { label: string; tab?: string }[] = [];
+  if (block.blockTypeId === "chat" || block.blockTypeId === "search") {
+    if (!hasSources) missing.push({ label: "Knowledge Base", tab: "logic" });
+  }
+  if (block.blockTypeId === "generate") {
+    if (!hasSystemPrompt) missing.push({ label: "Instructions", tab: "logic" });
+  }
+  if (block.blockTypeId === "search") {
+    if (!hasFormatter) missing.push({ label: "Formatter", tab: "interface" });
+  }
 
   return (
     <div className="group relative animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -92,6 +105,11 @@ export function BlockCard({ block, blocks, allBlocks, isInApp, appHasScreens, on
                 ⛓️ → {chainTarget.name}
               </span>
             )}
+            {missing.map(m => (
+              <span key={m.label} className="text-[10px] font-semibold bg-amber-50 border border-amber-200 text-amber-600 px-2 py-0.5 rounded-full flex items-center gap-1 opacity-80">
+                ○ {m.label}
+              </span>
+            ))}
 
             {/* App toggle */}
             <div className="ml-auto flex items-center gap-2 shrink-0">

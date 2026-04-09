@@ -1,12 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FileUploader } from "../ui/input/FileUploader";
 import { VariableList } from "../ui/input/VariableList";
-import { ChatThread } from "../ui/display/ChatThread";
-import { SearchBar } from "../ui/input/SearchBar";
-import { SourceAccordion } from "../ui/display/SourceAccordion";
 import { BlueprintDesigner } from "./BlueprintDesigner";
+import { LayoutRenderer } from "../ui/display/LayoutRenderer";
 import type { ActiveBlock } from "../../types/canvas";
 import { useNotebookStore } from "../../store/notebookStore";
 
@@ -22,6 +20,7 @@ interface BlockDetailPanelProps {
   onSetTemplatedInput: (inputKey: string, template: string) => void;
   onSetStateSetting: (key: string, value: any) => void;
   onSetUIConfig: (uiConfig: any) => void;
+  onSave: () => void;
 }
 
 const BLOCK_EMOJI: Record<string, string> = {
@@ -31,9 +30,9 @@ const BLOCK_EMOJI: Record<string, string> = {
 };
 
 const BLOCK_SUBTITLE: Record<string, string> = {
-  chat: "Conversational RAG · Chat with documents",
-  search: "Semantic Search · Structured data lookup",
-  generate: "Direct AI · No knowledge base",
+  chat: "Let your users chat with your knowledge base. E.g. FAQs.",
+  search: "Let your users search through your structured data. E.g. Product Catalog.",
+  generate: "Generate a response directly from AI. No knowledge base required.",
 };
 
 export function BlockDetailPanel({
@@ -48,6 +47,7 @@ export function BlockDetailPanel({
   onSetTemplatedInput,
   onSetStateSetting,
   onSetUIConfig,
+  onSave,
 }: BlockDetailPanelProps) {
   const [tab, setTab] = useState<"logic" | "review" | "interface">("logic");
   const { setSelectedBlockId } = useNotebookStore();
@@ -56,6 +56,17 @@ export function BlockDetailPanel({
   const emoji = BLOCK_EMOJI[block.blockTypeId] || "🔧";
   const subtitle = BLOCK_SUBTITLE[block.blockTypeId] || "";
   const chainableBlocks = allBlocks.filter(b => b.id !== block.id);
+
+  // Completion state for section accent bars
+  const hasSources = block.sources.length > 0;
+  const hasSystemPrompt = !!(blocks[block.id]?.inputBindings?.instructions as any)?.template;
+  const hasFormatter = !!(blocks[block.id]?.uiConfig?.layout?.length > 0);
+  const needsSources = block.blockTypeId === "chat" || block.blockTypeId === "search";
+  const needsInstructions = block.blockTypeId === "generate";
+  const needsFormatter = block.blockTypeId === "search";
+  const libraryBar = needsSources && !hasSources ? "bg-amber-400" : "bg-emerald-600";
+  const personaBar = needsInstructions && !hasSystemPrompt ? "bg-amber-400" : "bg-violet-600";
+  const formatterTabDot = needsFormatter && !hasFormatter;
 
   // Keyboard shortcut: Esc to close
   useEffect(() => {
@@ -147,13 +158,16 @@ export function BlockDetailPanel({
                 onClick={() => setTab("review")}
                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${tab === "review" ? "bg-white shadow-sm text-zinc-900" : "text-zinc-500 hover:text-zinc-700"}`}
               >
-                ▶ Test
+                ▶ Playground
               </button>
               <button
                 onClick={() => setTab("interface")}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${tab === "interface" ? "bg-white shadow-sm text-zinc-900" : "text-zinc-500 hover:text-zinc-700"}`}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all relative ${tab === "interface" ? "bg-white shadow-sm text-zinc-900" : "text-zinc-500 hover:text-zinc-700"}`}
               >
                 🪄 Formatter
+                {formatterTabDot && (
+                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-400" />
+                )}
               </button>
             </div>
 
@@ -182,8 +196,9 @@ export function BlockDetailPanel({
                 {/* ── 1. KNOWLEDGE & CONTEXT ─────────────────────────────── */}
                 <section>
                   <div className="flex items-center gap-2 mb-5">
-                    <span className="w-1.5 h-4 rounded-full bg-emerald-600 block"></span>
+                    <span className={`w-1.5 h-4 rounded-full ${libraryBar} block`}></span>
                     <h2 className="text-[10px] font-bold text-zinc-900 uppercase tracking-widest">Library & Context</h2>
+                    {needsSources && !hasSources && <span className="text-[9px] font-bold text-amber-500 uppercase tracking-wider ml-1">— Not configured</span>}
                   </div>
                   
                   {/* Always show FileUploader for Search/Chat blocks at the top */}
@@ -201,6 +216,7 @@ export function BlockDetailPanel({
                           blockId={block.id}
                           inputKey="documents"
                           acceptedFormats={block.uploadFormats || (block.blockTypeId === "search" ? ["spreadsheet"] : ["pdf", "spreadsheet"])}
+                          onUploadComplete={onSave}
                         />
                       </div>
 
@@ -218,8 +234,9 @@ export function BlockDetailPanel({
                 {/* ── 1. HERO PERSONA (INSTRUCTIONS) ───────────────────────── */}
                 <section>
                   <div className="flex items-center gap-2 mb-5">
-                    <span className="w-1.5 h-4 rounded-full bg-violet-600 block"></span>
+                    <span className={`w-1.5 h-4 rounded-full ${personaBar} block`}></span>
                     <h2 className="text-[10px] font-bold text-zinc-900 uppercase tracking-widest">System Persona</h2>
+                    {needsInstructions && !hasSystemPrompt && <span className="text-[9px] font-bold text-amber-500 uppercase tracking-wider ml-1">— Not configured</span>}
                   </div>
 
                   <div className="bg-zinc-50 border border-zinc-200 rounded-3xl p-6 shadow-sm group hover:border-violet-200 transition-all">
@@ -402,43 +419,10 @@ export function BlockDetailPanel({
             )}
 
             {/* ═══════════════════════════════════════════════════════════════ */}
-            {/* REVIEW TAB — live interactive component                       */}
+            {/* PLAYGROUND TAB                                               */}
             {/* ═══════════════════════════════════════════════════════════════ */}
             {tab === "review" && (
-              <div className="max-w-2xl mx-auto px-8 py-10 animate-in fade-in duration-300">
-                <div className="bg-white border-2 border-zinc-200 rounded-3xl shadow-lg overflow-hidden">
-
-                  {/* Review chrome */}
-                  <div className="bg-emerald-500 px-5 py-1.5 flex items-center justify-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>
-                    <span className="text-[9px] font-bold text-white uppercase tracking-widest">Live Test · {block.name}</span>
-                  </div>
-
-                  {/* Mobile-width simulation */}
-                  <div className="p-6 min-h-[400px] flex flex-col">
-                    {block.blockTypeId === "chat" && <ChatThread blockId={block.id} />}
-                    {block.blockTypeId === "search" && (
-                      <div className="space-y-5">
-                        <SearchBar blockId={block.id} inputKey="query" />
-                        <SourceAccordion blockId={block.id} outputKey="sources" layout="list" theme="card" />
-                      </div>
-                    )}
-                    {block.blockTypeId === "generate" && <ChatThread blockId={block.id} />}
-                  </div>
-
-                  {/* Chain forward indicator */}
-                  {block.chainingTarget && (
-                    <div className="px-6 pb-5 flex items-center gap-2 text-xs font-semibold text-amber-700 bg-amber-50 border-t border-amber-100 py-3">
-                      <span>⛓️</span>
-                      <span>On completion → <span className="underline">{allBlocks.find(b => b.id === block.chainingTarget?.blockId)?.name || "Next Block"}</span></span>
-                    </div>
-                  )}
-                </div>
-
-                <p className="text-center text-xs text-zinc-400 mt-4 font-medium">
-                  Interact here to test this block. Changes to Configure are reflected instantly.
-                </p>
-              </div>
+              <BlockPlayground block={block} blocks={blocks} />
             )}
             {tab === "interface" && (
                 <div className="max-w-4xl mx-auto px-8 py-10">
@@ -447,11 +431,283 @@ export function BlockDetailPanel({
                       <p className="text-sm text-zinc-500 font-medium">Map your block's data output to visual UI components.</p>
                    </div>
                    <BlueprintDesigner blockId={block.id} mode="panel" />
+                   <RawOutputInspector blockId={block.id} blocks={blocks} />
                 </div>
             )}
           </div>
         </div>
       </div>
     </>
+  );
+}
+
+/* ── Raw Output Inspector ─────────────────────────────────────────── */
+
+function RawOutputInspector({ blockId, blocks }: { blockId: string; blocks: Record<string, any> }) {
+  const [open, setOpen] = useState(false);
+  const preRef = useRef<HTMLPreElement>(null);
+
+  const runtime = blocks[blockId];
+  const sources = runtime?.outputs?.sources;
+  const hasData = Array.isArray(sources) && sources.length > 0;
+  const raw = hasData ? JSON.stringify(sources, null, 2) : null;
+
+  const copy = () => {
+    if (raw) navigator.clipboard.writeText(raw);
+  };
+
+  return (
+    <div className="mt-12 border border-zinc-200 rounded-[28px] overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-6 py-4 bg-zinc-50 hover:bg-zinc-100 transition-colors text-left"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-black text-zinc-700">Raw API Response</span>
+          {hasData ? (
+            <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full uppercase tracking-wide">
+              {sources.length} result{sources.length !== 1 ? "s" : ""}
+            </span>
+          ) : (
+            <span className="text-[9px] font-bold text-zinc-400 bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded-full uppercase tracking-wide">
+              No data yet — run a search first
+            </span>
+          )}
+        </div>
+        <span className="text-zinc-400 text-xs transition-transform duration-200" style={{ display: "inline-block", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>▼</span>
+      </button>
+
+      {open && (
+        <div className="relative bg-zinc-950 animate-in fade-in duration-200">
+          <button
+            onClick={copy}
+            className="absolute top-3 right-4 text-[10px] font-bold text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1 rounded-lg transition-all"
+          >
+            Copy
+          </button>
+          <pre
+            ref={preRef}
+            className="text-[11px] text-emerald-400 font-mono leading-relaxed p-6 overflow-x-auto max-h-[480px] overflow-y-auto"
+          >
+            {raw ?? <span className="text-zinc-500">// No output yet. Run a search in the Test tab first.</span>}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Block Playground ─────────────────────────────────────────────── */
+
+function BlockPlayground({ block, blocks }: { block: ActiveBlock; blocks: Record<string, any> }) {
+  const { setInputValue, executeBlock } = useNotebookStore();
+  const runtime = useNotebookStore(s => s.blocks[block.id]);
+
+  const [query, setQuery] = useState("");
+  const [view, setView] = useState<"output" | "raw">("output");
+  const [timing, setTiming] = useState<number | null>(null);
+  const startRef = useRef<number | null>(null);
+
+  const isChat = block.blockTypeId === "chat" || block.blockTypeId === "generate";
+  const isSearch = block.blockTypeId === "search";
+
+  const status = runtime?.status ?? "idle";
+  const isRunning = status === "streaming" || status === "loading";
+
+  // Capture timing when run completes
+  useEffect(() => {
+    if ((status === "complete" || status === "error") && startRef.current) {
+      setTiming(Date.now() - startRef.current);
+      startRef.current = null;
+    }
+  }, [status]);
+
+  const handleRun = async () => {
+    if (!query.trim() || isRunning) return;
+    setInputValue(block.id, "query", query);
+    startRef.current = Date.now();
+    setTiming(null);
+    executeBlock(block.id);
+  };
+
+  // Derive output data
+  const sources: any[] = runtime?.outputs?.sources ?? [];
+  const history: any[] = runtime?.outputs?.history ?? [];
+  const stream: string = runtime?.outputs?.stream ?? "";
+
+  const lastAssistant = [...history].reverse().find((m: any) => m.role === "assistant");
+  const hasOutput = isSearch ? sources.length > 0 : !!lastAssistant || !!stream;
+
+  const rawData = isSearch
+    ? sources
+    : lastAssistant ? [{ role: "assistant", content: lastAssistant.content, sources: lastAssistant.sources }] : null;
+
+  const hasFormatter = !!(runtime?.uiConfig?.layout && runtime.uiConfig.layout.length > 0);
+
+  return (
+    <div className="flex flex-col h-full animate-in fade-in duration-300">
+
+      {/* ── Input bar ── */}
+      <div className="px-8 py-6 border-b border-zinc-100 bg-white sticky top-0 z-10">
+        <div className="flex gap-3 items-start">
+          <div className="flex-1">
+            <textarea
+              rows={isChat ? 3 : 1}
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !isChat) { e.preventDefault(); handleRun(); }}}
+              placeholder={isSearch ? "Enter a search query..." : "Enter a prompt..."}
+              className="w-full text-sm text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-300 transition-all resize-none font-mono placeholder:font-sans placeholder:text-zinc-400"
+            />
+            <p className="text-[10px] text-zinc-400 mt-1.5 ml-1">
+              {isSearch ? "Press Enter to run" : "Shift+Enter for new line · Click Run to send"}
+            </p>
+          </div>
+          <button
+            onClick={handleRun}
+            disabled={!query.trim() || isRunning}
+            className="px-5 py-3 bg-zinc-900 text-white rounded-xl text-xs font-bold hover:bg-black transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm flex-shrink-0"
+          >
+            {isRunning ? (
+              <><div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Running</>
+            ) : "▶ Run"}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Status bar ── */}
+      {(hasOutput || status === "error") && (
+        <div className="px-8 py-2.5 border-b border-zinc-100 bg-zinc-50 flex items-center gap-4">
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${status === "error" ? "bg-red-500" : status === "streaming" ? "bg-amber-400 animate-pulse" : "bg-emerald-500"}`} />
+          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+            {status === "error" ? "Error" : status === "streaming" ? "Streaming..." : "Complete"}
+          </span>
+          {isSearch && sources.length > 0 && (
+            <span className="text-[10px] text-zinc-400">{sources.length} result{sources.length !== 1 ? "s" : ""}</span>
+          )}
+          {timing && (
+            <span className="text-[10px] text-zinc-400 ml-auto">{(timing / 1000).toFixed(2)}s</span>
+          )}
+          {/* Output / Raw toggle */}
+          <div className="flex items-center bg-zinc-200 rounded-lg p-0.5 gap-0.5 ml-auto">
+            {(["output", "raw"] as const).map(v => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all capitalize ${view === v ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
+              >
+                {v === "raw" ? "Raw JSON" : "Output"}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Output area ── */}
+      <div className="flex-1 overflow-y-auto">
+        {!hasOutput && !isRunning && (
+          <div className="flex flex-col items-center justify-center py-24 text-center text-zinc-400 select-none">
+            <span className="text-3xl mb-3 opacity-20">▶</span>
+            <p className="text-sm font-medium">Run a query to see results</p>
+          </div>
+        )}
+
+        {isRunning && !hasOutput && (
+          <div className="flex items-center justify-center py-24 gap-3 text-zinc-400">
+            <div className="w-4 h-4 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
+            <span className="text-sm font-medium">Running...</span>
+          </div>
+        )}
+
+        {hasOutput && view === "output" && (
+          <div className="px-8 py-6">
+            {/* Search results */}
+            {isSearch && sources.length > 0 && (
+              hasFormatter
+                ? <LayoutRenderer layout={runtime.uiConfig.layout} data={sources} />
+                : <div className="space-y-3">
+                    {sources.map((src: any, i: number) => (
+                      <div key={i} className="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-xs font-bold text-zinc-700 flex items-center gap-2">
+                            <span>📄</span> {src.file || "Unknown source"}
+                          </span>
+                          <span className="text-[10px] font-mono bg-zinc-50 border border-zinc-200 text-zinc-500 px-2 py-0.5 rounded-lg">
+                            {src.score != null ? `${(src.score * 100).toFixed(0)}% match` : ""}
+                          </span>
+                        </div>
+                        {src.snippet && (
+                          <p className="text-xs text-zinc-500 italic border-l-2 border-zinc-200 pl-3 leading-relaxed mb-3">
+                            {src.snippet}
+                          </p>
+                        )}
+                        {/* Dynamic row fields */}
+                        {(() => {
+                          const skip = new Set(["file", "score", "snippet"]);
+                          const fields = Object.entries(src).filter(([k]) => !skip.has(k));
+                          return fields.length > 0 ? (
+                            <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-zinc-100">
+                              {fields.map(([k, v]) => (
+                                <div key={k} className="flex flex-col gap-0.5">
+                                  <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">{k}</span>
+                                  <span className="text-[11px] font-medium text-zinc-700 truncate">{String(v)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null;
+                        })()}
+                      </div>
+                    ))}
+                  </div>
+            )}
+
+            {/* Chat / Generate response */}
+            {isChat && (lastAssistant || stream) && (
+              <div className="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm">
+                <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-3">Response</div>
+                <p className="text-sm text-zinc-800 leading-relaxed whitespace-pre-wrap">
+                  {stream || lastAssistant?.content}
+                  {isRunning && <span className="inline-block w-1.5 h-4 ml-1 bg-zinc-400 animate-pulse align-middle rounded-sm" />}
+                </p>
+                {lastAssistant?.sources?.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-zinc-100 space-y-1.5">
+                    <div className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-2">Sources</div>
+                    {lastAssistant.sources.map((s: any, i: number) => (
+                      <div key={i} className="flex items-center gap-2 text-[11px] text-zinc-600">
+                        <span className="text-zinc-300">📄</span>
+                        <span className="font-medium">{s.file}</span>
+                        <span className="ml-auto font-mono text-zinc-400">{Math.round(s.score * 100)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {hasOutput && view === "raw" && (
+          <div className="relative bg-zinc-950 min-h-full">
+            <button
+              onClick={() => rawData && navigator.clipboard.writeText(JSON.stringify(rawData, null, 2))}
+              className="absolute top-4 right-5 text-[10px] font-bold text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1 rounded-lg transition-all z-10"
+            >
+              Copy
+            </button>
+            <pre className="text-[11px] text-emerald-400 font-mono leading-relaxed p-6 overflow-x-auto">
+              {JSON.stringify(rawData, null, 2)}
+            </pre>
+          </div>
+        )}
+
+        {status === "error" && (
+          <div className="px-8 py-6">
+            <div className="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 text-sm text-red-700 font-medium">
+              Something went wrong. Check your connection and try again.
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

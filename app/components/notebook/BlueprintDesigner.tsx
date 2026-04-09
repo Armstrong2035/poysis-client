@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+
 import { useNotebookStore } from "../../store/notebookStore";
 import { LayoutRenderer } from "../ui/display/LayoutRenderer";
 import { LayoutComponent, UIConfig } from "../../types/canvas";
@@ -61,15 +61,19 @@ export function BlueprintDesigner({ blockId, mode = "sidebar" }: BlueprintDesign
   // ── Data Sniffer (Peeking at first result) ─────────────────────────
   
   const getSampleItem = () => {
-    if (!blockRuntime || !blockRuntime.outputs) return null;
-    
-    // For Search blocks, pick the first source
-    if (blockDef.blockTypeId === 'search' && Array.isArray(blockRuntime.outputs.sources) && blockRuntime.outputs.sources.length > 0) {
-      return blockRuntime.outputs.sources[0];
+    // For Search blocks, prefer live output, fall back to persisted sampleData
+    if (blockDef.blockTypeId === 'search') {
+      if (blockRuntime?.outputs && Array.isArray(blockRuntime.outputs.sources) && blockRuntime.outputs.sources.length > 0) {
+        return blockRuntime.outputs.sources[0];
+      }
+      if (blockDef.uiConfig?.sampleData) {
+        try { return JSON.parse(blockDef.uiConfig.sampleData); } catch {}
+      }
+      return null;
     }
-    
+
     // For Chat/Generate blocks, try to parse the last assistant message
-    if ((blockDef.blockTypeId === 'chat' || blockDef.blockTypeId === 'generate') && Array.isArray(blockRuntime.outputs.history) && blockRuntime.outputs.history.length > 0) {
+    if ((blockDef.blockTypeId === 'chat' || blockDef.blockTypeId === 'generate') && Array.isArray(blockRuntime?.outputs?.history) && blockRuntime.outputs.history.length > 0) {
        const assistantMsgs = blockRuntime.outputs.history.filter((m: any) => m.role === 'assistant');
        if (assistantMsgs.length > 0) {
           const last = assistantMsgs[assistantMsgs.length - 1];
@@ -84,7 +88,6 @@ export function BlueprintDesigner({ blockId, mode = "sidebar" }: BlueprintDesign
   };
 
   const sampleItem = getSampleItem();
-  const detectedKeys = sampleItem ? Object.keys(sampleItem) : [];
 
   // ── 1. SIDEBAR MODE (VISUAL STUDIO) ─────────────────────────────
   if (mode === "sidebar") {

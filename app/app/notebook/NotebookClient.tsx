@@ -251,6 +251,7 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
           onSetTemplatedInput={(key, tpl) => setTemplatedInput(selectedBlock.id, key, tpl)}
           onSetStateSetting={(key, val) => setStateSetting(selectedBlock.id, key, val)}
           onSetUIConfig={(cfg) => setBlockUIConfig(selectedBlock.id, cfg)}
+          onSave={handleSave}
         />
       )}
 

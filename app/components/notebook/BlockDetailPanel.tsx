@@ -624,7 +624,7 @@ function BlockPlayground({ block, blocks }: { block: ActiveBlock; blocks: Record
             {/* Search results */}
             {isSearch && sources.length > 0 && (
               hasFormatter
-                ? <LayoutRenderer layout={runtime.uiConfig.layout} data={sources} />
+                ? <LayoutRenderer layout={runtime.uiConfig?.layout ?? []} data={sources} />
                 : <div className="space-y-3">
                     {sources.map((src: any, i: number) => (
                       <div key={i} className="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm">

@@ -166,7 +166,7 @@ export function FileUploader({ blockId, inputKey, acceptedFormats = ["pdf", "spr
       {/* ── Idle / Error: drop zone ── */}
       {!isActive && (
         <div
-          onClick={() => uploadState !== "uploading" && fileInputRef.current?.click()}
+          onClick={() => fileInputRef.current?.click()}
           className={`w-full border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center group transition-colors cursor-pointer
             ${uploadState === "error"
               ? "border-red-300 bg-red-50/50 hover:border-red-400"

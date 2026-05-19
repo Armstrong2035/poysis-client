@@ -13,14 +13,17 @@ export function SceneConsolidate() {
         {/* LEFT — copy column */}
         <div className="flex flex-col gap-6 md:gap-5 max-w-[460px]">
           <div className="lv2-eyebrow">01 · Consolidate</div>
-          <h3 className="lv2-h-medium">Connect your sources.</h3>
+          <h3 className="lv2-h-medium">
+            Connect Google Drive and other sources
+          </h3>
           <p className="lv2-body-md">
-            Poysis shows you what you actually know.
+            Watch your files and notes automatically group themselves into a
+            visual map of topics. No manual folders required.
           </p>
-          <p className="lv2-body-sm">
+          {/* <p className="lv2-body-sm">
             Connect Google Drive. Watch your knowledge organize itself into a
             map of named territories.
-          </p>
+          </p> */}
           <div className="flex flex-wrap gap-2.5 mt-2">
             <span className="lv2-chip lv2-chip--live">Google Drive · Live</span>
             <span className="lv2-chip">Notion</span>

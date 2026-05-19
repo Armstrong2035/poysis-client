@@ -19,11 +19,10 @@ export function SceneWound() {
           </p>
 
           <h2 className="lv2-h-medium">
-            Why do you have to search for it?
+            Why does finding what you need have to be a puzzle?
           </h2>
-
           <h2 className="lv2-h-medium lv2-h-medium--amber">
-            Why can&apos;t it just work for you?
+            Why can’t the tools you already use remember for you?
           </h2>
         </div>
       </div>

@@ -87,18 +87,44 @@ export function SceneAirlock() {
     e.preventDefault();
     setError(null);
 
-    const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    const trimmed = email.trim();
+    const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
     if (!ok) {
       setError("Enter a valid email");
       return;
     }
 
+    const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL;
+    if (!workerUrl) {
+      setError("Signup is temporarily unavailable.");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      // TODO: wire to real API. For now we accept the submission optimistically.
-      await new Promise((r) => setTimeout(r, 600));
+      const res = await fetch(
+        `${workerUrl.replace(/\/+$/, "")}/waitlist`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: trimmed, source: "landing" }),
+        },
+      );
+
+      if (res.status === 422) {
+        setError("Enter a valid email");
+        return;
+      }
+      if (!res.ok) {
+        setError("Something went wrong. Try again.");
+        return;
+      }
+
+      // 200 covers both first-time and duplicate signups (idempotent on email).
       setSubmitted(true);
       setEmail("");
+    } catch {
+      setError("Network error. Check your connection.");
     } finally {
       setSubmitting(false);
     }

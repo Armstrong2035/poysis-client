@@ -33,17 +33,19 @@ export function SceneReveal() {
             viewport={{ amount: 0.5, once: false }}
             transition={{ duration: 2.2, ease: "easeOut", times: [0, 0.4, 1] }}
           >
-            It can.
+            They can.
           </motion.div>
 
           <div className="lv2-h-section">This is Poysis.</div>
 
           <p className="lv2-body-md lv2-body-italic max-w-[620px]">
-            Poysis turns scattered knowledge into navigable territory.
+            Poysis organizes your ideas, notes, and past work — no matter where
+            you stored them.
           </p>
 
           <p className="lv2-body-md max-w-[540px]">
-            Connect your knowledge. Use it wherever you work.
+            Then, it provides context to ChatGPT, Claude, Slack, and wherever
+            you already work.
           </p>
         </div>
       </div>

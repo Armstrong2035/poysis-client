@@ -57,13 +57,15 @@ export function SceneQuery() {
         {/* LEFT — copy column */}
         <div className="flex flex-col gap-6 md:gap-5 max-w-[460px]">
           <div className="lv2-eyebrow">02 · Query</div>
-          <h3 className="lv2-h-medium">
-            Talk to your knowledge from anywhere.
-          </h3>
+          <h3 className="lv2-h-medium">Stop repeating yourself to AI.</h3>
           <p className="lv2-body-md lv2-mobile-hide">
+            Instead of explaining your life's story or pasting old documents,
+            Poysis instantly feeds your exact past thinking into ChatGPT,
+            Claude, Slack, and wherever you work.
+            {/* <br />
             Claude. ChatGPT. Slack. Telegram.
             <br />
-            Wherever you work.
+            Wherever you work. */}
           </p>
           <div className="flex flex-wrap gap-2.5 mt-2 lv2-mobile-hide">
             <span className="lv2-chip">Claude · MCP</span>

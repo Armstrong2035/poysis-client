@@ -48,9 +48,11 @@ export function SceneBuild() {
         {/* LEFT — copy column */}
         <div className="flex flex-col gap-6 md:gap-5 max-w-[460px]">
           <div className="lv2-eyebrow">03 · Build</div>
-          <h3 className="lv2-h-medium">Put your knowledge to work.</h3>
+          <h3 className="lv2-h-medium">Put your thinking on autopilot</h3>
           <p className="lv2-body-md lv2-mobile-hide">
-            Build internal or public copilots from what you already know.
+            Turn specific sections of your map into specialized assistants. You
+            could build an assistant trained only on your past proposals to
+            draft new contracts exactly the way you write them.
           </p>
 
           {/* Mobile-only condensed copy — replaces the body line + callout below */}

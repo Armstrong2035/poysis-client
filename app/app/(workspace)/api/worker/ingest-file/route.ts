@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "../../../../utils/supabase/server";
+import { cookies } from "next/headers";
 
 const WORKER_URL = process.env.WORKER_URL ?? "http://127.0.0.1:8000";
 
@@ -7,12 +9,23 @@ export async function POST(req: NextRequest) {
   const url = `${WORKER_URL.replace(/\/$/, "")}/retrieval/ingest-file`;
 
   try {
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.arrayBuffer();
-    console.log(`[ingest-file] → ${url} | ${body.byteLength} bytes | ${contentType.slice(0, 60)}`);
+    console.log(`[ingest-file] → ${url} | ${body.byteLength} bytes | ${contentType.slice(0, 60)} | user: ${user.id}`);
 
     const workerRes = await fetch(url, {
       method: "POST",
-      headers: { "content-type": contentType },
+      headers: {
+        "content-type": contentType,
+        "X-User-ID": user.id,
+      },
       body: Buffer.from(body),
     });
 

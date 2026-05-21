@@ -20,9 +20,7 @@ export function SideRail({ active, onSelect }: Props) {
           }`}
           aria-label={`Go to ${s.label}`}
           aria-current={active === s.id ? "true" : undefined}
-        >
-          <span className="lv2-rail__label">{s.label}</span>
-        </button>
+        />
       ))}
     </nav>
   );

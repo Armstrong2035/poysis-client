@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "../../../../utils/supabase/server";
+import { createClient } from "../../../../../utils/supabase/server";
 import { cookies } from "next/headers";
 
-const WORKER_URL = process.env.WORKER_URL ?? "http://127.0.0.1:8000";
+const WORKER_URL = process.env.WORKER_URL ?? process.env.LOCAL_WORKER_URL ?? "http://127.0.0.1:8000";
 
 export async function POST(req: NextRequest) {
   const url = `${WORKER_URL.replace(/\/$/, "")}/retrieval/search`;

@@ -1,17 +1,17 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useNotebookStore } from "../../store/notebookStore";
-import { useHydrated } from "../../hooks/useHydrated";
-import { saveNotebook } from "../../lib/actions";
+import { useNotebookStore } from "../../../store/notebookStore";
+import { useHydrated } from "../../../hooks/useHydrated";
+import { saveNotebook } from "../../../lib/actions";
 import type { User } from "@supabase/supabase-js";
 
-import { NotebookSidebar } from "../../components/notebook/NotebookSidebar";
-import { AppComposer } from "../../components/notebook/AppComposer";
-import { BlockPickerModal } from "../../components/notebook/BlockPickerModal";
-import { ConfigHubModal } from "../../components/notebook/ConfigHubModal";
-import { BlockCard } from "../../components/notebook/BlockCard";
-import { BlockDetailPanel } from "../../components/notebook/BlockDetailPanel";
+import { NotebookSidebar } from "../../../components/notebook/NotebookSidebar";
+import { AppComposer } from "../../../components/notebook/AppComposer";
+import { BlockPickerModal } from "../../../components/notebook/BlockPickerModal";
+import { ConfigHubModal } from "../../../components/notebook/ConfigHubModal";
+import { BlockCard } from "../../../components/notebook/BlockCard";
+import { BlockDetailPanel } from "../../../components/notebook/BlockDetailPanel";
 
 interface NotebookClientProps {
   id?: string;
@@ -43,7 +43,6 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
     setBlockUIConfig,
   } = useNotebookStore();
 
-  // UI state
   const [notebookTitle, setNotebookTitle] = useState(initialData?.name || "Untitled Notebook");
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -54,13 +53,11 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
 
   const selectedBlock = activeBlocks.find(b => b.id === selectedBlockId) || null;
 
-  // ── Hydration & Save Guard ────────────────
   const [isHydrationComplete, setIsHydrationComplete] = useState(false);
   const hasHydratedForId = useRef<string | null>(null);
 
   useEffect(() => {
     const notebookId = id || initialData?.id;
-    // Only hydrate if we haven't already done so for this specific notebook ID
     if (notebookId && hasHydratedForId.current === notebookId) return;
 
     if (notebookId) {
@@ -71,21 +68,14 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
     if (initialData?.config) {
       hydrateStore(initialData.config, initialData.name);
       setLastSaved(new Date(initialData.updated_at || initialData.created_at));
-      // Give the store a moment to propagate before we allow auto-saves
       setTimeout(() => setIsHydrationComplete(true), 100);
     } else {
-      // If there's no initial data, we're likely in a 'new' state
       setIsHydrationComplete(true);
     }
-    // We intentionally only run this on mount/ID change to avoid overwriting 
-    // local state when revalidatePath triggers a background prop update.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, initialData?.id]);
 
-  // ── Debounced auto-save (2s after last store change) ────────────────
-  // ── Debounced auto-save (2s after last store change) ────────────────
   useEffect(() => {
-    // ONLY save after we've finished the initial hydration
     if (!isHydrationComplete) return;
 
     const targetId = id || initialData?.id;
@@ -114,8 +104,6 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeBlocks, blocks, uiComponents, appScreens, theme, notebookTitle, isHydrationComplete]);
 
-  // ── Handlers ──────────────────────────────────────────────────────────
-
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -132,9 +120,6 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
   const handleAddBlock = (blockTypeId: string) => {
     storeAddBlock(blockTypeId);
     setShowBlockPicker(false);
-    // Immediately open the detail panel for the new block
-    // The block ID is generated as `${blockTypeId}_${Date.now()}` in addBlock
-    // We use a small timeout to let the store update first
     setTimeout(() => {
       const allBlocks = useNotebookStore.getState().activeBlocks;
       const newest = allBlocks[allBlocks.length - 1];
@@ -142,14 +127,21 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
     }, 50);
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────
-
   if (!hydrated) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-zinc-200 relative">
-      {/* Dot Grid Background */}
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px] opacity-60 z-0"></div>
+    <div
+      className="flex h-screen overflow-hidden relative"
+      style={{ background: "#0A0B0F", color: "#E8E9ED" }}
+    >
+      {/* Gold dot grid */}
+      <div
+        className="absolute inset-0 pointer-events-none z-0"
+        style={{
+          backgroundImage: "radial-gradient(rgba(232,165,71,0.07) 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+        }}
+      />
 
       {/* Left Sidebar */}
       <NotebookSidebar
@@ -162,7 +154,7 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
         onSave={handleSave}
       />
 
-      {/* Main Content — Block Index — Focus Mode aware */}
+      {/* Main Content */}
       <div className={`flex-1 overflow-y-auto relative flex flex-col z-10 transition-all duration-300 ${showComposer ? "min-w-[360px]" : "min-w-0"}`}>
         <div className={`max-w-2xl mx-auto pt-10 pb-24 w-full transition-all duration-300 ${showComposer ? "px-4" : "px-8"}`}>
 
@@ -174,23 +166,57 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
               onChange={(e) => setNotebookTitle(e.target.value)}
               onBlur={handleSave}
               onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
-              className="w-full text-4xl md:text-5xl font-semibold tracking-tight text-zinc-900 outline-none bg-transparent hover:bg-white focus:bg-white focus:shadow-sm rounded-xl -ml-4 px-4 py-2 transition-all border border-transparent focus:border-zinc-200"
+              className="w-full outline-none bg-transparent rounded-xl -ml-4 px-4 py-2 transition-all border border-transparent"
+              style={{
+                fontFamily: "Syne, sans-serif",
+                fontSize: "clamp(28px, 4vw, 40px)",
+                fontWeight: 800,
+                letterSpacing: "-0.03em",
+                color: "#E8E9ED",
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.background = "rgba(58,61,71,0.15)";
+                e.currentTarget.style.borderColor = "rgba(232,165,71,0.25)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.borderColor = "transparent";
+                handleSave();
+              }}
             />
-            <p className="mt-2 text-zinc-400 text-sm -ml-4 px-4">
+            <p
+              className="-ml-4 px-4 mt-2"
+              style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "10px", letterSpacing: "0.15em", color: "#3A3D47", textTransform: "uppercase" }}
+            >
               {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
             </p>
           </div>
 
           {/* Empty State */}
           {activeBlocks.length === 0 && (
-            <div className="text-center py-24 opacity-60">
-              <div className="text-5xl mb-4">🧩</div>
-              <div className="text-lg font-semibold text-zinc-700 mb-1">No blocks yet</div>
-              <div className="text-sm text-zinc-400 mb-6">Add a logic block to start building your AI app.</div>
+            <div className="text-center py-24" style={{ opacity: 0.5 }}>
+              <div className="flex justify-center mb-5">
+                <div
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                  style={{ background: "rgba(232,165,71,0.08)", border: "1px solid rgba(232,165,71,0.15)" }}
+                >
+                  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#E8A547" strokeWidth="1.3">
+                    <rect x="2" y="2" width="18" height="18" rx="3" />
+                    <line x1="11" y1="7" x2="11" y2="15" />
+                    <line x1="7" y1="11" x2="15" y2="11" />
+                  </svg>
+                </div>
+              </div>
+              <div style={{ fontFamily: "Syne, sans-serif", fontSize: "15px", fontWeight: 700, color: "#E8E9ED", marginBottom: "6px" }}>
+                No blocks yet
+              </div>
+              <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: "12px", fontWeight: 300, color: "#9CA0AC" }}>
+                Add a logic block to start building your AI app.
+              </div>
             </div>
           )}
 
-          {/* Block Index — the list of tiles */}
+          {/* Block Index */}
           <div className="space-y-3">
             {activeBlocks.map((block) => (
               <BlockCard
@@ -217,13 +243,31 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
           {/* Add Block Button */}
           <button
             onClick={() => setShowBlockPicker(true)}
-            className="mt-4 w-full group flex items-center justify-center gap-3 cursor-pointer border-2 border-dashed border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50 bg-white/50 rounded-2xl py-6 transition-all"
+            className="mt-4 w-full group flex items-center justify-center gap-3 cursor-pointer rounded-2xl py-6 transition-all"
+            style={{
+              border: "2px dashed rgba(232,165,71,0.2)",
+              background: "rgba(232,165,71,0.02)",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(232,165,71,0.45)";
+              (e.currentTarget as HTMLButtonElement).style.background = "rgba(232,165,71,0.05)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(232,165,71,0.2)";
+              (e.currentTarget as HTMLButtonElement).style.background = "rgba(232,165,71,0.02)";
+            }}
           >
-            <div className="w-8 h-8 rounded-full bg-white shadow-sm border border-zinc-200 flex items-center justify-center text-zinc-400 group-hover:text-zinc-600 text-lg transition-colors group-hover:scale-110">
-              +
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+              style={{ background: "rgba(58,61,71,0.5)", border: "1px solid rgba(232,165,71,0.2)", color: "#E8A547" }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <line x1="6" y1="1" x2="6" y2="11" />
+                <line x1="1" y1="6" x2="11" y2="6" />
+              </svg>
             </div>
-            <span className="text-zinc-400 group-hover:text-zinc-700 text-sm font-semibold transition-colors">
-              {activeBlocks.length === 0 ? "Add your first block..." : "Add another block..."}
+            <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: "12px", fontWeight: 400, color: "#9CA0AC" }}>
+              {activeBlocks.length === 0 ? "Add your first block…" : "Add another block…"}
             </span>
           </button>
         </div>
@@ -237,7 +281,7 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
         onToggle={() => setShowComposer(v => !v)}
       />
 
-      {/* Block Detail Panel (slide-over) */}
+      {/* Block Detail Panel */}
       {selectedBlock && (
         <BlockDetailPanel
           block={selectedBlock}

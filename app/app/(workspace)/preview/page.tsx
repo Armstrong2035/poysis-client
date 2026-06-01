@@ -1,12 +1,12 @@
 "use client";
 
-import { useNotebookStore } from "../../store/notebookStore";
-import { SearchBar } from "../../components/ui/input/SearchBar";
-import { SourceAccordion } from "../../components/ui/display/SourceAccordion";
-import { ChatThread } from "../../components/ui/display/ChatThread";
+import { useNotebookStore } from "../../../store/notebookStore";
+import { SearchBar } from "../../../components/ui/input/SearchBar";
+import { SourceAccordion } from "../../../components/ui/display/SourceAccordion";
+import { ChatThread } from "../../../components/ui/display/ChatThread";
 import Link from "next/link";
 import { useState, useEffect, Suspense } from "react";
-import { useHydrated } from "../../hooks/useHydrated";
+import { useHydrated } from "../../../hooks/useHydrated";
 import { useSearchParams } from "next/navigation";
 // getPublicNotebook removed — now fetched via /api/notebook/public
 

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Poysis — Knowledge Map Reference</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --obsidian: #0A0B0F;
+    --dark-surface: #14161D;
+    --mid-gray: #3A3D47;
+    --light-gray: #9CA0AC;
+    --bone: #E8E9ED;
+    --forge: #E8A547;
+    --confidence: #6BB07A;
+    --stale: #C99547;
+
+    --syne: 'Syne', sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --sans: 'DM Sans', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: radial-gradient(ellipse at center, #14161D 0%, #0A0B0F 60%, #06070A 100%);
+    color: var(--bone);
+    font-family: var(--sans);
+    font-weight: 300;
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Subtle starfield over the vignette */
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none;
+    background-image:
+      radial-gradient(1px 1px at 18% 28%, rgba(232,233,237,.28), transparent 50%),
+      radial-gradient(1px 1px at 73% 62%, rgba(232,233,237,.22), transparent 50%),
+      radial-gradient(1px 1px at 45% 82%, rgba(232,233,237,.18), transparent 50%),
+      radial-gradient(1px 1px at 88% 14%, rgba(232,233,237,.28), transparent 50%),
+      radial-gradient(1px 1px at 12% 70%, rgba(232,233,237,.18), transparent 50%),
+      radial-gradient(1px 1px at 62% 24%, rgba(232,233,237,.22), transparent 50%),
+      radial-gradient(1px 1px at 85% 84%, rgba(232,233,237,.18), transparent 50%),
+      radial-gradient(1px 1px at 32% 50%, rgba(232,233,237,.16), transparent 50%);
+    z-index: 0;
+  }
+  #root { height: 100vh; width: 100vw; position: relative; z-index: 1; }
+  ::selection { background: rgba(232,165,71,0.3); color: var(--bone); }
+  button { font-family: inherit; color: inherit; background: transparent; border: 0; cursor: default; padding: 0; }
+  input { font-family: inherit; }
+
+  .mono { font-family: var(--mono); font-weight: 400; letter-spacing: 0.02em; }
+  .syne { font-family: var(--syne); font-weight: 700; letter-spacing: -0.02em; }
+
+  .wordmark {
+    font-family: var(--syne); font-weight: 800;
+    letter-spacing: -0.04em; font-size: 16px;
+    color: var(--bone);
+  }
+  .wordmark .dot {
+    display: inline-block; width: 6px; height: 6px;
+    background: var(--forge); border-radius: 50%;
+    margin-left: 1px; transform: translateY(-7px);
+    box-shadow: 0 0 8px rgba(232,165,71,.6);
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 0.85; transform: scale(1); }
+    50%      { opacity: 1;    transform: scale(1.015); }
+  }
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes citation-pulse {
+    0%, 100% { filter: drop-shadow(0 0 0 rgba(232,165,71,0)); }
+    50%      { filter: drop-shadow(0 0 12px rgba(232,165,71,.9)); }
+  }
+  @keyframes beacon {
+    0%, 100% { box-shadow: 0 0 24px rgba(232,165,71,0.55), 0 0 4px rgba(232,165,71,0.9); }
+    50%      { box-shadow: 0 0 40px rgba(232,165,71,0.75), 0 0 6px rgba(232,165,71,1);   }
+  }
+
+  .loading-shell {
+    display: flex; align-items: center; justify-content: center;
+    height: 100vh; color: var(--mid-gray);
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+  }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"><div class="loading-shell">LOADING…</div></div>
+
+  <script type="text/babel" src="knowledge-map-reference.js"></script>
+</body>
+</html>

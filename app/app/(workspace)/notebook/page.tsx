@@ -1,4 +1,4 @@
-import { createClient } from '../../utils/supabase/server';
+import { createClient } from '../../../utils/supabase/server';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import NotebookClient from './NotebookClient';

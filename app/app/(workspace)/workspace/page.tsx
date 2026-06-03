@@ -258,12 +258,28 @@ function DoneState() {
     refreshKnowledge();
   }, [refreshKnowledge]);
 
+  // mcpUrl now comes from the dedicated /mcp-url endpoint (fetched on mount
+  // by the context), not the SSE `complete` event — so it's available even
+  // without a fresh snapshot run.
   const handleCopy = () => {
     if (clustering.mcpUrl) navigator.clipboard.writeText(clustering.mcpUrl);
   };
 
   const docsIndexed = clustering.indexedCount ?? clustering.docsProcessed;
   const orphaned = clustering.orphanedCount ?? clustering.docsSkipped ?? 0;
+
+  // Prefer counts derived from the topics tree (source of truth after any
+  // recluster). Fall back to the SSE counters from the most recent run.
+  const totalTopics =
+    topics != null ? topics.length : clustering.totalTopics ?? null;
+  const leafTopics = (() => {
+    if (!topics) return clustering.leafTopics ?? null;
+    const parentIds = new Set<string>();
+    for (const t of topics) {
+      if (t.parent_topic_id) parentIds.add(t.parent_topic_id);
+    }
+    return topics.filter((t) => !parentIds.has(t.topic_id)).length;
+  })();
 
   return (
     <div className="space-y-6">
@@ -280,19 +296,51 @@ function DoneState() {
             Your documents have been indexed and organised into topics.
           </div>
         </div>
-        <button
-          onClick={clustering.reset}
-          style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.15em", color: "#3A3D47", textTransform: "uppercase" as const }}
-          className="hover:text-[#9CA0AC] transition-colors flex-shrink-0"
-        >
-          Rebuild
-        </button>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <button
+            onClick={clustering.recluster}
+            disabled={clustering.reclustering}
+            style={{
+              fontFamily: "JetBrains Mono, monospace",
+              fontSize: "9px",
+              letterSpacing: "0.15em",
+              color: clustering.reclustering ? "#9CA0AC" : "#E8A547",
+              textTransform: "uppercase" as const,
+              border: "1px solid rgba(232,165,71,0.3)",
+              padding: "5px 10px",
+              borderRadius: "4px",
+              cursor: clustering.reclustering ? "default" : "pointer",
+              opacity: clustering.reclustering ? 0.6 : 1,
+            }}
+            className="hover:bg-[rgba(232,165,71,0.08)] transition-all"
+          >
+            {clustering.reclustering ? "Reclustering…" : "Recluster"}
+          </button>
+          <button
+            onClick={clustering.reset}
+            style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.15em", color: "#3A3D47", textTransform: "uppercase" as const }}
+            className="hover:text-[#9CA0AC] transition-colors"
+          >
+            Rebuild
+          </button>
+        </div>
       </div>
+
+      {clustering.reclusterError && (
+        <div
+          className="px-4 py-2.5 rounded-lg"
+          style={{ background: "rgba(201,80,75,0.06)", border: "1px solid rgba(201,80,75,0.2)" }}
+        >
+          <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: "12px", fontWeight: 300, color: "#C9534B" }}>
+            Recluster failed: {clustering.reclusterError}
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-4">
         <MetricCard value={docsIndexed != null ? docsIndexed.toLocaleString() : "—"} label="Docs indexed" />
-        <MetricCard value={clustering.totalTopics?.toString() ?? "—"} label="Total topics" gold />
-        <MetricCard value={clustering.leafTopics?.toString() ?? "—"} label="Leaf topics" />
+        <MetricCard value={totalTopics != null ? totalTopics.toString() : "—"} label="Total topics" gold />
+        <MetricCard value={leafTopics != null ? leafTopics.toString() : "—"} label="Leaf topics" />
       </div>
 
       {clustering.mcpUrl && (
@@ -316,7 +364,7 @@ function DoneState() {
             </button>
           </div>
           <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "11px", fontWeight: 300, color: "#3A3D47", marginTop: "8px" }}>
-            Paste this URL into Claude.ai to query your knowledge base.
+            Paste this into claude.ai → Settings → Connectors to access your knowledge from Claude.
           </p>
         </div>
       )}
@@ -324,8 +372,8 @@ function DoneState() {
       <ActivityLog
         docsIndexed={docsIndexed ?? null}
         orphaned={orphaned}
-        totalTopics={clustering.totalTopics ?? null}
-        leafTopics={clustering.leafTopics ?? null}
+        totalTopics={totalTopics}
+        leafTopics={leafTopics}
         vectorsIndexed={clustering.vectorsIndexed ?? null}
         sourceCount={clustering.connections.length}
       />

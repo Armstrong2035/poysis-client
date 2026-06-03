@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useConsolidation } from "./ConsolidationContext";
+import { Logo } from "@/components/Logo";
 
 const NAV: { id: string; href: string; label: string; exact: boolean; modal?: boolean; icon: (active: boolean) => React.ReactElement }[] = [
   {
@@ -215,16 +216,7 @@ export function WorkspaceSidebar({ email }: { email: string }) {
         <>
           {/* Wordmark */}
           <div className="flex items-center justify-between px-5 pt-6 pb-5">
-            <div
-              className="flex items-baseline gap-1.5"
-              style={{ fontFamily: "Syne, sans-serif", fontSize: "18px", fontWeight: 800, letterSpacing: "-0.04em", color: "#E8E9ED" }}
-            >
-              Poysis
-              <div
-                className="w-1.5 h-1.5 bg-[#E8A547] rounded-full"
-                style={{ transform: "translateY(-7px)", boxShadow: "0 0 8px rgba(232,165,71,0.6)" }}
-              />
-            </div>
+            <Logo />
             <button
               onClick={() => setCollapsed(true)}
               className="w-3.5 h-3.5 flex items-center justify-center text-[#9CA0AC] hover:text-[#E8E9ED] transition-colors"

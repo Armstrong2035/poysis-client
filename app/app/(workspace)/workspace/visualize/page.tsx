@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, memo } from "react";
 import {
   useConsolidation,
   type Topic,
@@ -162,6 +162,9 @@ export default function VisualizeKnowledgePage() {
     knowledgeError,
     refreshKnowledge,
     status,
+    reclustering,
+    reclusterError,
+    recluster,
   } = useConsolidation();
   const [tab, setTab] = useState<Tab>("topics");
 
@@ -183,26 +186,69 @@ export default function VisualizeKnowledgePage() {
             Topics organise your knowledge base; stories thread topics into narratives.
           </p>
         </div>
-        <div className="flex gap-1 p-1 rounded-lg" style={{ background: "rgba(58,61,71,0.2)", border: "1px solid rgba(58,61,71,0.4)" }}>
-          <TabButton active={tab === "topics"} onClick={() => setTab("topics")}>
-            Topics{topics ? ` · ${topics.length}` : ""}
-          </TabButton>
-          <TabButton active={tab === "stories"} onClick={() => setTab("stories")}>
-            Stories{stories ? ` · ${stories.length}` : ""}
-          </TabButton>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={recluster}
+            disabled={reclustering}
+            title={reclusterError ?? undefined}
+            style={{
+              fontFamily: "JetBrains Mono, monospace",
+              fontSize: "10px",
+              letterSpacing: "0.15em",
+              color: reclustering ? "#9CA0AC" : reclusterError ? "#C9534B" : "#E8A547",
+              textTransform: "uppercase" as const,
+              border: `1px solid ${reclusterError ? "rgba(201,80,75,0.4)" : "rgba(232,165,71,0.3)"}`,
+              padding: "6px 12px",
+              borderRadius: "6px",
+              cursor: reclustering ? "default" : "pointer",
+              opacity: reclustering ? 0.6 : 1,
+              background: "transparent",
+            }}
+            className="hover:bg-[rgba(232,165,71,0.08)] transition-all"
+          >
+            {reclustering ? "Reclustering…" : reclusterError ? "Retry recluster" : "Recluster"}
+          </button>
+          <div className="flex gap-1 p-1 rounded-lg" style={{ background: "rgba(58,61,71,0.2)", border: "1px solid rgba(58,61,71,0.4)" }}>
+            <TabButton active={tab === "topics"} onClick={() => setTab("topics")}>
+              Topics{topics ? ` · ${topics.length}` : ""}
+            </TabButton>
+            <TabButton active={tab === "stories"} onClick={() => setTab("stories")}>
+              Stories{stories ? ` · ${stories.length}` : ""}
+            </TabButton>
+          </div>
         </div>
       </header>
 
       <div className="relative flex-1" style={{ overflow: "hidden" }}>
-        {tab === "topics" ? (
+        {/* Both views stay mounted; the inactive one is hidden. Keeps
+            Particles, cluster selection, and zoom state across tab switches. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            opacity: tab === "topics" ? 1 : 0,
+            pointerEvents: tab === "topics" ? "auto" : "none",
+            willChange: "opacity",
+          }}
+          aria-hidden={tab !== "topics"}
+        >
           <TopicsView
             topics={topics}
             loading={knowledgeLoading}
             error={knowledgeError}
             onRetry={refreshKnowledge}
             status={status}
+            active={tab === "topics"}
           />
-        ) : (
+        </div>
+        <div
+          className="absolute inset-0"
+          style={{
+            opacity: tab === "stories" ? 1 : 0,
+            pointerEvents: tab === "stories" ? "auto" : "none",
+            willChange: "opacity",
+          }}
+          aria-hidden={tab !== "stories"}
+        >
           <StoriesView
             stories={stories}
             topics={topics}
@@ -210,7 +256,7 @@ export default function VisualizeKnowledgePage() {
             error={knowledgeError}
             onRetry={refreshKnowledge}
           />
-        )}
+        </div>
       </div>
     </div>
   );
@@ -238,18 +284,20 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 
 /* ── Topics view (radial map) ──────────────────────────────────────── */
 
-function TopicsView({
+const TopicsView = memo(function TopicsView({
   topics,
   loading,
   error,
   onRetry,
   status,
+  active,
 }: {
   topics: Topic[] | null;
   loading: boolean;
   error: string | null;
   onRetry: () => void;
   status: string;
+  active: boolean;
 }) {
   const clusters = useMemo(() => buildClusters(topics), [topics]);
 
@@ -266,6 +314,8 @@ function TopicsView({
   const activePos = activeClusterData ? getClusterPos(activeClusterData.angle) : null;
 
   useEffect(() => {
+    // Don't intercept keys when this tab is hidden behind Stories.
+    if (!active) return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
@@ -302,7 +352,7 @@ function TopicsView({
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [activeCluster, activeSubCluster, clusters, activeClusterData]);
+  }, [active, activeCluster, activeSubCluster, clusters, activeClusterData]);
 
   useEffect(() => {
     const el = mapRef.current;
@@ -345,10 +395,12 @@ function TopicsView({
         }}
       />
 
-      {/* Key hint bar */}
+      {/* Key hint bar — centered within map area (drawer takes 384px on the right) */}
       <div
-        className="absolute top-6 left-1/2 -translate-x-1/2 flex gap-4 items-center"
+        className="absolute top-6 flex gap-4 items-center"
         style={{
+          left: "calc((100% - 384px) / 2)",
+          transform: "translateX(-50%)",
           fontFamily: "JetBrains Mono, monospace",
           fontSize: "10px",
           color: "rgba(156, 160, 172, 0.55)",
@@ -373,8 +425,8 @@ function TopicsView({
         ))}
       </div>
 
-      {/* Map stage */}
-      <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 10 }}>
+      {/* Map stage — offset right edge to leave room for the persistent drawer */}
+      <div className="absolute top-0 bottom-0 left-0 flex items-center justify-center" style={{ right: "384px", zIndex: 10 }}>
         <div
           ref={mapRef}
           className="relative"
@@ -590,11 +642,13 @@ function TopicsView({
         </div>
       </div>
 
-      {/* Breadcrumb */}
+      {/* Breadcrumb — centered within map area */}
       {activeCluster && (
         <div
-          className="absolute bottom-6 left-1/2 -translate-x-1/2"
+          className="absolute bottom-6"
           style={{
+            left: "calc((100% - 384px) / 2)",
+            transform: "translateX(-50%)",
             fontFamily: "JetBrains Mono, monospace",
             fontSize: "10px",
             color: "rgba(156, 160, 172, 0.7)",
@@ -613,44 +667,51 @@ function TopicsView({
         </div>
       )}
 
-      {/* Topic detail pane */}
-      {activeCluster && (
-        <div
-          className="absolute right-0 top-0 bottom-0 w-96 bg-[#0A0B0F]/95 overflow-y-auto"
-          style={{
-            borderLeft: "1px solid rgba(232,165,71,0.2)",
-            backdropFilter: "blur(12px)",
-            animation: "slide-in-left 300ms ease-out",
-            zIndex: 25,
-          }}
-        >
+      {/* Persistent topic detail pane */}
+      <div
+        className="absolute right-0 top-0 bottom-0 w-96 bg-[#0A0B0F]/95 overflow-y-auto"
+        style={{
+          borderLeft: "1px solid rgba(232,165,71,0.2)",
+          backdropFilter: "blur(12px)",
+          zIndex: 25,
+        }}
+      >
+        {activeCluster ? (
           <TopicDetailPane
             topic={activeSubData?.topic ?? activeClusterData?.topic}
             isSub={!!activeSubData}
             siblings={activeClusterData?.subs ?? []}
             onSelectSibling={(id) => setActiveSubCluster(id)}
             showSiblings={!activeSubData}
+            onClear={() => {
+              setActiveCluster(null);
+              setActiveSubCluster(null);
+            }}
           />
-        </div>
-      )}
+        ) : (
+          <DrawerOverview
+            clusters={clusters}
+            onSelectCluster={(id) => {
+              setActiveCluster(id);
+              setActiveSubCluster(null);
+            }}
+          />
+        )}
+      </div>
     </>
   );
-}
+});
 
-function TopicDetailPane({
-  topic,
-  isSub,
-  siblings,
-  onSelectSibling,
-  showSiblings,
+function DrawerOverview({
+  clusters,
+  onSelectCluster,
 }: {
-  topic: Topic | undefined;
-  isSub: boolean;
-  siblings: SubCluster[];
-  onSelectSibling: (id: string) => void;
-  showSiblings: boolean;
+  clusters: Cluster[];
+  onSelectCluster: (id: string) => void;
 }) {
-  if (!topic) return null;
+  const totalDocs = clusters.reduce((sum, c) => sum + c.count, 0);
+  const totalSubs = clusters.reduce((sum, c) => sum + c.subs.length, 0);
+
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -664,7 +725,120 @@ function TopicDetailPane({
             marginBottom: "12px",
           }}
         >
-          {isSub ? "Sub-Topic" : "Topic"}
+          Overview
+        </div>
+        <h2
+          style={{
+            fontFamily: "Syne, sans-serif",
+            fontSize: "20px",
+            fontWeight: 700,
+            color: "#E8A547",
+            marginBottom: "8px",
+            letterSpacing: "-0.01em",
+          }}
+        >
+          Knowledge Map
+        </h2>
+        <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "13px", fontWeight: 300, color: "#9CA0AC", lineHeight: 1.6 }}>
+          {clusters.length} top-level topic{clusters.length === 1 ? "" : "s"} · {totalSubs} sub-topic{totalSubs === 1 ? "" : "s"} · {totalDocs.toLocaleString()} document{totalDocs === 1 ? "" : "s"}.
+        </p>
+      </div>
+
+      <div>
+        <div
+          style={{
+            fontFamily: "JetBrains Mono, monospace",
+            fontSize: "10px",
+            color: "rgba(156, 160, 172, 0.6)",
+            letterSpacing: "0.15em",
+            textTransform: "uppercase",
+            marginBottom: "10px",
+          }}
+        >
+          Topics
+        </div>
+        <div className="space-y-1.5">
+          {clusters.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => onSelectCluster(c.id)}
+              className="w-full text-left flex items-center gap-3 px-3 py-2 rounded transition-all"
+              style={{
+                background: "transparent",
+                border: "1px solid rgba(58,61,71,0.3)",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(232,165,71,0.4)";
+                (e.currentTarget as HTMLButtonElement).style.background = "rgba(232,165,71,0.05)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(58,61,71,0.3)";
+                (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+              }}
+            >
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#E8A547", boxShadow: "0 0 4px rgba(232,165,71,0.6)" }} />
+              <span className="flex-1 truncate" style={{ fontFamily: "DM Sans, sans-serif", fontSize: "13px", fontWeight: 400, color: "#E8E9ED" }}>
+                {c.name}
+              </span>
+              <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", color: "#9CA0AC", letterSpacing: "0.05em" }}>
+                {c.count}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "11px", fontWeight: 300, color: "#3A3D47", lineHeight: 1.55, fontStyle: "italic" }}>
+        Click a node on the map (or a topic above) to see its summary, key themes, and suggested use cases.
+      </p>
+    </div>
+  );
+}
+
+function TopicDetailPane({
+  topic,
+  isSub,
+  siblings,
+  onSelectSibling,
+  showSiblings,
+  onClear,
+}: {
+  topic: Topic | undefined;
+  isSub: boolean;
+  siblings: SubCluster[];
+  onSelectSibling: (id: string) => void;
+  showSiblings: boolean;
+  onClear: () => void;
+}) {
+  if (!topic) return null;
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div
+            style={{
+              fontFamily: "JetBrains Mono, monospace",
+              fontSize: "10px",
+              color: "rgba(156, 160, 172, 0.6)",
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+            }}
+          >
+            {isSub ? "Sub-Topic" : "Topic"}
+          </div>
+          <button
+            onClick={onClear}
+            style={{
+              fontFamily: "JetBrains Mono, monospace",
+              fontSize: "9px",
+              letterSpacing: "0.15em",
+              color: "#9CA0AC",
+              textTransform: "uppercase",
+            }}
+            className="hover:text-[#E8A547] transition-colors"
+          >
+            ← Overview
+          </button>
         </div>
         <h2
           style={{
@@ -799,7 +973,7 @@ function ChipList({ items, subtle = false }: { items: string[]; subtle?: boolean
 
 /* ── Stories view ──────────────────────────────────────────────────── */
 
-function StoriesView({
+const StoriesView = memo(function StoriesView({
   stories,
   topics,
   loading,
@@ -839,7 +1013,7 @@ function StoriesView({
       </div>
     </div>
   );
-}
+});
 
 function StoryCard({ story, topicLookup }: { story: Story; topicLookup: Map<string, Topic> }) {
   return (

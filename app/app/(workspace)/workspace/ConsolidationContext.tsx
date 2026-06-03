@@ -33,7 +33,7 @@ export type Story = {
   doc_count: number;
 };
 
-type WorkspaceContextValue = ReturnType<typeof useClusteringStatus> & {
+type WorkspaceContextValue = Omit<ReturnType<typeof useClusteringStatus>, "mcpUrl"> & {
   connections: DriveConnection[];
   refreshConnections: () => Promise<void>;
   openSources: () => void;
@@ -45,6 +45,11 @@ type WorkspaceContextValue = ReturnType<typeof useClusteringStatus> & {
   knowledgeLoading: boolean;
   knowledgeError: string | null;
   refreshKnowledge: () => Promise<void>;
+  reclustering: boolean;
+  reclusterError: string | null;
+  recluster: () => Promise<void>;
+  mcpUrl: string | null;
+  refreshMcpUrl: () => Promise<void>;
 };
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -59,6 +64,9 @@ export function ConsolidationProvider({ children }: { children: React.ReactNode 
   const [stories, setStories] = useState<Story[] | null>(null);
   const [knowledgeLoading, setKnowledgeLoading] = useState(false);
   const [knowledgeError, setKnowledgeError] = useState<string | null>(null);
+  const [reclustering, setReclustering] = useState(false);
+  const [reclusterError, setReclusterError] = useState<string | null>(null);
+  const [mcpUrl, setMcpUrl] = useState<string | null>(null);
   const hasFetchedKnowledgeRef = useRef(false);
 
   const refreshConnections = useCallback(async () => {
@@ -91,13 +99,27 @@ export function ConsolidationProvider({ children }: { children: React.ReactNode 
     setKnowledgeLoading(true);
     setKnowledgeError(null);
     try {
-      const res = await fetch("/api/worker/consolidation/knowledge");
-      if (res.ok) {
-        const data = await res.json();
+      const [topicsRes, storiesRes] = await Promise.all([
+        fetch("/api/worker/consolidation/topics"),
+        fetch("/api/worker/consolidation/stories"),
+      ]);
+
+      if (topicsRes.ok) {
+        const data = await topicsRes.json();
         setTopics(Array.isArray(data.topics) ? data.topics : []);
-        setStories(Array.isArray(data.stories) ? data.stories : []);
       } else {
-        setKnowledgeError(await res.text());
+        const text = await topicsRes.text();
+        setKnowledgeError(text || "Failed to load topics");
+      }
+
+      if (storiesRes.ok) {
+        const data = await storiesRes.json();
+        setStories(Array.isArray(data.stories) ? data.stories : []);
+      } else if (topicsRes.ok) {
+        // Topics loaded but stories didn't — surface a softer error
+        // without clobbering the loaded topics.
+        const text = await storiesRes.text();
+        setKnowledgeError(`Stories unavailable: ${text || storiesRes.statusText}`);
       }
     } catch (err: any) {
       setKnowledgeError(err?.message ?? "Failed to load knowledge");
@@ -106,10 +128,47 @@ export function ConsolidationProvider({ children }: { children: React.ReactNode 
     }
   }, []);
 
+  const refreshMcpUrl = useCallback(async () => {
+    try {
+      const res = await fetch("/api/worker/consolidation/mcp-url");
+      if (res.ok) {
+        const data = await res.json();
+        setMcpUrl(data.mcp_url ?? null);
+      }
+    } catch {
+      // keep current state
+    }
+  }, []);
+
+  const recluster = useCallback(async () => {
+    setReclustering(true);
+    setReclusterError(null);
+    try {
+      const res = await fetch("/api/worker/consolidation/recluster", { method: "POST" });
+      if (!res.ok) {
+        setReclusterError(await res.text());
+        setReclustering(false);
+        return;
+      }
+      // Give the worker a moment to produce the new tree, then refresh.
+      // The status endpoint exists if we want true polling later; this is
+      // the "or just call refreshKnowledge() after a bit" path.
+      setTimeout(async () => {
+        await refreshKnowledge();
+        await refreshIndexedCount();
+        setReclustering(false);
+      }, 4000);
+    } catch (err: any) {
+      setReclusterError(err?.message ?? "Failed to start recluster");
+      setReclustering(false);
+    }
+  }, [refreshKnowledge, refreshIndexedCount]);
+
   useEffect(() => {
     refreshConnections();
     refreshIndexedCount();
-  }, [refreshConnections, refreshIndexedCount]);
+    refreshMcpUrl();
+  }, [refreshConnections, refreshIndexedCount, refreshMcpUrl]);
 
   // Re-fetch the cumulative count whenever a run finishes — that's when
   // consolidation_indexed_files has new rows to surface.
@@ -145,6 +204,11 @@ export function ConsolidationProvider({ children }: { children: React.ReactNode 
         knowledgeLoading,
         knowledgeError,
         refreshKnowledge,
+        reclustering,
+        reclusterError,
+        recluster,
+        mcpUrl,
+        refreshMcpUrl,
       }}
     >
       {children}

@@ -434,6 +434,74 @@ html:has(.lv2-root) {
   transform: translateY(1px);
 }
 
+/* Reveal scene — medium CTA */
+.lv2-cta-md {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 20px;
+  background: var(--forge);
+  color: var(--obsidian);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: filter 0.18s, transform 0.18s;
+}
+.lv2-cta-md:hover {
+  filter: brightness(1.1);
+}
+.lv2-cta-md:active {
+  transform: translateY(1px);
+}
+
+/* Airlock — full-size standalone CTA */
+.lv2-airlock-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 56px;
+  padding: 0 36px;
+  background: var(--forge);
+  color: var(--obsidian);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  box-shadow: 0 0 28px rgba(232, 165, 71, 0.25);
+  transition: filter 0.18s, transform 0.18s, box-shadow 0.18s;
+}
+.lv2-airlock-cta:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 0 36px rgba(232, 165, 71, 0.38);
+}
+.lv2-airlock-cta:active {
+  transform: translateY(1px);
+}
+
+/* Airlock — secondary sign-in link */
+.lv2-airlock-signin {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 10px;
+  color: var(--light-gray);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: color 0.18s;
+}
+.lv2-airlock-signin:hover {
+  color: var(--forge);
+}
+
 /* ---------- Chrome: registration marks ---------- */
 .lv2-regmarks {
   position: absolute;

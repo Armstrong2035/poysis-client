@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { RegMarks } from "../chrome/reg-marks";
 import { StationCluster } from "../chrome/station-cluster";
 import { SceneShell } from "./scene-shell";
@@ -47,6 +48,10 @@ export function SceneReveal() {
             Then, it provides context to ChatGPT, Claude, Slack, and wherever
             you already work.
           </p>
+
+          <Link href="/signup" className="lv2-cta-md">
+            Try it free →
+          </Link>
         </div>
       </div>
     </SceneShell>

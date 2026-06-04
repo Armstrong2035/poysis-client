@@ -29,7 +29,6 @@ export default function LandingV2Page() {
       <FilmStrips />
       <HudTop
         active={active}
-        onJoin={() => scrollToScene("airlock")}
         onNav={scrollToScene}
       />
       {/* <HudBottom /> */}

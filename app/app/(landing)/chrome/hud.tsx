@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import type { SceneId } from "../navigation/scenes";
+import { Logo } from "@/components/Logo";
 
 const FEATURE_IDS: SceneId[] = ["consolidate", "query", "build"];
 
@@ -33,7 +35,6 @@ const FEATURE_ITEMS: {
 
 type HudTopProps = {
   active?: SceneId;
-  onJoin?: () => void;
   onNav?: (id: SceneId) => void;
 };
 
@@ -114,50 +115,23 @@ function FeaturesMenu({
   );
 }
 
-export function HudTop({ active, onJoin, onNav }: HudTopProps) {
+export function HudTop({ active, onNav }: HudTopProps) {
   return (
     <header className="lv2-hud lv2-hud--top">
-      <span className="lv2-wordmark">
-        Poysis<span className="lv2-wordmark__dot">●</span>
-      </span>
+      <Logo size="sm" />
 
       <nav className="lv2-hud__nav" aria-label="Section navigation">
         <FeaturesMenu active={active} onNav={onNav} />
-        <button
-          type="button"
-          onClick={() => {
-            // Pricing lives inside the Airlock scene further down — scroll
-            // to the section anchor instead of the scene's top (where the
-            // join form is).
-            const el = document.getElementById("airlock-pricing");
-            if (el) {
-              el.scrollIntoView({ behavior: "smooth", block: "start" });
-            } else {
-              onNav?.("airlock");
-            }
-          }}
-          className={`lv2-hud__navlink${
-            active === "airlock" ? " lv2-hud__navlink--active" : ""
-          }`}
-        >
-          Pricing
-        </button>
       </nav>
 
       <div className="lv2-hud__right">
         <span className="lv2-hud__tag">Memory Infrastructure</span>
-        <span className="lv2-hud__status">
-          <span className="lv2-status-dot" />
-          Early Access
-        </span>
-        <button
-          type="button"
-          onClick={onJoin}
-          className="lv2-join-btn"
-          aria-label="Join the waitlist"
-        >
-          Join →
-        </button>
+        <Link href="/login" className="lv2-hud__navlink">
+          Sign in
+        </Link>
+        <Link href="/signup" className="lv2-join-btn">
+          Get started →
+        </Link>
       </div>
     </header>
   );

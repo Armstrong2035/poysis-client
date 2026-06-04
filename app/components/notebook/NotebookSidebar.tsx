@@ -15,79 +15,146 @@ interface NotebookSidebarProps {
 }
 
 export function NotebookSidebar({ user, onConfigOpen, notebookTitle, isSaving, lastSaved, onTitleChange, onSave }: NotebookSidebarProps) {
+  const initial = user.email?.charAt(0).toUpperCase() ?? "?";
+
   return (
-    <div className="w-72 border-r border-zinc-200/80 bg-white/70 backdrop-blur-xl flex-col pt-6 hidden sm:flex shadow-[4px_0_24px_rgba(0,0,0,0.04)] z-20 h-screen overflow-y-auto sticky top-0 shrink-0">
-        {/* Logo */}
-        <div className="px-6 mb-6 flex items-center gap-2 font-bold text-lg text-zinc-900">
-          <div className="w-6 h-6 bg-black rounded-md flex items-center justify-center">
-            <div className="w-2 h-2 bg-white rounded-sm"></div>
-          </div>
+    <div
+      className="w-64 hidden sm:flex flex-col h-screen sticky top-0 shrink-0 z-20"
+      style={{
+        background: "rgba(10,11,15,0.96)",
+        borderRight: "1px solid rgba(58,61,71,0.4)",
+        backdropFilter: "blur(16px)",
+      }}
+    >
+      {/* Wordmark */}
+      <div className="flex items-baseline gap-1.5 px-5 pt-6 pb-5">
+        <span style={{ fontFamily: "Syne, sans-serif", fontSize: "17px", fontWeight: 800, letterSpacing: "-0.04em", color: "#E8E9ED" }}>
           Poysis
-        </div>
+        </span>
+        <div className="w-1.5 h-1.5 bg-[#E8A547] rounded-full" style={{ transform: "translateY(-6px)", boxShadow: "0 0 8px rgba(232,165,71,0.6)" }} />
+      </div>
 
-        {/* Title + Save */}
-        <div className="px-4 mb-4 flex flex-col gap-2">
-          <input
-            value={notebookTitle}
-            onChange={(e) => onTitleChange(e.target.value)}
-            onBlur={onSave}
-            onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
-            placeholder="Notebook Title"
-            className="bg-transparent border-none outline-none text-sm font-bold text-zinc-900 placeholder:text-zinc-300 w-full focus:ring-4 focus:ring-black/5 rounded-lg px-3 py-2 transition-all hover:bg-zinc-50 focus:bg-zinc-50"
+      {/* Title input */}
+      <div className="px-4 mb-3">
+        <input
+          value={notebookTitle}
+          onChange={(e) => onTitleChange(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+          placeholder="Untitled Notebook"
+          className="w-full rounded-lg px-3 py-2 outline-none transition-all"
+          style={{
+            background: "transparent",
+            border: "1px solid transparent",
+            fontFamily: "Syne, sans-serif",
+            fontSize: "13px",
+            fontWeight: 700,
+            color: "#E8E9ED",
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.background = "rgba(58,61,71,0.2)";
+            e.currentTarget.style.borderColor = "rgba(232,165,71,0.3)";
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.borderColor = "transparent";
+            onSave();
+          }}
+        />
+      </div>
+
+      {/* Save status */}
+      <div className="px-7 mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <div
+            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+            style={{
+              background: isSaving ? "#C99547" : "#6BB07A",
+              boxShadow: isSaving ? "0 0 5px rgba(201,149,71,0.6)" : "0 0 5px rgba(107,176,122,0.6)",
+              animation: isSaving ? "pulse 1s ease-in-out infinite" : "none",
+            }}
           />
-          <div className="flex items-center gap-2 px-3">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-              <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isSaving ? "bg-amber-500 animate-pulse" : "bg-emerald-500"}`}></div>
-              {isSaving ? "Syncing..." : lastSaved ? `Saved ${lastSaved.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Cloud Draft"}
-            </div>
-            <div className="ml-auto flex items-center gap-1">
-              <button
-                onClick={onSave}
-                disabled={isSaving}
-                className="px-2 py-1 text-[10px] font-bold text-zinc-500 hover:text-black hover:bg-zinc-100 rounded-md transition-all flex items-center gap-1 disabled:opacity-50"
-              >
-                {isSaving ? <div className="w-2.5 h-2.5 border-2 border-zinc-400 border-t-transparent animate-spin rounded-full"></div> : "☁️"} Save
-              </button>
+          <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.15em", color: "#9CA0AC", textTransform: "uppercase" }}>
+            {isSaving ? "Saving…" : lastSaved ? `Saved ${lastSaved.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Draft"}
+          </span>
+        </div>
+        <button
+          onClick={onSave}
+          disabled={isSaving}
+          style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.15em", color: "#E8A547", textTransform: "uppercase", background: "none", border: "none", cursor: "pointer" }}
+          className="hover:text-[#F5B25F] transition-colors disabled:opacity-40"
+        >
+          Save
+        </button>
+      </div>
+
+      <div style={{ borderTop: "1px solid rgba(58,61,71,0.4)", margin: "0 16px 12px" }} />
+
+      {/* Nav */}
+      <div className="px-4 flex flex-col gap-1">
+        <Link
+          href="/workspace"
+          className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors group"
+          style={{ textDecoration: "none" }}
+        >
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#9CA0AC" strokeWidth="1.3"
+            className="group-hover:stroke-[#E8E9ED] transition-colors">
+            <line x1="11" y1="6.5" x2="2" y2="6.5" />
+            <polyline points="5.5,3 2,6.5 5.5,10" />
+          </svg>
+          <span
+            style={{ fontFamily: "DM Sans, sans-serif", fontSize: "12px", fontWeight: 300, color: "#9CA0AC" }}
+            className="group-hover:text-[#E8E9ED] transition-colors"
+          >
+            Back to Playground
+          </span>
+        </Link>
+
+        <button
+          onClick={onConfigOpen}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors group text-left"
+        >
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#9CA0AC" strokeWidth="1.3"
+            className="group-hover:stroke-[#E8E9ED] transition-colors">
+            <circle cx="6.5" cy="6.5" r="1.5" />
+            <path d="M6.5 1v1.5M6.5 10v1.5M1 6.5h1.5M10 6.5h1.5M2.6 2.6l1 1M9.4 9.4l1 1M9.4 2.6l-1 1M2.6 9.4l1-1" />
+          </svg>
+          <span
+            style={{ fontFamily: "DM Sans, sans-serif", fontSize: "12px", fontWeight: 300, color: "#9CA0AC" }}
+            className="group-hover:text-[#E8E9ED] transition-colors"
+          >
+            Project Config
+          </span>
+        </button>
+      </div>
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Account footer */}
+      <div className="px-4 py-4" style={{ borderTop: "1px solid rgba(58,61,71,0.4)" }}>
+        <div className="flex items-center gap-3">
+          <div
+            className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0"
+            style={{ background: "linear-gradient(135deg, #E8A547 0%, #C99547 100%)", fontFamily: "JetBrains Mono, monospace", fontSize: "11px", fontWeight: 500, color: "#0A0B0F" }}
+          >
+            {initial}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="truncate" style={{ fontFamily: "DM Sans, sans-serif", fontSize: "11px", fontWeight: 400, color: "#E8E9ED" }}>{user.email}</div>
+            <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.12em", color: "#9CA0AC", textTransform: "uppercase" }}>
+              {user.role || "User"}
             </div>
           </div>
-        </div>
-
-        <div className="mx-4 border-t border-zinc-100 mb-3"></div>
-
-        {/* Nav */}
-        <div className="px-4 flex flex-col gap-1">
-          <Link href="/workspace" className="flex items-center gap-3 px-3 py-2 text-sm text-zinc-500 hover:text-black hover:bg-zinc-50 rounded-lg transition-colors font-medium group">
-            <span className="text-base leading-none group-hover:-translate-x-1 transition-transform">←</span> Back to Workspace
-          </Link>
           <button
-            onClick={onConfigOpen}
-            className="flex items-center gap-3 px-3 py-2 text-sm text-zinc-500 hover:text-black hover:bg-zinc-50 rounded-lg transition-colors font-medium group"
+            onClick={() => logout()}
+            className="hover:text-[#C9534B] transition-colors"
+            style={{ color: "#3A3D47", background: "none", border: "none", cursor: "pointer", fontSize: "12px" }}
+            title="Sign out"
           >
-            <span className="text-base leading-none group-hover:rotate-12 transition-transform">⚙️</span> Project Config
+            ↪
           </button>
         </div>
-
-        {/* User Profile */}
-        <div className="p-4 border-t border-zinc-200/80 bg-zinc-50/50 shadow-inner mt-auto">
-          <div className="flex items-center justify-between gap-3 px-2">
-            <div className="flex items-center gap-3 overflow-hidden">
-              <div className="w-8 h-8 rounded-full bg-zinc-900 flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-white shadow-lg">
-                {user.email?.charAt(0).toUpperCase()}
-              </div>
-              <div className="overflow-hidden">
-                <div className="text-[11px] font-bold text-zinc-900 truncate">{user.email}</div>
-                <div className="text-[9px] font-medium text-zinc-400 capitalize">{user.role || "User"}</div>
-              </div>
-            </div>
-            <button
-              onClick={() => logout()}
-              className="p-2 hover:bg-white rounded-lg transition-all border border-transparent hover:border-zinc-200 group shadow-sm hover:shadow active:scale-95"
-              title="Logout"
-            >
-              <span className="text-xs group-hover:scale-110 transition-transform inline-block">🚪</span>
-            </button>
-          </div>
-        </div>
+      </div>
     </div>
   );
 }

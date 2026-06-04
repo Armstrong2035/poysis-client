@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "../../../../../utils/supabase/server";
 import { cookies } from "next/headers";
 import { getWorkspaceId } from "@/lib/workspace";
 import { getAuthUser } from "@/lib/getAuthUser";
 
-const WORKER_URL = process.env.WORKER_URL ?? process.env.LOCAL_WORKER_URL ?? "http://127.0.0.1:8000";
+const WORKER_URL = process.env.WORKER_URL ?? process.env.LOCAL_WORKER_URL ?? "";
+if (!WORKER_URL) throw new Error("WORKER_URL environment variable is not set");
 
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
   const accessToken = session?.access_token ?? "";
 
   try {
-    // Re-use the connect endpoint for a sync — worker handles re-indexing idempotently
+    // Re-use the connect endpoint for a sync â€” worker handles re-indexing idempotently
     const workerRes = await fetch(`${WORKER_URL}/sources/gdrive/connect`, {
       method: "POST",
       headers: {

@@ -164,7 +164,6 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
               type="text"
               value={notebookTitle}
               onChange={(e) => setNotebookTitle(e.target.value)}
-              onBlur={handleSave}
               onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
               className="w-full outline-none bg-transparent rounded-xl -ml-4 px-4 py-2 transition-all border border-transparent"
               style={{

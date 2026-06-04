@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "../../../../../utils/supabase/server";
 import { cookies } from "next/headers";
 
-const WORKER_URL = process.env.WORKER_URL ?? process.env.LOCAL_WORKER_URL ?? "http://127.0.0.1:8000";
+const WORKER_URL = process.env.WORKER_URL ?? process.env.LOCAL_WORKER_URL ?? "";
+if (!WORKER_URL) throw new Error("WORKER_URL environment variable is not set");
 
 export async function POST(req: NextRequest) {
   const url = `${WORKER_URL.replace(/\/$/, "")}/retrieval/ask`;
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    console.log(`[ask] → ${url} | query: "${body.query?.slice(0, 60)}" | user: ${user.id}`);
+    console.log(`[ask] â†’ ${url} | query: "${body.query?.slice(0, 60)}" | user: ${user.id}`);
 
     const workerRes = await fetch(url, {
       method: "POST",
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     if (!workerRes.ok) {
       const text = await workerRes.text();
-      console.error(`[ask] ← ${workerRes.status} | ${text.slice(0, 200)}`);
+      console.error(`[ask] â† ${workerRes.status} | ${text.slice(0, 200)}`);
       return new Response(text, { status: workerRes.status });
     }
 

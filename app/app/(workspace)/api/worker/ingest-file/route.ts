@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "../../../../../utils/supabase/server";
 import { cookies } from "next/headers";
 
-const WORKER_URL = process.env.WORKER_URL ?? process.env.LOCAL_WORKER_URL ?? "http://127.0.0.1:8000";
+const WORKER_URL = process.env.WORKER_URL ?? process.env.LOCAL_WORKER_URL ?? "";
+if (!WORKER_URL) throw new Error("WORKER_URL environment variable is not set");
 
 export async function POST(req: NextRequest) {
   const contentType = req.headers.get("content-type") ?? "";
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.arrayBuffer();
-    console.log(`[ingest-file] → ${url} | ${body.byteLength} bytes | ${contentType.slice(0, 60)} | user: ${user.id}`);
+    console.log(`[ingest-file] â†’ ${url} | ${body.byteLength} bytes | ${contentType.slice(0, 60)} | user: ${user.id}`);
 
     const workerRes = await fetch(url, {
       method: "POST",
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
     });
 
     const text = await workerRes.text();
-    console.log(`[ingest-file] ← ${workerRes.status} | ${text.slice(0, 200)}`);
+    console.log(`[ingest-file] â† ${workerRes.status} | ${text.slice(0, 200)}`);
 
     try {
       return NextResponse.json(JSON.parse(text), { status: workerRes.status });

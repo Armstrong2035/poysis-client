@@ -39,7 +39,6 @@ export function NotebookSidebar({ user, onConfigOpen, notebookTitle, isSaving, l
         <input
           value={notebookTitle}
           onChange={(e) => onTitleChange(e.target.value)}
-          onBlur={onSave}
           onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
           placeholder="Untitled Notebook"
           className="w-full rounded-lg px-3 py-2 outline-none transition-all"

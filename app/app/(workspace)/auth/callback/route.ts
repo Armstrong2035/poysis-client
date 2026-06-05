@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { ensureWorkspace } from "@/lib/workspace";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -11,8 +12,15 @@ export async function GET(request: Request) {
   if (code) {
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // First entry after email confirmation lands here with no workspace yet
+      // (signup couldn't create one without a session). Create it now.
+      // Idempotent, so recovery/OAuth callbacks that already have one are safe.
+      if (data.user) {
+        await ensureWorkspace(supabase, data.user.id);
+      }
+
       const forwardedHost = request.headers.get("x-forwarded-host"); // confirmed with supabase docs
       const isLocalEnv = process.env.NODE_ENV === "development";
       if (isLocalEnv) {

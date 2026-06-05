@@ -162,7 +162,7 @@ export default function OnboardingPage() {
               </div>
 
               <Link
-                href="/dashboard"
+                href="/workspace"
                 className="inline-block px-8 py-5 bg-[#E8A547] hover:bg-[#F5B25F] text-[#0A0B0F] rounded-2xl font-bold text-lg transition-all duration-300 hover:-translate-y-1 shadow-2xl shadow-[#E8A547]/40 active:translate-y-0"
               >
                 <span className="flex items-center gap-2">

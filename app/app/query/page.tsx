@@ -29,18 +29,9 @@ const INTEGRATIONS: Integration[] = [
       </svg>
     ),
     instructions: [
-      "Go to console.anthropic.com and sign in or create an account.",
-      "Navigate to API Keys and create a new key — copy it immediately.",
-      "Paste your API key in the field below. It is stored locally and never sent to Poysis servers.",
-      "Choose a model. Claude Sonnet is recommended for speed and quality.",
-      "Poysis will use this key when you query your knowledge map.",
-    ],
-    fields: [
-      { key: "api_key", label: "API Key", type: "password" },
-      {
-        key: "model", label: "Model", type: "select",
-        options: ["claude-sonnet-4-6", "claude-opus-4-7", "claude-haiku-4-5"],
-      },
+      "No API key needed — Claude connects to your knowledge through a secure MCP URL.",
+      "Build your knowledge map below to generate your personal connection URL.",
+      "Then add it to Claude Desktop using the steps shown with the URL.",
     ],
   },
   {
@@ -147,7 +138,7 @@ export default function QueryPage() {
       <div className="relative max-w-2xl mx-auto px-6 py-12">
         {/* Back nav */}
         <Link
-          href="/dashboard"
+          href="/workspace"
           className="inline-flex items-center gap-2 mb-10 transition-colors group"
           style={{
             fontFamily: "JetBrains Mono, monospace",
@@ -163,7 +154,7 @@ export default function QueryPage() {
             <line x1="12" y1="7" x2="2" y2="7" />
             <polyline points="6,3 2,7 6,11" />
           </svg>
-          <span className="group-hover:text-[#E8A547] transition-colors">Dashboard</span>
+          <span className="group-hover:text-[#E8A547] transition-colors">Workspace</span>
         </Link>
 
         {/* Page header */}
@@ -189,8 +180,9 @@ export default function QueryPage() {
               lineHeight: 1.6,
             }}
           >
-            Connect an AI model to query your knowledge map. Poysis uses your key
-            directly — nothing is proxied through our servers.
+            Connect an AI model to query your knowledge map. Your knowledge stays
+            yours — Poysis connects you directly, nothing is proxied through our
+            servers.
           </p>
         </div>
 
@@ -564,14 +556,16 @@ function IntegrationCard({
                     marginBottom: "10px",
                   }}
                 >
-                  Add to Claude.ai
+                  Add to Claude Desktop
                 </div>
                 {[
-                  "Go to claude.ai and open Settings",
-                  "Navigate to Integrations → Cloud Connectors",
-                  'Click "Add Custom MCP Server"',
-                  "Paste the URL above and save",
-                  "Ask Claude about your knowledge base",
+                  "Copy the URL above",
+                  "In Claude Desktop, click Customize",
+                  "Open the Connectors tab",
+                  "Click the + button to add a connector",
+                  'Name it "Poysis" (or anything you like) and paste the URL',
+                  "Ignore the advanced settings and wait a moment",
+                  "You can now chat with your knowledge from Claude",
                 ].map((step, i) => (
                   <div key={i} className="flex gap-3">
                     <span
@@ -649,7 +643,7 @@ function IntegrationCard({
               >
                 Connect a source and build your knowledge map to get your MCP URL.{" "}
                 <Link
-                  href="/dashboard"
+                  href="/workspace/sources"
                   style={{ color: "#E8A547", textDecoration: "none" }}
                   className="hover:text-[#F5B25F] transition-colors"
                 >

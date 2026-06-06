@@ -198,9 +198,12 @@ function RunningState() {
   const clustering = useConsolidation();
   const isClustering = clustering.status === "clustering";
 
-  // Prefer cumulative `indexedCount`; fall back to live `docsProcessed`
-  // from the stream if the cumulative endpoint hasn't responded yet.
-  const docsIndexed = clustering.indexedCount ?? clustering.docsProcessed;
+  // During an active run, prefer the LIVE per-stream `docsProcessed`. The
+  // cumulative `indexedCount` endpoint isn't refreshed mid-run, so it sits
+  // stale (0 on a first run) — and `0 ?? docsProcessed` returns 0, which would
+  // freeze the counter while vectors climb. Fall back to indexedCount only if
+  // the stream count isn't present yet.
+  const docsIndexed = clustering.docsProcessed ?? clustering.indexedCount;
 
   return (
     <div className="space-y-6">

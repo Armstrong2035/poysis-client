@@ -8,6 +8,21 @@ import { type NextRequest, NextResponse } from "next/server";
  *   (e.g., in /notebook/page.tsx) to avoid breaking Server Actions and public routes.
  */
 export async function middleware(request: NextRequest) {
+  // Supabase sometimes lands email-confirmation / recovery redirects on the
+  // site root (e.g. https://www.poysis.com/?code=...) instead of
+  // /auth/callback — this happens when the redirect falls back to the Site URL
+  // rather than the configured callback. Forward any such code to the callback
+  // (preserving `next` and other params) so the PKCE exchange and the
+  // post-login redirect to /workspace actually run.
+  if (
+    request.nextUrl.pathname === "/" &&
+    request.nextUrl.searchParams.has("code")
+  ) {
+    const callbackUrl = request.nextUrl.clone();
+    callbackUrl.pathname = "/auth/callback";
+    return NextResponse.redirect(callbackUrl);
+  }
+
   let supabaseResponse = NextResponse.next({
     request: { headers: request.headers },
   });

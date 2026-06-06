@@ -7,6 +7,18 @@ import { revalidatePath } from "next/cache";
 import { ensureWorkspace } from "./workspace";
 
 /**
+ * Base URL for auth email redirects. Prefer the configured site URL so the
+ * target is deterministic across environments; fall back to the request
+ * origin header, which can be empty in some server-action contexts (and when
+ * it is, Supabase silently falls back to the dashboard Site URL).
+ */
+async function authRedirectBase(): Promise<string> {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL;
+  if (configured) return configured.replace(/\/$/, "");
+  return (await headers()).get("origin") ?? "";
+}
+
+/**
  * Log in a user with email and password.
  */
 export async function login(formData: FormData) {
@@ -39,13 +51,13 @@ export async function signup(formData: FormData) {
 
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const origin = (await headers()).get("origin") ?? "";
+  const base = await authRedirectBase();
 
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${origin}/auth/callback`,
+      emailRedirectTo: `${base}/auth/callback`,
     },
   });
 
@@ -77,10 +89,10 @@ export async function requestPasswordReset(formData: FormData) {
   const supabase = createClient(cookieStore);
 
   const email = formData.get("email") as string;
-  const origin = (await headers()).get("origin") ?? "";
+  const base = await authRedirectBase();
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?next=/reset`,
+    redirectTo: `${base}/auth/callback?next=/reset`,
   });
 
   if (error) {

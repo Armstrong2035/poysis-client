@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { authedFetch } from "@/utils/authedFetch";
+import { normalizeMcpUrl } from "@/utils/normalizeMcpUrl";
 
 const STORAGE_KEY = "poysis-clustering-status";
 
@@ -44,7 +45,7 @@ export function useClusteringStatus() {
         if (data.type === "complete") {
           persist({
             status: "done",
-            mcpUrl: data.mcp_url,
+            mcpUrl: normalizeMcpUrl(data.mcp_url) ?? undefined,
             leafTopics: data.leaf_topics,
             totalTopics: data.total_topics,
             docsProcessed: data.docs_processed,

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { useClusteringStatus } from "../../hooks/useClusteringStatus";
+import { normalizeMcpUrl } from "@/utils/normalizeMcpUrl";
 import { SourcesModal } from "../../dashboard/SourcesModal";
 
 export type DriveConnection = {
@@ -133,7 +134,7 @@ export function ConsolidationProvider({ children }: { children: React.ReactNode 
       const res = await fetch("/api/worker/consolidation/mcp-url");
       if (res.ok) {
         const data = await res.json();
-        setMcpUrl(data.mcp_url ?? null);
+        setMcpUrl(normalizeMcpUrl(data.mcp_url));
       }
     } catch {
       // keep current state

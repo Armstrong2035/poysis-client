@@ -16,6 +16,7 @@ export type ClusteringState = {
   totalTopics?: number;
   mcpUrl?: string;
   error?: string;
+  completedAt?: number;
 };
 
 export function useClusteringStatus() {
@@ -50,6 +51,7 @@ export function useClusteringStatus() {
             totalTopics: data.total_topics,
             docsProcessed: data.docs_processed,
             vectorsIndexed: data.vectors_indexed,
+            completedAt: Date.now(),
           });
           closeStream();
           return;
@@ -85,19 +87,21 @@ export function useClusteringStatus() {
     });
   }, [persist, closeStream]);
 
-  // On mount: restore state and reconnect stream if job was in progress
+  // On mount: restore last-known state, then always connect to the
+  // snapshot stream. The worker may have started, progressed, or finished
+  // a consolidation that this client never triggered (e.g. run from
+  // another tab or kicked off locally), so the stream's initial snapshot
+  // is what reconciles local state with backend truth.
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return;
-    try {
-      const parsed: ClusteringState = JSON.parse(stored);
-      setState(parsed);
-      if (parsed.status === "running" || parsed.status === "clustering") {
-        openStream();
+    if (stored) {
+      try {
+        setState(JSON.parse(stored));
+      } catch {
+        // ignore malformed storage
       }
-    } catch {
-      // ignore malformed storage
     }
+    openStream();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => () => closeStream(), [closeStream]);

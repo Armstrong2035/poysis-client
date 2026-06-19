@@ -45,7 +45,12 @@ export function LeftRail() {
     if (driveParam) {
       if (driveParam === "connected") {
         setConnectToast("connected");
-        setToastDocs(parseInt(params.get("docs") ?? "0", 10));
+        // doc count is no longer carried on the redirect — fetch the
+        // workspace-level indexed total from the worker instead.
+        authedFetch("/api/worker/consolidation/indexed-count")
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => { if (d) setToastDocs(d.indexed ?? 0); })
+          .catch(() => {});
       } else if (driveParam === "denied") setConnectToast("denied");
       else setConnectToast("error");
 

@@ -131,7 +131,9 @@ export function ConsolidationProvider({ children }: { children: React.ReactNode 
 
   const refreshMcpUrl = useCallback(async () => {
     try {
-      const res = await fetch("/api/worker/consolidation/mcp-url");
+      const res = await fetch("/api/worker/consolidation/mcp-url", {
+        cache: "no-store",
+      });
       if (res.ok) {
         const data = await res.json();
         setMcpUrl(normalizeMcpUrl(data.mcp_url));
@@ -172,12 +174,23 @@ export function ConsolidationProvider({ children }: { children: React.ReactNode 
   }, [refreshConnections, refreshIndexedCount, refreshMcpUrl]);
 
   // Re-fetch the cumulative count whenever a run finishes — that's when
-  // consolidation_indexed_files has new rows to surface.
+  // consolidation_indexed_files has new rows to surface. completedAt is
+  // included so a fresh "done" snapshot from the stream (e.g. a run that
+  // finished before this client connected) re-triggers the refresh even
+  // if status was already "done" from a prior session.
   useEffect(() => {
     if (clustering.status === "done" || clustering.status === "failed") {
       refreshIndexedCount();
     }
-  }, [clustering.status, refreshIndexedCount]);
+  }, [clustering.status, clustering.completedAt, refreshIndexedCount]);
+
+  // The worker can (re)issue the MCP URL when a run finishes, so re-fetch it
+  // on done — the mount-only fetch would otherwise leave a stale value.
+  useEffect(() => {
+    if (clustering.status === "done") {
+      refreshMcpUrl();
+    }
+  }, [clustering.status, clustering.completedAt, refreshMcpUrl]);
 
   // Refresh topics/stories on done — but only if a consumer has already
   // requested them at least once. Avoids fetching for users who never
@@ -186,7 +199,7 @@ export function ConsolidationProvider({ children }: { children: React.ReactNode 
     if (clustering.status === "done" && hasFetchedKnowledgeRef.current) {
       refreshKnowledge();
     }
-  }, [clustering.status, refreshKnowledge]);
+  }, [clustering.status, clustering.completedAt, refreshKnowledge]);
 
   const openSources = useCallback(() => setSourcesOpen(true), []);
 

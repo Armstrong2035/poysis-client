@@ -1,10 +1,12 @@
-"use client";
+me"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { FileUploader } from "../ui/input/FileUploader";
 import { VariableList } from "../ui/input/VariableList";
 import { BlueprintDesigner } from "./BlueprintDesigner";
 import { LayoutRenderer } from "../ui/display/LayoutRenderer";
+import { TopicScopePicker } from "./TopicScopePicker";
+import { ConnectionScopePicker } from "./ConnectionScopePicker";
 import type { ActiveBlock } from "../../types/canvas";
 import { useNotebookStore } from "../../store/notebookStore";
 
@@ -275,6 +277,64 @@ export function BlockDetailPanel({
                           This block is connected to <strong style={{ color: "#E8E9ED" }}>{block.name}</strong> memory. Queries from the UI will search these documents instantly.
                         </div>
                       </div>
+
+                      {/* Knowledge Scope */}
+                      <DarkCard>
+                        <div className="flex items-center justify-between mb-5">
+                          <div>
+                            <h3 style={{ fontFamily: "Syne, sans-serif", fontSize: "13px", fontWeight: 700, color: "#E8E9ED" }}>
+                              Knowledge Scope
+                            </h3>
+                            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "11px", fontWeight: 300, color: "#9CA0AC", marginTop: "2px" }}>
+                              What end users can query. No selection = no access.
+                            </p>
+                          </div>
+                          <div
+                            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                            style={{ background: "rgba(58,61,71,0.5)", color: "#9CA0AC", border: "1px solid rgba(58,61,71,0.6)" }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2">
+                              <circle cx="7" cy="7" r="2" />
+                              <circle cx="7" cy="2" r="1" /><circle cx="12" cy="5" r="1" />
+                              <circle cx="12" cy="9" r="1" /><circle cx="7" cy="12" r="1" />
+                              <circle cx="2" cy="9" r="1" /><circle cx="2" cy="5" r="1" />
+                              <line x1="7" y1="5" x2="7" y2="3" /><line x1="7" y1="9" x2="7" y2="11" />
+                              <line x1="8.7" y1="6" x2="11" y2="5.3" /><line x1="8.7" y1="8" x2="11" y2="8.7" />
+                              <line x1="5.3" y1="6" x2="3" y2="5.3" /><line x1="5.3" y1="8" x2="3" y2="8.7" />
+                            </svg>
+                          </div>
+                        </div>
+
+                        {/* Connections */}
+                        <div className="mb-5">
+                          <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "8px", letterSpacing: "0.18em", color: "#9CA0AC", textTransform: "uppercase", marginBottom: "8px" }}>
+                            By Connection
+                          </div>
+                          <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "10px", fontWeight: 300, color: "#3A3D47", marginBottom: "10px", lineHeight: 1.5 }}>
+                            Grant access to everything from a source — e.g. all 150 sermons from your YouTube channel.
+                          </p>
+                          <ConnectionScopePicker
+                            selectedIds={block.sources}
+                            onToggle={(id) => onToggleSource(id)}
+                          />
+                        </div>
+
+                        <div style={{ borderTop: "1px solid rgba(58,61,71,0.3)", margin: "0 0 16px" }} />
+
+                        {/* Topics */}
+                        <div>
+                          <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "8px", letterSpacing: "0.18em", color: "#9CA0AC", textTransform: "uppercase", marginBottom: "8px" }}>
+                            By Topic
+                          </div>
+                          <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "10px", fontWeight: 300, color: "#3A3D47", marginBottom: "10px", lineHeight: 1.5 }}>
+                            Restrict to specific knowledge clusters — e.g. only sermons about Grace & Forgiveness.
+                          </p>
+                          <TopicScopePicker
+                            selectedIds={block.sources}
+                            onToggle={(id) => onToggleSource(id)}
+                          />
+                        </div>
+                      </DarkCard>
                     </div>
                   )}
                 </section>

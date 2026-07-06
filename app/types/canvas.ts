@@ -135,6 +135,24 @@ export interface UIConfig {
   sampleData?: string; // Mock JSON for the builder preview
 }
 
+// --- 7. CHAT CONFIG (The shared chat module interface) ---
+
+export interface ChatBranding {
+  primaryColor?: string;
+  persona?: string;
+  systemPrompt?: string;
+}
+
+export interface ChatConfig {
+  mode: "dashboard" | "playground";
+  notebookId: string;
+  playgroundId?: string;       // Required when mode === "playground"
+  allowedSources?: string[];   // Scope restriction — undefined means full KB access
+  branding?: ChatBranding;
+  placeholder?: string;
+  model?: string;              // Dashboard only — LLM model override
+}
+
 export interface ActiveBlock {
   id: string;
   blockTypeId: string;

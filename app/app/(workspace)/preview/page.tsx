@@ -3,7 +3,7 @@
 import { useNotebookStore } from "../../../store/notebookStore";
 import { SearchBar } from "../../../components/ui/input/SearchBar";
 import { SourceAccordion } from "../../../components/ui/display/SourceAccordion";
-import { ChatThread } from "../../../components/ui/display/ChatThread";
+import { Chat } from "../../../components/ui/chat/Chat";
 import Link from "next/link";
 import { useState, useEffect, Suspense } from "react";
 import { useHydrated } from "../../../hooks/useHydrated";
@@ -18,6 +18,7 @@ function PreviewContent() {
   const [shareTab, setShareTab] = useState<"link" | "embed">("link");
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [notebookSlug, setNotebookSlug] = useState<string | null>(null);
 
   const notebookId = searchParams.get("id");
   const isEmbed = searchParams.get("embed") === "true";
@@ -34,6 +35,7 @@ function PreviewContent() {
           if (!res.ok) throw new Error(`Failed to fetch notebook: ${res.status}`);
           const data = await res.json();
           if (data?.config) hydrateStore(data.config, data.name);
+          if (data?.slug) setNotebookSlug(data.slug);
         } catch (err) {
           console.error("Failed to load preview:", err);
         } finally {
@@ -44,8 +46,12 @@ function PreviewContent() {
     loadNotebook();
   }, [notebookId]);
 
+  const shareUrl = notebookSlug
+    ? `${window.location.origin}/p/${notebookSlug}`
+    : `${window.location.origin}/preview?id=${notebookId}`;
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/preview?id=${notebookId}`);
+    navigator.clipboard.writeText(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -115,14 +121,17 @@ function PreviewContent() {
             </div>
           ) : (
             <div className="flex-1 flex flex-col min-h-0">
-              {currentBlock.blockTypeId === "chat" && (
+              {(currentBlock.blockTypeId === "chat" || currentBlock.blockTypeId === "generate") && (
                 <div className="flex-1 flex flex-col min-h-0 px-4 pb-4 pt-2">
-                  <ChatThread blockId={currentBlock.id} />
-                </div>
-              )}
-              {currentBlock.blockTypeId === "generate" && (
-                <div className="flex-1 flex flex-col min-h-0 px-4 pb-4 pt-2">
-                  <ChatThread blockId={currentBlock.id} />
+                  <Chat
+                    config={{
+                      mode: "dashboard",
+                      notebookId: notebookId ?? "",
+                      allowedSources: currentBlock.sources.length > 0 ? currentBlock.sources : undefined,
+                      branding: { primaryColor: theme.primaryColor },
+                      placeholder: "Ask a question…",
+                    }}
+                  />
                 </div>
               )}
               {currentBlock.blockTypeId === "search" && (
@@ -334,7 +343,7 @@ function PreviewContent() {
                   </p>
                   <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-4 flex items-center gap-3 mb-5">
                     <code className="text-xs font-mono text-zinc-600 truncate flex-1">
-                      {typeof window !== "undefined" ? window.location.origin : "https://poysis.app"}/preview?id={notebookId}
+                      {shareUrl}
                     </code>
                     <button
                       onClick={handleCopy}

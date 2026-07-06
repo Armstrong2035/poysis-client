@@ -280,6 +280,55 @@ export async function getPublicNotebook(id: string) {
 }
 
 /**
+ * Updates the slug for a notebook. Slug must be unique across all notebooks.
+ * Returns an error string if the slug is already taken, null on success.
+ */
+export async function updateNotebookSlug(id: string, slug: string): Promise<string | null> {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const clean = slug.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+  if (!clean) return "Slug cannot be empty.";
+
+  const { error } = await supabase
+    .from("notebooks")
+    .update({ slug: clean, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) {
+    if (error.code === "23505") return "That slug is already taken. Try another.";
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/workspace");
+  return null;
+}
+
+/**
+ * Fetches a notebook by its slug (public — no auth required).
+ * Returns id, name, config, slug, and user_id (owner) for the playground route.
+ */
+export async function getNotebookBySlug(slug: string) {
+  const supabase = createPublicClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
+  );
+
+  const { data, error } = await supabase
+    .from("notebooks")
+    .select("id, name, slug, config, user_id")
+    .eq("slug", slug)
+    .single();
+
+  if (error) return null;
+  return data;
+}
+
+/**
  * Deletes a notebook by ID.
  */
 export async function deleteNotebook(id: string) {

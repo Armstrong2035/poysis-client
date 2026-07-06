@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNotebookStore } from "../../../store/notebookStore";
 import { useHydrated } from "../../../hooks/useHydrated";
-import { saveNotebook } from "../../../lib/actions";
+import { saveNotebook, updateNotebookSlug } from "../../../lib/actions";
 import type { User } from "@supabase/supabase-js";
 
 import { NotebookSidebar } from "../../../components/notebook/NotebookSidebar";
@@ -44,6 +44,7 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
   } = useNotebookStore();
 
   const [notebookTitle, setNotebookTitle] = useState(initialData?.name || "Untitled Notebook");
+  const [slug, setSlug] = useState<string>(initialData?.slug ?? "");
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showBlockPicker, setShowBlockPicker] = useState(false);
@@ -117,6 +118,14 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
     }
   };
 
+  const handleSlugSave = async (newSlug: string): Promise<string | null> => {
+    const targetId = id || initialData?.id;
+    if (!targetId) return "No notebook ID.";
+    const err = await updateNotebookSlug(targetId, newSlug);
+    if (!err) setSlug(newSlug.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, ""));
+    return err;
+  };
+
   const handleAddBlock = (blockTypeId: string) => {
     storeAddBlock(blockTypeId);
     setShowBlockPicker(false);
@@ -152,6 +161,8 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
         lastSaved={lastSaved}
         onTitleChange={setNotebookTitle}
         onSave={handleSave}
+        slug={slug}
+        onSlugSave={handleSlugSave}
       />
 
       {/* Main Content */}

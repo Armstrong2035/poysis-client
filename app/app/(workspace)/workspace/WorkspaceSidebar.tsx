@@ -90,6 +90,17 @@ const NAV: { id: string; href: string; label: string; exact: boolean; modal?: bo
       </svg>
     ),
   },
+  {
+    id: "chat",
+    href: "/workspace/chat",
+    label: "Chat",
+    exact: false,
+    icon: (active: boolean) => (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" strokeWidth="1.3" stroke={active ? "#E8A547" : "#9CA0AC"}>
+        <path d="M12 1H2a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h2l2 3 2-3h4a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z" />
+      </svg>
+    ),
+  },
 ];
 
 export function WorkspaceSidebar({ email }: { email: string }) {

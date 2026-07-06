@@ -18,10 +18,20 @@ export async function POST(req: NextRequest) {
   if (!workspaceId)
     return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
 
+  // Fetch locked topic IDs so the worker can preserve user-modified topics.
+  const { data: overrides } = await supabase
+    .from("topic_overrides")
+    .select("topic_id")
+    .eq("workspace_id", workspaceId)
+    .eq("locked", true);
+
+  const lockedTopicIds = (overrides ?? []).map((r: { topic_id: string }) => r.topic_id);
+
   try {
     const res = await fetch(`${WORKER_URL}/consolidation/cluster/${workspaceId}`, {
       method: "POST",
-      headers: { "X-User-ID": user.id },
+      headers: { "Content-Type": "application/json", "X-User-ID": user.id },
+      body: JSON.stringify({ locked_topic_ids: lockedTopicIds }),
     });
     if (!res.ok) {
       return NextResponse.json({ error: await res.text() }, { status: res.status });

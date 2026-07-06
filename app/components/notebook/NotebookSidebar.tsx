@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
 import { logout } from "../../lib/auth";
@@ -12,10 +13,25 @@ interface NotebookSidebarProps {
   lastSaved: Date | null;
   onTitleChange: (value: string) => void;
   onSave: () => void;
+  slug: string;
+  onSlugSave: (slug: string) => Promise<string | null>;
 }
 
-export function NotebookSidebar({ user, onConfigOpen, notebookTitle, isSaving, lastSaved, onTitleChange, onSave }: NotebookSidebarProps) {
+export function NotebookSidebar({ user, onConfigOpen, notebookTitle, isSaving, lastSaved, onTitleChange, onSave, slug, onSlugSave }: NotebookSidebarProps) {
   const initial = user.email?.charAt(0).toUpperCase() ?? "?";
+  const [slugDraft, setSlugDraft] = useState(slug);
+  const [slugError, setSlugError] = useState<string | null>(null);
+  const [slugSaving, setSlugSaving] = useState(false);
+  const [slugSaved, setSlugSaved] = useState(false);
+
+  const handleSlugSave = async () => {
+    if (!slugDraft.trim() || slugDraft === slug) return;
+    setSlugSaving(true);
+    setSlugError(null);
+    const err = await onSlugSave(slugDraft);
+    setSlugSaving(false);
+    if (err) { setSlugError(err); } else { setSlugSaved(true); setTimeout(() => setSlugSaved(false), 2000); }
+  };
 
   return (
     <div
@@ -125,6 +141,53 @@ export function NotebookSidebar({ user, onConfigOpen, notebookTitle, isSaving, l
             Project Config
           </span>
         </button>
+      </div>
+
+      {/* Publish */}
+      <div className="px-4 mt-4">
+        <div style={{ borderTop: "1px solid rgba(58,61,71,0.4)", paddingTop: "14px" }}>
+          <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.18em", color: "#9CA0AC", textTransform: "uppercase" as const, marginBottom: "8px", paddingLeft: "4px" }}>
+            Publish
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "11px", color: "#3A3D47", flexShrink: 0 }}>/p/</span>
+            <input
+              value={slugDraft}
+              onChange={(e) => { setSlugDraft(e.target.value); setSlugError(null); setSlugSaved(false); }}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.currentTarget.blur(); handleSlugSave(); } }}
+              onBlur={handleSlugSave}
+              placeholder="my-app"
+              className="flex-1 rounded px-2 py-1 outline-none transition-all"
+              style={{
+                background: "rgba(58,61,71,0.2)",
+                border: "1px solid rgba(58,61,71,0.4)",
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: "11px",
+                color: "#E8E9ED",
+                minWidth: 0,
+              }}
+            />
+          </div>
+          {slugError && (
+            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "10px", color: "#C9534B", marginTop: "5px", paddingLeft: "4px" }}>
+              {slugError}
+            </p>
+          )}
+          {slugSaved && (
+            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "10px", color: "#6BB07A", marginTop: "5px", paddingLeft: "4px" }}>
+              ✓ Saved
+            </p>
+          )}
+          {slugDraft && !slugError && !slugSaving && (
+            <button
+              onClick={() => { const url = `${window.location.origin}/p/${slugDraft}`; navigator.clipboard.writeText(url); }}
+              className="mt-2 w-full py-1.5 rounded transition-all hover:bg-[rgba(232,165,71,0.12)]"
+              style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.12em", color: "#E8A547", textTransform: "uppercase" as const, border: "1px solid rgba(232,165,71,0.25)", background: "transparent", cursor: "pointer" }}
+            >
+              Copy Link
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Spacer */}

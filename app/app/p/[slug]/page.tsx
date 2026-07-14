@@ -24,9 +24,16 @@ export default async function PlaygroundPage({ params }: Props) {
   const theme = config.theme ?? {};
   const activeBlocks: any[] = config.activeBlocks ?? [];
 
-  // Find the first chat or generate block to power the playground chat.
+  // Find the first chat, generate, or search block to power the playground
+  // chat. Search notebooks (from Canvas) render through the same chat UI for
+  // now — the critical part is that their sources still scope retrieval;
+  // without this, a published search notebook would fall through with no
+  // allowedSources at all.
   const chatBlock = activeBlocks.find(
-    (b: any) => b.blockTypeId === "chat" || b.blockTypeId === "generate"
+    (b: any) =>
+      b.blockTypeId === "chat" ||
+      b.blockTypeId === "generate" ||
+      b.blockTypeId === "search"
   );
 
   return (

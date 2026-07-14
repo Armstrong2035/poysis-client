@@ -151,6 +151,8 @@ export interface ChatConfig {
   branding?: ChatBranding;
   placeholder?: string;
   model?: string;              // Dashboard only — LLM model override
+  useOuroboros?: boolean;      // Dashboard only — ground replies in docs/ouroboros.md (Canvas onboarding)
+  hideModelSwitcher?: boolean; // Dashboard only — suppress the in-chat Flash/Pro picker when the host page has its own model control (e.g. Canvas's settings drawer)
 }
 
 export interface ActiveBlock {

@@ -56,6 +56,10 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
 
   const [isHydrationComplete, setIsHydrationComplete] = useState(false);
   const hasHydratedForId = useRef<string | null>(null);
+  // Config keys this builder doesn't know about (e.g. Canvas's `canvas` meta)
+  // must survive our save round-trips — captured at hydration, spread back
+  // into every save payload.
+  const extraConfigRef = useRef<Record<string, any>>({});
 
   useEffect(() => {
     const notebookId = id || initialData?.id;
@@ -67,6 +71,9 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
     }
 
     if (initialData?.config) {
+      const { activeBlocks: _a, blocks: _b, uiComponents: _u, appScreens: _s, theme: _t, ...extra } =
+        initialData.config ?? {};
+      extraConfigRef.current = extra;
       hydrateStore(initialData.config, initialData.name);
       setLastSaved(new Date(initialData.updated_at || initialData.created_at));
       setTimeout(() => setIsHydrationComplete(true), 100);
@@ -86,6 +93,7 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
       setIsSaving(true);
       try {
         await saveNotebook(targetId, {
+          ...extraConfigRef.current,
           name: notebookTitle,
           activeBlocks,
           blocks,
@@ -109,7 +117,7 @@ export default function NotebookClient({ id, initialData, user }: NotebookClient
     setIsSaving(true);
     try {
       const targetId = id || initialData?.id || "default-notebook";
-      await saveNotebook(targetId, { name: notebookTitle, activeBlocks, blocks, uiComponents, appScreens, theme });
+      await saveNotebook(targetId, { ...extraConfigRef.current, name: notebookTitle, activeBlocks, blocks, uiComponents, appScreens, theme });
       setLastSaved(new Date());
     } catch (err) {
       console.error("Save failed:", err);

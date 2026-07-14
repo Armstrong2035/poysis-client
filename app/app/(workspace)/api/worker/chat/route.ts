@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "../../../../../utils/supabase/server";
 import { getWorkspaceId } from "@/lib/workspace";
+import { loadOuroboros } from "@/lib/ouroboros";
 import { cookies } from "next/headers";
 
 const WORKER_URL = process.env.WORKER_URL ?? process.env.LOCAL_WORKER_URL ?? "";
@@ -29,11 +30,13 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { query, top_k = 5, min_score = 0.4, model, allowed_topic_ids, allowed_connection_ids } = body;
+    const { query, top_k = 5, min_score = 0.4, model, allowed_topic_ids, allowed_connection_ids, useOuroboros } = body;
 
     if (!query?.trim()) {
       return NextResponse.json({ error: "Query is required" }, { status: 400 });
     }
+
+    const instructions = useOuroboros ? loadOuroboros() : undefined;
 
     console.log(
       `[worker/chat] → ${url} | workspace: ${workspaceId} | user: ${user.id} | model: ${model ?? "default"} | query: "${query?.slice(0, 60)}"`,
@@ -51,6 +54,7 @@ export async function POST(req: NextRequest) {
         top_k,
         min_score,
         ...(model ? { model } : {}),
+        ...(instructions ? { instructions } : {}),
         ...(allowed_topic_ids?.length > 0 ? { allowed_topic_ids } : {}),
         ...(allowed_connection_ids?.length > 0 ? { allowed_connection_ids } : {}),
       }),

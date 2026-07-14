@@ -1,40 +1,32 @@
 import type { Metadata } from "next";
-import { DM_Sans, JetBrains_Mono, Syne } from "next/font/google";
-import "./landing-v2.css";
+import { Albert_Sans, Source_Serif_4 } from "next/font/google";
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const albertSans = Albert_Sans({
+  variable: "--font-albert-sans",
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const jetbrains = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
+const sourceSerif4 = Source_Serif_4({
+  variable: "--font-source-serif-4",
   subsets: ["latin"],
-  weight: ["400", "500"],
-});
-
-const syne = Syne({
-  variable: "--font-syne",
-  subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
-  title: "Poysis — Memory Infrastructure",
+  title: "Poysis — Your best thinking, on demand.",
   description:
-    "Poysis turns scattered knowledge into navigable territory. Connect your knowledge. Use it wherever you work.",
+    "Poysis turns your documents, videos, notes, and bookmarks into a living archive you can talk to — every answer grounded in your own knowledge.",
 };
 
-export default function LandingV2Layout({
+export default function LandingLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className={`lv2-root ${dmSans.variable} ${jetbrains.variable} ${syne.variable} relative min-h-screen w-full`}
-    >
+    <div className={`${albertSans.variable} ${sourceSerif4.variable}`}>
       {children}
     </div>
   );

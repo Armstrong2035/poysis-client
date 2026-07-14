@@ -1,12 +1,22 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useNotebooks } from "../NotebooksContext";
 
 type DriveConnection = {
   id: string;
   google_account_email: string;
   doc_count: number;
   last_synced_at: string | null;
+};
+
+type YoutubeConnection = {
+  id: string;
+  channel_id: string;
+  channel_name: string | null;
+  enabled: boolean;
+  created_at: string;
 };
 
 const COMING_SOON = [
@@ -20,6 +30,8 @@ const COMING_SOON = [
 export default function SourcesPage() {
   const [connections, setConnections] = useState<DriveConnection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [youtubeConnections, setYoutubeConnections] = useState<YoutubeConnection[]>([]);
+
   const fetchConnections = useCallback(async () => {
     try {
       const res = await fetch("/api/drive/status");
@@ -34,9 +46,22 @@ export default function SourcesPage() {
     }
   }, []);
 
+  const fetchYoutube = useCallback(async () => {
+    try {
+      const res = await fetch("/api/youtube/status");
+      if (res.ok) {
+        const data = await res.json();
+        setYoutubeConnections(data.connections ?? []);
+      }
+    } catch {
+      // keep state
+    }
+  }, []);
+
   useEffect(() => {
     fetchConnections();
-  }, [fetchConnections]);
+    fetchYoutube();
+  }, [fetchConnections, fetchYoutube]);
 
   const hasConnections = connections.length > 0;
 
@@ -45,11 +70,11 @@ export default function SourcesPage() {
       {/* Header */}
       <div className="mb-8">
         <h1
-          style={{ fontFamily: "Syne, sans-serif", fontSize: "26px", fontWeight: 700, letterSpacing: "-0.03em", color: "#E8E9ED", marginBottom: "6px" }}
+          style={{ fontFamily: "Syne, sans-serif", fontSize: "26px", fontWeight: 700, letterSpacing: "-0.03em", color: "#262922", marginBottom: "6px" }}
         >
           Knowledge Sources
         </h1>
-        <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "14px", fontWeight: 300, color: "#9CA0AC" }}>
+        <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "14px", fontWeight: 300, color: "#55594D" }}>
           Connect the places your knowledge lives.
         </p>
       </div>
@@ -70,7 +95,7 @@ export default function SourcesPage() {
       {!loading && !hasConnections && (
         <section className="mb-8">
           <SectionLabel text="Get Started" />
-          <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "13px", fontWeight: 300, color: "#9CA0AC", marginBottom: "16px" }}>
+          <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "13px", fontWeight: 300, color: "#55594D", marginBottom: "16px" }}>
             Connect a source so Poysis can build your knowledge map.
           </p>
           <ConnectGoogleDriveButton />
@@ -85,6 +110,19 @@ export default function SourcesPage() {
         </section>
       )}
 
+      {/* YouTube channels */}
+      <section className="mb-8">
+        <SectionLabel text="YouTube" />
+        {youtubeConnections.length > 0 && (
+          <div className="space-y-2 mb-3">
+            {youtubeConnections.map((conn) => (
+              <YoutubeCard key={conn.id} connection={conn} onConnectionChange={fetchYoutube} />
+            ))}
+          </div>
+        )}
+        <ConnectYoutubeForm onConnected={fetchYoutube} />
+      </section>
+
       {/* Coming soon */}
       <section>
         <SectionLabel text="Coming Soon" />
@@ -93,17 +131,17 @@ export default function SourcesPage() {
             <div
               key={s.id}
               className="flex items-center gap-3 px-3 py-2.5 rounded"
-              style={{ background: "rgba(58,61,71,0.15)", border: "1px solid rgba(58,61,71,0.3)", opacity: 0.55 }}
+              style={{ background: "#FAF8F0", border: "1px solid #E4DECC", opacity: 0.7 }}
             >
               <div
                 className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0"
-                style={{ background: "rgba(58,61,71,0.5)", fontFamily: "Syne, sans-serif", fontSize: "12px", fontWeight: 700, color: "#9CA0AC" }}
+                style={{ background: "#E4DECC", fontFamily: "Syne, sans-serif", fontSize: "12px", fontWeight: 700, color: "#8A9488" }}
               >
                 {s.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: "13px", fontWeight: 400, color: "#9CA0AC" }}>{s.name}</div>
-                <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: "11px", fontWeight: 300, color: "#3A3D47" }}>{s.description}</div>
+                <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: "13px", fontWeight: 400, color: "#55594D" }}>{s.name}</div>
+                <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: "11px", fontWeight: 300, color: "#8A9488" }}>{s.description}</div>
               </div>
               <SoonPill />
             </div>
@@ -114,7 +152,7 @@ export default function SourcesPage() {
       {/* Sync footnote */}
       <p
         className="mt-10"
-        style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.18em", color: "#3A3D47", textTransform: "uppercase" as const }}
+        style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.18em", color: "#8A9488", textTransform: "uppercase" as const }}
       >
         Sources sync every 15 min
       </p>
@@ -164,11 +202,11 @@ function DriveCard({ connection, onConnectionChange }: { connection: DriveConnec
   return (
     <div
       className="flex items-center gap-3 px-4 py-3 rounded"
-      style={{ background: "rgba(107,176,122,0.06)", border: "1px solid rgba(107,176,122,0.2)" }}
+      style={{ background: "#EDF1E9", border: "1px solid #84977755" }}
     >
       <div
         className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0"
-        style={{ background: "rgba(107,176,122,0.12)" }}
+        style={{ background: "#E4ECDD" }}
       >
         <DriveIcon />
       </div>
@@ -177,21 +215,21 @@ function DriveCard({ connection, onConnectionChange }: { connection: DriveConnec
         <div className="flex items-center gap-2">
           <span
             className="truncate"
-            style={{ fontFamily: "DM Sans, sans-serif", fontSize: "13px", fontWeight: 400, color: "#E8E9ED" }}
+            style={{ fontFamily: "DM Sans, sans-serif", fontSize: "13px", fontWeight: 400, color: "#262922" }}
           >
             {connection.google_account_email}
           </span>
           <div className="flex items-center gap-1 flex-shrink-0">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#6BB07A]" style={{ boxShadow: "0 0 5px rgba(107,176,122,0.7)" }} />
+            <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#4B6B49" }} />
             <span
-              style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.15em", color: "#6BB07A", textTransform: "uppercase" as const }}
+              style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.15em", color: "#4B6B49", textTransform: "uppercase" as const }}
             >
               Active
             </span>
           </div>
         </div>
         <div
-          style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", color: "#9CA0AC", letterSpacing: "0.1em", marginTop: "2px" }}
+          style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", color: "#55594D", letterSpacing: "0.1em", marginTop: "2px" }}
         >
           {connection.doc_count > 0 ? `${connection.doc_count} docs` : "Indexing…"} · synced {lastSynced}
         </div>
@@ -201,21 +239,161 @@ function DriveCard({ connection, onConnectionChange }: { connection: DriveConnec
         <button
           onClick={handleResync}
           disabled={resyncing}
-          className="px-2.5 py-1 rounded transition-all hover:bg-[rgba(232,165,71,0.12)] disabled:opacity-40"
-          style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.15em", color: "#E8A547", textTransform: "uppercase" as const, border: "1px solid rgba(232,165,71,0.25)" }}
+          className="px-2.5 py-1 rounded transition-all hover:bg-[#FBF3E4] disabled:opacity-40"
+          style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.15em", color: "#9C6B2E", textTransform: "uppercase" as const, border: "1px solid #EAD3A8" }}
         >
           {resyncing ? "…" : "Resync"}
         </button>
         <button
           onClick={handleRemove}
           disabled={removing}
-          className="px-2.5 py-1 rounded transition-all hover:bg-[rgba(201,80,75,0.12)] disabled:opacity-40"
-          style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.15em", color: "#9CA0AC", textTransform: "uppercase" as const, border: "1px solid rgba(58,61,71,0.4)" }}
+          className="px-2.5 py-1 rounded transition-all hover:bg-[#F1EEE2] disabled:opacity-40"
+          style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.15em", color: "#8A9488", textTransform: "uppercase" as const, border: "1px solid #E4DECC" }}
         >
           {removing ? "…" : "Remove"}
         </button>
       </div>
     </div>
+  );
+}
+
+/* ── YoutubeCard ──────────────────────────────────────────────────── */
+
+function YoutubeCard({ connection, onConnectionChange }: { connection: YoutubeConnection; onConnectionChange: () => void }) {
+  const router = useRouter();
+  const { createNotebook } = useNotebooks();
+  const [removing, setRemoving] = useState(false);
+  const [building, setBuilding] = useState(false);
+
+  const handleRemove = async () => {
+    if (!confirm(`Disconnect ${connection.channel_name ?? connection.channel_id} from Poysis?`)) return;
+    setRemoving(true);
+    try {
+      await fetch("/api/youtube/disconnect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channelId: connection.channel_id }),
+      });
+      onConnectionChange();
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  const handleBuildNotebook = async () => {
+    if (building) return;
+    setBuilding(true);
+    try {
+      const name = connection.channel_name ?? connection.channel_id;
+      const nb = await createNotebook({
+        name: `${name} Notebook`,
+        connectionIds: [connection.id],
+      });
+      router.push(`/workspace/canvas?notebook=${nb.id}`);
+    } catch (err) {
+      console.error("Failed to build notebook from YouTube channel:", err);
+      setBuilding(false);
+    }
+  };
+
+  return (
+    <div
+      className="flex items-center gap-3 px-4 py-3 rounded"
+      style={{ background: "#F3E5E3", border: "1px solid #7E3A3333" }}
+    >
+      <div className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style={{ background: "#EAD6D3" }}>
+        <YoutubeIcon />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <span
+          className="truncate block"
+          style={{ fontFamily: "DM Sans, sans-serif", fontSize: "13px", fontWeight: 400, color: "#262922" }}
+        >
+          {connection.channel_name ?? connection.channel_id}
+        </span>
+        <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", color: "#55594D", letterSpacing: "0.1em", marginTop: "2px" }}>
+          {connection.enabled ? "Active" : "Disabled"}
+        </div>
+      </div>
+
+      <button
+        onClick={handleBuildNotebook}
+        disabled={building}
+        className="px-2.5 py-1 rounded transition-all hover:bg-[#FBF3E4] disabled:opacity-40"
+        style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.15em", color: "#9C6B2E", textTransform: "uppercase" as const, border: "1px solid #EAD3A8", flexShrink: 0 }}
+      >
+        {building ? "…" : "Build Notebook"}
+      </button>
+      <button
+        onClick={handleRemove}
+        disabled={removing}
+        className="px-2.5 py-1 rounded transition-all hover:bg-[#F1EEE2] disabled:opacity-40"
+        style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.15em", color: "#8A9488", textTransform: "uppercase" as const, border: "1px solid #E4DECC", flexShrink: 0 }}
+      >
+        {removing ? "…" : "Remove"}
+      </button>
+    </div>
+  );
+}
+
+/* ── ConnectYoutubeForm ───────────────────────────────────────────── */
+
+function ConnectYoutubeForm({ onConnected }: { onConnected: () => void }) {
+  const [url, setUrl] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!url.trim() || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/youtube/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channelUrl: url.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Couldn't add that channel");
+      }
+      setUrl("");
+      onConnected();
+    } catch (err: any) {
+      setError(err?.message ?? "Couldn't add that channel");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2">
+      <div className="flex items-center gap-2">
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://youtube.com/@yourchannel"
+          className="flex-1 px-3 py-2.5 rounded outline-none"
+          style={{ background: "#FAF8F0", border: "1px solid #E4DECC", fontFamily: "DM Sans, sans-serif", fontSize: "13px", color: "#262922" }}
+        />
+        <button
+          type="submit"
+          disabled={submitting || !url.trim()}
+          className="px-4 py-2.5 rounded transition-all disabled:opacity-40"
+          style={{ background: "#3C4A3A", border: "none", fontFamily: "DM Sans, sans-serif", fontSize: "13px", fontWeight: 500, color: "#FAF8F0", whiteSpace: "nowrap" }}
+        >
+          {submitting ? "Adding…" : "Add channel"}
+        </button>
+      </div>
+      {error && (
+        <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "11px", color: "#7E3A33" }}>{error}</p>
+      )}
+      <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "11px", fontWeight: 300, color: "#8A9488" }}>
+        Public channels only — no sign-in required.
+      </p>
+    </form>
   );
 }
 
@@ -228,31 +406,29 @@ function ConnectGoogleDriveButton({ secondary = false }: { secondary?: boolean }
       className="w-full flex items-center gap-3 px-4 py-3 rounded transition-all duration-300"
       style={
         secondary
-          ? { background: "rgba(58,61,71,0.15)", border: "1px dashed rgba(232,165,71,0.3)" }
-          : { background: "linear-gradient(135deg, rgba(232,165,71,0.12) 0%, rgba(201,149,71,0.06) 100%)", border: "1px solid rgba(232,165,71,0.35)", boxShadow: "0 0 24px rgba(232,165,71,0.04)" }
+          ? { background: "transparent", border: "1px dashed #E4DECC" }
+          : { background: "#3C4A3A", border: "none" }
       }
-      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = secondary ? "rgba(232,165,71,0.5)" : "rgba(232,165,71,0.6)"; }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = secondary ? "rgba(232,165,71,0.3)" : "rgba(232,165,71,0.35)"; }}
     >
       <div
         className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0"
-        style={{ background: secondary ? "rgba(58,61,71,0.4)" : "rgba(232,165,71,0.1)" }}
+        style={{ background: secondary ? "#F1EEE2" : "rgba(250,248,240,0.14)" }}
       >
         <DriveIcon size={14} />
       </div>
       <div className="flex-1 text-left">
         <div
-          style={{ fontFamily: "DM Sans, sans-serif", fontSize: "13px", fontWeight: secondary ? 300 : 500, color: secondary ? "#9CA0AC" : "#E8E9ED" }}
+          style={{ fontFamily: "DM Sans, sans-serif", fontSize: "13px", fontWeight: secondary ? 300 : 500, color: secondary ? "#55594D" : "#FAF8F0" }}
         >
           {secondary ? "Connect another Google Drive" : "Connect Google Drive"}
         </div>
         {!secondary && (
-          <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: "11px", fontWeight: 300, color: "#9CA0AC", marginTop: "1px" }}>
+          <div style={{ fontFamily: "DM Sans, sans-serif", fontSize: "11px", fontWeight: 300, color: "#C7D0C4", marginTop: "1px" }}>
             Docs, Sheets, Slides, Folders
           </div>
         )}
       </div>
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#E8A547" strokeWidth="1.4">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke={secondary ? "#8A9488" : "#FAF8F0"} strokeWidth="1.4">
         <line x1="2" y1="7" x2="12" y2="7" />
         <polyline points="8,3 12,7 8,11" />
       </svg>
@@ -262,11 +438,20 @@ function ConnectGoogleDriveButton({ secondary = false }: { secondary?: boolean }
 
 /* ── Primitives ──────────────────────────────────────────────────────── */
 
+function YoutubeIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <rect x="1" y="4" width="22" height="16" rx="4" fill="#7E3A33" opacity="0.85" />
+      <path d="M10 8.5v7l6-3.5-6-3.5z" fill="#FAF8F0" />
+    </svg>
+  );
+}
+
 function SectionLabel({ text }: { text: string }) {
   return (
     <div
       className="mb-3"
-      style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.18em", color: "#9CA0AC", textTransform: "uppercase" as const }}
+      style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.18em", color: "#8A9488", textTransform: "uppercase" as const }}
     >
       {text}
     </div>
@@ -277,7 +462,7 @@ function SoonPill() {
   return (
     <div
       className="px-1.5 py-0.5 rounded"
-      style={{ background: "rgba(58,61,71,0.5)", fontFamily: "JetBrains Mono, monospace", fontSize: "8px", letterSpacing: "0.15em", color: "#3A3D47", textTransform: "uppercase" as const, flexShrink: 0 }}
+      style={{ background: "#E4DECC", fontFamily: "JetBrains Mono, monospace", fontSize: "8px", letterSpacing: "0.15em", color: "#8A9488", textTransform: "uppercase" as const, flexShrink: 0 }}
     >
       Soon
     </div>

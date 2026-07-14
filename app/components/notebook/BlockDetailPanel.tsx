@@ -1,4 +1,4 @@
-me"use client";
+"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { FileUploader } from "../ui/input/FileUploader";

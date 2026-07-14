@@ -25,6 +25,11 @@
   to { transform: rotate(360deg); }
 }
 
+@keyframes pulseSync {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .4; }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

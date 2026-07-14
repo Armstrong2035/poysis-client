@@ -64,6 +64,7 @@ interface NotebookState {
 
   // Builder Methods
   addBlock: (blockTypeId: string) => void;
+  replaceBlockType: (blockId: string, newTypeId: string) => void;
   renameBlock: (id: string, newName: string) => void;
   toggleBlock: (id: string) => void;
   removeBlock: (id: string) => void;
@@ -147,6 +148,58 @@ export const useNotebookStore = create<NotebookState>()(
             ...state.blocks,
             [newId]: newComputeBlock
           }
+        };
+      }),
+
+      /**
+       * Atomically swaps a block's type (e.g. chat ↔ search) in place,
+       * preserving its sources, model (stateSettings) and persona
+       * (inputBindings) while resetting outputs/uiConfig to the new type's
+       * defaults. Used by Canvas's chat-vs-search onboarding choice — there's
+       * no drag-drop "remove and re-add" flow there, and doing it as three
+       * separate set() calls would leave observers a window of no-block state.
+       */
+      replaceBlockType: (blockId: string, newTypeId: string) => set((state: NotebookState) => {
+        const defaults = BLOCK_DEFAULTS[newTypeId];
+        const oldActive = state.activeBlocks.find(b => b.id === blockId);
+        const oldCompute = state.blocks[blockId];
+        if (!defaults || !oldActive || !oldCompute || oldActive.blockTypeId === newTypeId) {
+          return state;
+        }
+
+        const newId = `${newTypeId}_${Date.now()}`;
+        const { [blockId]: _removed, ...restBlocks } = state.blocks;
+
+        return {
+          activeBlocks: state.activeBlocks.map(b =>
+            b.id === blockId
+              ? {
+                  ...b,
+                  id: newId,
+                  blockTypeId: newTypeId,
+                  name: defaults.name,
+                  slug: defaults.slug,
+                  uploadFormats: defaults.uploadFormats,
+                  uiConfig: undefined,
+                }
+              : b
+          ),
+          blocks: {
+            ...restBlocks,
+            [newId]: {
+              id: newId,
+              type: newTypeId as any,
+              status: 'idle',
+              stateSettings: oldCompute.stateSettings,
+              inputBindings: oldCompute.inputBindings,
+              triggers: [],
+              currentInputs: {},
+              outputs: { ...defaults.outputs },
+            },
+          },
+          appScreens: state.appScreens.filter(id => id !== blockId),
+          selectedBlockId: state.selectedBlockId === blockId ? null : state.selectedBlockId,
+          activePreviewBlockId: state.activePreviewBlockId === blockId ? null : state.activePreviewBlockId,
         };
       }),
 

@@ -79,9 +79,24 @@ const LIGHT = {
 interface ChatProps {
   config: ChatConfig;
   className?: string;
+  /**
+   * Optional local command interceptor, checked before any message is sent
+   * to the backend. Return a reply string to handle the message entirely
+   * client-side (appended to the thread as a synthetic assistant turn, no
+   * network call) — used by Canvas to let the same input drive mock
+   * ceiling/rename actions instead of the real RAG chat. Return null/undefined
+   * to fall through to the real chat.
+   */
+  onCommand?: (text: string) => string | null | undefined;
+  /** Quick-fill chips rendered above the input; clicking fills and sends. */
+  quickPrompts?: { label: string; text: string }[];
+  /** Optional extra content rendered under each assistant reply (e.g. a "Promote to notebook" action). */
+  renderMessageFooter?: (info: { id: string; userText: string; assistantText: string }) => React.ReactNode;
+  /** Fires whenever the user submits a message, before onCommand runs — a lightweight "chat was used" signal. */
+  onSend?: (text: string) => void;
 }
 
-export function Chat({ config, className }: ChatProps) {
+export function Chat({ config, className, onCommand, quickPrompts, renderMessageFooter, onSend }: ChatProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const modelDropRef = useRef<HTMLDivElement>(null);
 
@@ -133,6 +148,7 @@ export function Chat({ config, className }: ChatProps) {
                   top_k: 5,
                   min_score: 0.4,
                   model: modelRef.current,
+                  ...(c.useOuroboros ? { useOuroboros: true } : {}),
                   ...(topicIds.length > 0 ? { allowed_topic_ids: topicIds } : {}),
                   ...(connIds.length > 0 ? { allowed_connection_ids: connIds } : {}),
                 }
@@ -154,16 +170,36 @@ export function Chat({ config, className }: ChatProps) {
     [endpoint]
   );
 
-  const { messages, sendMessage, status, error } = useChat({ transport });
+  const { messages, sendMessage, setMessages, status, error } = useChat({ transport });
 
   const isStreaming = status === "streaming" || status === "submitted";
 
+  const submitText = async (text: string) => {
+    if (!text.trim() || isStreaming) return;
+    onSend?.(text);
+
+    const reply = onCommand?.(text);
+    if (reply != null) {
+      setMessages((prev) => [
+        ...prev,
+        { id: `local-user-${Date.now()}`, role: "user", parts: [{ type: "text", text }] },
+        { id: `local-assistant-${Date.now()}`, role: "assistant", parts: [{ type: "text", text: reply }] },
+      ]);
+      return;
+    }
+
+    await sendMessage({ text });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isStreaming) return;
     const text = input;
     setInput("");
-    await sendMessage({ text });
+    await submitText(text);
+  };
+
+  const handleQuickPrompt = (text: string) => {
+    void submitText(text);
   };
 
   // Close model dropdown on outside click.
@@ -224,22 +260,22 @@ export function Chat({ config, className }: ChatProps) {
           </div>
         )}
 
-        {messages.map((msg) => {
+        {messages.map((msg, i) => {
           const text = getMessageText(msg.parts as any[]);
-          return msg.role === "user" ? (
-            <UserBubble
-              key={msg.id}
-              content={text}
-              primaryColor={primaryColor}
-            />
-          ) : (
-            <AssistantBubble
-              key={msg.id}
-              content={displayContent(text)}
-              sources={extractSources(text)}
-              streaming={false}
-              theme={theme}
-            />
+          if (msg.role === "user") {
+            return <UserBubble key={msg.id} content={text} primaryColor={primaryColor} />;
+          }
+          const prevUser = messages.slice(0, i).reverse().find((m) => m.role === "user");
+          const assistantText = displayContent(text);
+          return (
+            <div key={msg.id}>
+              <AssistantBubble content={assistantText} sources={extractSources(text)} streaming={false} theme={theme} />
+              {renderMessageFooter?.({
+                id: msg.id,
+                userText: prevUser ? getMessageText(prevUser.parts as any[]) : "",
+                assistantText,
+              })}
+            </div>
           );
         })}
 
@@ -261,6 +297,28 @@ export function Chat({ config, className }: ChatProps) {
         )}
       </div>
 
+      {quickPrompts && quickPrompts.length > 0 && (
+        <div className="flex gap-2 flex-wrap pb-2 shrink-0">
+          {quickPrompts.map((p) => (
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => handleQuickPrompt(p.text)}
+              disabled={isStreaming}
+              className="px-3 py-1.5 rounded-full text-xs transition-opacity disabled:opacity-40"
+              style={{
+                border: `1px solid ${theme.inputBorder}`,
+                background: theme.inputBg,
+                color: theme.mutedText,
+                fontFamily: "DM Sans, sans-serif",
+              }}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Input */}
       <form
         onSubmit={handleSubmit}
@@ -269,8 +327,8 @@ export function Chat({ config, className }: ChatProps) {
           borderTop: `1px solid ${isDark ? "rgba(58,61,71,0.4)" : "rgba(0,0,0,0.08)"}`,
         }}
       >
-        {/* Model switcher — dashboard only */}
-        {config.mode === "dashboard" && (
+        {/* Model switcher — dashboard only, unless the host page has its own */}
+        {config.mode === "dashboard" && !config.hideModelSwitcher && (
           <div className="relative self-center" ref={modelDropRef}>
             <button
               type="button"

@@ -1,4 +1,4 @@
-Somethi"use client";
+"use client";
 
 import { useState, useRef, useCallback } from "react";
 import type { ChatMessage, ChatConfig } from "../types/canvas";

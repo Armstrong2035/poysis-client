@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "../../../../../../utils/supabase/server";
+import { getWorkspaceId } from "@/lib/workspace";
 import { cookies } from "next/headers";
 
 const WORKER_URL = process.env.WORKER_URL ?? process.env.LOCAL_WORKER_URL ?? "";
@@ -22,9 +23,12 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Verify the playground (notebook) exists and this user has access.
-    // For now we check the notebooks table directly; playground-specific ACLs
-    // will be enforced here once the playground membership table is added.
+    // Verify the playground (notebook) exists. Notebook-level access itself
+    // is a "capability URL" model (holding a working link is sufficient) —
+    // we don't gate who can open a notebook. What we DO gate below is which
+    // clusters a non-owner requester can actually retrieve from, via each
+    // topic's ceiling — that's the real, enforced backstop regardless of who
+    // has the link.
     const { data: notebook, error: notebookError } = await supabase
       .from("notebooks")
       .select("id, user_id, config")
@@ -36,16 +40,68 @@ export async function POST(
     }
 
     const body = await req.json();
-    const { query, notebook_id, stream, instructions, allowed_topic_ids, allowed_connection_ids } = body;
+    const {
+      query,
+      top_k = 5,
+      min_score = 0.4,
+      model,
+      instructions,
+      allowed_topic_ids,
+      allowed_connection_ids,
+    } = body;
 
     if (!query?.trim()) {
       return NextResponse.json({ error: "Query is required" }, { status: 400 });
     }
 
-    const workerUrl = `${WORKER_URL.replace(/\/$/, "")}/retrieval/ask`;
+    const isOwner = user.id === notebook.user_id;
+    let effectiveTopicIds: string[] | undefined = allowed_topic_ids;
+    let effectiveConnectionIds: string[] | undefined = allowed_connection_ids;
+
+    if (!isOwner) {
+      // Never trust a non-owner's requested scope as-is — recompute it from
+      // what this notebook's owner has actually marked public. A cluster's
+      // ceiling is the only thing standing between "someone has this link"
+      // and "someone can read this owner's private documents."
+      let publicTopicsQuery = supabase
+        .from("cluster_ceilings")
+        .select("topic_id")
+        .eq("owner_user_id", notebook.user_id)
+        .eq("ceiling", "public");
+      if (allowed_topic_ids?.length > 0) {
+        publicTopicsQuery = publicTopicsQuery.in("topic_id", allowed_topic_ids);
+      }
+      const { data: publicTopics } = await publicTopicsQuery;
+      effectiveTopicIds = (publicTopics ?? []).map((row) => row.topic_id);
+
+      // No ceiling concept exists for connections yet, so there's nothing to
+      // validate a non-owner's requested connection scope against — the only
+      // safe default is none at all, not "trust the client."
+      effectiveConnectionIds = undefined;
+
+      if (effectiveTopicIds.length === 0) {
+        return new Response(
+          "No public information is available for this notebook yet.",
+          { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } }
+        );
+      }
+    }
+
+    // The worker's /chat contract is scoped by workspace_id, not notebook_id —
+    // always resolve it from the URL-verified notebook owner, never from a
+    // client-supplied value, for the same reason notebook_id used to be pinned.
+    const workspaceId = await getWorkspaceId(supabase, notebook.user_id);
+    if (!workspaceId) {
+      return NextResponse.json(
+        { error: "Workspace not found" },
+        { status: 404 }
+      );
+    }
+
+    const workerUrl = `${WORKER_URL.replace(/\/$/, "")}/chat`;
 
     console.log(
-      `[notebook/chat] → ${workerUrl} | playground: ${playgroundId} | user: ${user.id} | query: "${query?.slice(0, 60)}"`
+      `[notebook/chat] → ${workerUrl} | playground: ${playgroundId} | workspace: ${workspaceId} | user: ${user.id} | owner: ${isOwner} | query: "${query?.slice(0, 60)}"`
     );
 
     const workerRes = await fetch(workerUrl, {
@@ -55,12 +111,14 @@ export async function POST(
         "X-User-ID": notebook.user_id,
       },
       body: JSON.stringify({
-        notebook_id: notebook_id ?? playgroundId,
+        workspace_id: workspaceId,
         query,
-        stream: stream ?? true,
+        top_k,
+        min_score,
+        ...(model ? { model } : {}),
         ...(instructions ? { instructions } : {}),
-        ...(allowed_topic_ids?.length > 0 ? { allowed_topic_ids } : {}),
-        ...(allowed_connection_ids?.length > 0 ? { allowed_connection_ids } : {}),
+        ...(effectiveTopicIds?.length ? { allowed_topic_ids: effectiveTopicIds } : {}),
+        ...(effectiveConnectionIds?.length ? { allowed_connection_ids: effectiveConnectionIds } : {}),
       }),
     });
 

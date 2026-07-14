@@ -104,7 +104,34 @@ export async function initializeNotebook(config: any) {
 
   revalidatePath('/workspace');
   revalidatePath('/');
+  // saveNotebook (below, used on every subsequent edit) also revalidates
+  // '/', 'layout' — the workspace layout is what actually holds the
+  // notebooks list fetch, so a page-level revalidatePath('/workspace')
+  // alone doesn't bust its cache. Match that here too.
+  revalidatePath('/', 'layout');
   return data;
+}
+
+/**
+ * Lists all of the current user's notebooks (with config). Ordered by
+ * created_at so the Canvas picker doesn't reshuffle on every autosave the
+ * way updated_at ordering would.
+ */
+export async function listNotebooks() {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data, error } = await supabase
+    .from('notebooks')
+    .select('id, name, slug, config, created_at, updated_at')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data ?? [];
 }
 
 /**

@@ -70,3 +70,7 @@ body {
     background: #d1d5db;
   }
 }
+
+/* Rendered Markdown in chat bubbles: no trailing margin on the last block */
+.poysis-md > *:last-child { margin-bottom: 0 !important; }
+.poysis-md > *:first-child { margin-top: 0 !important; }

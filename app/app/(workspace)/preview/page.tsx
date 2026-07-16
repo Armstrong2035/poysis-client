@@ -47,7 +47,7 @@ function PreviewContent() {
   }, [notebookId]);
 
   const shareUrl = notebookSlug
-    ? `${window.location.origin}/p/${notebookSlug}`
+    ? `${window.location.origin}/${notebookSlug}`
     : `${window.location.origin}/preview?id=${notebookId}`;
 
   const handleCopy = () => {

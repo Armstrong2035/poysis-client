@@ -19,12 +19,38 @@ export async function saveNotebook(id: string, config: any) {
   // Name lives in config — extract it to keep the 'name' column in sync for dashboard queries
   const { name, ...rest } = config;
 
-  const updatePayload = { 
-    id, 
+  // Data-loss backstop: this is a full-config upsert, so a caller that hands
+  // us an empty config would wipe the row. That's the exact signature of a
+  // client bug — e.g. an autosave firing from a store that reset to defaults
+  // (activeBlocks: []) before it re-hydrated. Never let a blockless config
+  // overwrite a notebook that currently HAS blocks; a genuinely new/empty
+  // notebook (no blocks either side) still saves normally.
+  const incomingHasBlocks =
+    Array.isArray(rest.activeBlocks) && rest.activeBlocks.length > 0;
+  if (!incomingHasBlocks) {
+    const { data: existing } = await supabase
+      .from("notebooks")
+      .select("config")
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .single();
+    const existingBlocks = existing?.config?.activeBlocks;
+    if (Array.isArray(existingBlocks) && existingBlocks.length > 0) {
+      console.warn(
+        `[saveNotebook] Refused to overwrite notebook ${id} with an empty config (would drop ${existingBlocks.length} block(s)). Save skipped — the stored notebook is preserved.`,
+      );
+      throw new Error(
+        "Refused to overwrite existing notebook content with an empty config.",
+      );
+    }
+  }
+
+  const updatePayload = {
+    id,
     name: name || 'Untitled Notebook',
     config: rest,
     user_id: user.id,
-    updated_at: new Date().toISOString() 
+    updated_at: new Date().toISOString()
   };
 
   console.log(`>>> [SERVER ACTION] Saving notebook ${id} with name: "${updatePayload.name}"`);
@@ -306,6 +332,17 @@ export async function getPublicNotebook(id: string) {
   return data;
 }
 
+// Published notebooks live at the root (/<slug>, see app/app/[slug]/page.tsx)
+// rather than under a /p/ prefix, so a slug matching any real top-level
+// route would make that notebook permanently unreachable (the static route
+// always wins). Keep in sync with app/app/'s top-level segments.
+const RESERVED_SLUGS = new Set([
+  "api", "auth", "chrome", "components", "dashboard", "enterprise", "forgot",
+  "home", "hooks", "login", "navigation", "notebook", "onboarding", "p",
+  "preview", "privacy", "query", "reset", "scenes", "signup", "templates",
+  "v1", "workspace",
+]);
+
 /**
  * Updates the slug for a notebook. Slug must be unique across all notebooks.
  * Returns an error string if the slug is already taken, null on success.
@@ -319,6 +356,7 @@ export async function updateNotebookSlug(id: string, slug: string): Promise<stri
 
   const clean = slug.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
   if (!clean) return "Slug cannot be empty.";
+  if (RESERVED_SLUGS.has(clean)) return "That link is reserved. Try another.";
 
   const { error } = await supabase
     .from("notebooks")

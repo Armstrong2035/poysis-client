@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "../../../../../utils/supabase/server";
 import { getWorkspaceId } from "@/lib/workspace";
+import { resolveConnectionSourceTypes } from "@/lib/connectionScope";
 import { loadOuroboros } from "@/lib/ouroboros";
 import { cookies } from "next/headers";
 
@@ -38,6 +39,18 @@ export async function POST(req: NextRequest) {
 
     const instructions = useOuroboros ? loadOuroboros() : undefined;
 
+    // conn:<row-id> scope tags carry connection row ids, but the worker's
+    // allowed_connection_ids is a source_type allowlist — translate them or
+    // the filter matches nothing. See lib/connectionScope.ts.
+    const connectionSourceTypes = allowed_connection_ids?.length
+      ? await resolveConnectionSourceTypes(
+          supabase,
+          workspaceId,
+          user.id,
+          allowed_connection_ids,
+        )
+      : [];
+
     console.log(
       `[worker/chat] → ${url} | workspace: ${workspaceId} | user: ${user.id} | model: ${model ?? "default"} | query: "${query?.slice(0, 60)}"`,
     );
@@ -56,7 +69,7 @@ export async function POST(req: NextRequest) {
         ...(model ? { model } : {}),
         ...(instructions ? { instructions } : {}),
         ...(allowed_topic_ids?.length > 0 ? { allowed_topic_ids } : {}),
-        ...(allowed_connection_ids?.length > 0 ? { allowed_connection_ids } : {}),
+        ...(connectionSourceTypes.length > 0 ? { allowed_connection_ids: connectionSourceTypes } : {}),
       }),
     });
 

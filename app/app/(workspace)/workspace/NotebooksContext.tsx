@@ -157,7 +157,17 @@ function buildSeedConfig(opts: {
       appLabel: opts.name ?? "Untitled notebook",
       showBanner: true,
     },
-    canvas: { ...DEFAULT_CANVAS_META, ceiling: opts.ceiling ?? "private" },
+    // A notebook built from a whole connection (e.g. "Build Notebook from
+    // YouTube") arrives pre-scoped with a chat block — it never goes through
+    // the cluster/appType onboarding, so seeding it as still-onboarding would
+    // trap it in an empty guided-setup view in Canvas. Mark it complete.
+    canvas: {
+      ...DEFAULT_CANVAS_META,
+      ceiling: opts.ceiling ?? "private",
+      ...((opts.connectionIds?.length ?? 0) > 0
+        ? { appTypeChosen: true, onboardingComplete: true }
+        : {}),
+    },
   };
 }
 
@@ -175,6 +185,7 @@ type NotebooksValue = {
     persona?: string;
   }) => Promise<NotebookRow>;
   deployNotebook: (id: string) => Promise<{ slug: string } | { error: string }>;
+  renameSlug: (id: string, slug: string) => Promise<{ slug: string } | { error: string }>;
   dependentsOf: (clusterId: string) => NotebookRow[];
 };
 
@@ -249,12 +260,33 @@ export function NotebooksProvider({
           return { slug: candidate };
         }
         // updateNotebookSlug reports a unique-violation as "...already taken..."
-        // — anything else is fatal, stop retrying.
-        if (!/taken/i.test(err)) return { error: err };
+        // and a collision with a real app route (e.g. a notebook named
+        // "Login") as "...reserved..." — both mean "try another candidate,"
+        // anything else is fatal.
+        if (!/taken|reserved/i.test(err)) return { error: err };
       }
       return { error: "Couldn't find an available link name." };
     },
     [notebooks, patchLocal],
+  );
+
+  // Manual slug edit — usable both before publish (sets the initial link,
+  // implicitly publishing since `published` is derived from `!!row.slug`)
+  // and after (renames the live link). Unlike deployNotebook this never
+  // auto-suffixes on collision; the caller picked this exact slug, so a
+  // taken/reserved name is reported back rather than silently altered.
+  const renameSlug = useCallback(
+    async (id: string, slugInput: string): Promise<{ slug: string } | { error: string }> => {
+      // Mirrors updateNotebookSlug's own sanitization so the value patched
+      // into local state matches what actually got stored server-side,
+      // rather than the raw (possibly mixed-case/invalid) typed input.
+      const slug = slugify(slugInput);
+      const err = await updateNotebookSlug(id, slug);
+      if (err) return { error: err };
+      patchLocal(id, { slug });
+      return { slug };
+    },
+    [patchLocal],
   );
 
   const dependentsOf = useCallback(
@@ -271,6 +303,7 @@ export function NotebooksProvider({
         patchLocal,
         createNotebook,
         deployNotebook,
+        renameSlug,
         dependentsOf,
       }}
     >

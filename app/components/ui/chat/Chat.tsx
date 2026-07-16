@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { TextStreamChatTransport } from "ai";
 import type { ChatConfig } from "../../../types/canvas";
+import { MarkdownContent } from "./MarkdownContent";
 
 const SENTINEL = "\n\n__SOURCES__";
 
@@ -17,9 +18,15 @@ function displayContent(content: string): string {
   return idx !== -1 ? content.slice(0, idx) : content;
 }
 
-function extractSources(
-  content: string
-): Array<{ file: string; score: number; snippet?: string }> {
+type CitedSource = {
+  file: string;
+  score: number;
+  snippet?: string;
+  url?: string;
+  title?: string;
+};
+
+function extractSources(content: string): CitedSource[] {
   const idx = content.indexOf(SENTINEL);
   if (idx === -1) return [];
   try {
@@ -489,7 +496,7 @@ function AssistantBubble({
   theme,
 }: {
   content: string;
-  sources: Array<{ file: string; score: number; snippet?: string }>;
+  sources: CitedSource[];
   streaming: boolean;
   theme: typeof DARK;
 }) {
@@ -510,10 +517,9 @@ function AssistantBubble({
             fontFamily: "DM Sans, sans-serif",
             fontSize: "13px",
             fontWeight: 300,
-            whiteSpace: "pre-wrap",
           }}
         >
-          {content}
+          <MarkdownContent content={content} linkColor="#3b82f6" />
           {streaming && (
             <span
               className="inline-block w-1.5 h-4 ml-0.5 animate-pulse align-middle rounded-sm"
@@ -549,38 +555,54 @@ function AssistantBubble({
 
             {sourcesOpen && (
               <div className="mt-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 duration-200">
-                {sources.map((src, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-2 px-3 py-1.5"
-                    style={{
-                      background: theme.sourceItemBg,
-                      border: `1px solid ${theme.sourceItemBorder}`,
-                      borderRadius: "8px",
-                      fontFamily: "DM Sans, sans-serif",
-                      fontSize: "11px",
-                      color: theme.mutedText,
-                    }}
-                  >
-                    <span style={{ opacity: 0.5 }}>📄</span>
-                    <span
-                      className="font-medium truncate"
-                      style={{ color: "#3b82f6" }}
-                    >
-                      {src.file}
-                    </span>
-                    <span
-                      className="ml-auto flex-shrink-0"
+                {sources.map((src, i) => {
+                  const label = src.title || src.file;
+                  return (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 px-3 py-1.5"
                       style={{
-                        fontFamily: "JetBrains Mono, monospace",
-                        fontSize: "9px",
+                        background: theme.sourceItemBg,
+                        border: `1px solid ${theme.sourceItemBorder}`,
+                        borderRadius: "8px",
+                        fontFamily: "DM Sans, sans-serif",
+                        fontSize: "11px",
                         color: theme.mutedText,
                       }}
                     >
-                      {Math.round(src.score * 100)}%
-                    </span>
-                  </div>
-                ))}
+                      <span style={{ opacity: 0.5 }}>{src.url ? "🔗" : "📄"}</span>
+                      {src.url ? (
+                        <a
+                          href={src.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-medium truncate hover:underline"
+                          style={{ color: "#3b82f6" }}
+                          title={src.url}
+                        >
+                          {label}
+                        </a>
+                      ) : (
+                        <span
+                          className="font-medium truncate"
+                          style={{ color: "#3b82f6" }}
+                        >
+                          {label}
+                        </span>
+                      )}
+                      <span
+                        className="ml-auto flex-shrink-0"
+                        style={{
+                          fontFamily: "JetBrains Mono, monospace",
+                          fontSize: "9px",
+                          color: theme.mutedText,
+                        }}
+                      >
+                        {Math.round(src.score * 100)}%
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

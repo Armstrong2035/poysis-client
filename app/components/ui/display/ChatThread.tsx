@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNotebookStore } from "../../../store/notebookStore";
 import { LayoutRenderer } from "./LayoutRenderer";
+import { MarkdownContent } from "../chat/MarkdownContent";
 import type { ChatMessage, UIConfig } from "../../../types/canvas";
 
 interface ChatThreadProps {
@@ -191,7 +192,7 @@ function AssistantBubble({
   onAction,
 }: {
   content: string;
-  sources?: Array<{ file: string; score: number; snippet?: string }>;
+  sources?: Array<{ file: string; score: number; snippet?: string; url?: string; title?: string }>;
   streaming?: boolean;
   uiConfig?: UIConfig;
   onAction?: (action: string, metadata: any) => void;
@@ -207,15 +208,13 @@ function AssistantBubble({
          return <LayoutRenderer layout={uiConfig.layout} data={parsed} onAction={onAction} />;
        } catch (e) {
          // Fallback to direct rendering if not valid JSON
-         return (
-           <div className="whitespace-pre-wrap">{content}</div>
-         );
+         return <MarkdownContent content={content} linkColor="var(--primary-color)" />;
        }
     }
-    
+
     return (
-       <div className="whitespace-pre-wrap">
-         {content}
+       <div>
+         <MarkdownContent content={content} linkColor="var(--primary-color)" />
          {streaming && (
            <span className="inline-block w-1.5 h-4 ml-0.5 animate-pulse align-middle rounded-sm" style={{ backgroundColor: 'var(--primary-color)' }} />
          )}
@@ -258,8 +257,14 @@ function AssistantBubble({
               <div className="mt-2 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
                 {sources!.map((src, i) => (
                   <div key={i} className="flex items-center gap-2 text-[11px] text-zinc-600 bg-white border border-zinc-100 rounded-lg px-3 py-1.5 shadow-sm">
-                    <span className="text-zinc-400">📄</span>
-                    <span className="font-medium text-blue-600 truncate">{src.file}</span>
+                    <span className="text-zinc-400">{src.url ? "🔗" : "📄"}</span>
+                    {src.url ? (
+                      <a href={src.url} target="_blank" rel="noreferrer" title={src.url} className="font-medium text-blue-600 truncate hover:underline">
+                        {src.title || src.file}
+                      </a>
+                    ) : (
+                      <span className="font-medium text-blue-600 truncate">{src.title || src.file}</span>
+                    )}
                     <span className="ml-auto font-mono text-zinc-400 text-[10px] flex-shrink-0">
                       {Math.round(src.score * 100)}%
                     </span>

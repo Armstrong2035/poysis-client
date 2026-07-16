@@ -24,7 +24,7 @@ export function SourceAccordion({ blockId, outputKey, layout = "list", theme = "
     }
   };
 
-  const sources = block ? (block.outputs[outputKey as keyof typeof block.outputs] as Array<{ file: string; score: number; snippet?: string }>) : undefined;
+  const sources = block ? (block.outputs[outputKey as keyof typeof block.outputs] as Array<{ file: string; score: number; snippet?: string; url?: string; title?: string }>) : undefined;
   const hasSources = sources && sources.length > 0;
 
   if (hiddenWhenEmpty && !hasSources) return null;
@@ -70,13 +70,26 @@ export function SourceAccordion({ blockId, outputKey, layout = "list", theme = "
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                 <span className="text-zinc-400 text-sm">📄</span>
-                 <span 
-                    className="text-sm font-bold cursor-pointer hover:underline transition-colors"
-                    style={{ color: 'var(--primary-color)' }}
-                  >
-                    {source.file}
-                 </span>
+                 <span className="text-zinc-400 text-sm">{source.url ? "🔗" : "📄"}</span>
+                 {source.url ? (
+                   <a
+                     href={source.url}
+                     target="_blank"
+                     rel="noreferrer"
+                     title={source.url}
+                     className="text-sm font-bold cursor-pointer hover:underline transition-colors"
+                     style={{ color: 'var(--primary-color)' }}
+                   >
+                     {source.title || source.file}
+                   </a>
+                 ) : (
+                   <span
+                     className="text-sm font-bold transition-colors"
+                     style={{ color: 'var(--primary-color)' }}
+                   >
+                     {source.title || source.file}
+                   </span>
+                 )}
               </div>
               <span className="text-[10px] font-mono bg-zinc-50 border border-zinc-100 text-zinc-500 px-2 py-0.5 rounded">
                 {(source.score * 100).toFixed(0)}% Match

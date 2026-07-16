@@ -150,7 +150,7 @@ export function NotebookSidebar({ user, onConfigOpen, notebookTitle, isSaving, l
             Publish
           </div>
           <div className="flex items-center gap-1.5">
-            <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "11px", color: "#3A3D47", flexShrink: 0 }}>/p/</span>
+            <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "11px", color: "#3A3D47", flexShrink: 0 }}>/</span>
             <input
               value={slugDraft}
               onChange={(e) => { setSlugDraft(e.target.value); setSlugError(null); setSlugSaved(false); }}
@@ -180,7 +180,7 @@ export function NotebookSidebar({ user, onConfigOpen, notebookTitle, isSaving, l
           )}
           {slugDraft && !slugError && !slugSaving && (
             <button
-              onClick={() => { const url = `${window.location.origin}/p/${slugDraft}`; navigator.clipboard.writeText(url); }}
+              onClick={() => { const url = `${window.location.origin}/${slugDraft}`; navigator.clipboard.writeText(url); }}
               className="mt-2 w-full py-1.5 rounded transition-all hover:bg-[rgba(232,165,71,0.12)]"
               style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "9px", letterSpacing: "0.12em", color: "#E8A547", textTransform: "uppercase" as const, border: "1px solid rgba(232,165,71,0.25)", background: "transparent", cursor: "pointer" }}
             >

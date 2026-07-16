@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Chat } from "@/components/ui/chat/Chat";
 import { BlueprintDesigner } from "@/components/notebook/BlueprintDesigner";
@@ -106,7 +106,7 @@ function CanvasInner() {
   const searchParams = useSearchParams();
   const { topics, refreshKnowledge } = useConsolidation();
   const { getCeiling, setCeiling } = useMockPermissions();
-  const { notebooks, patchLocal, createNotebook, deployNotebook, dependentsOf } = useNotebooks();
+  const { notebooks, patchLocal, createNotebook, deployNotebook, renameSlug, dependentsOf } = useNotebooks();
   const { markDone } = useOnboarding();
 
   const {
@@ -150,6 +150,11 @@ function CanvasInner() {
   const [redirectFocus, setRedirectFocus] = useState<FocusField | null>(null);
   const [creating, setCreating] = useState(false);
   const [deploying, setDeploying] = useState(false);
+  // Save status surfaced in the toolbar so a failed autosave (e.g. an expired
+  // session throwing Unauthorized) is never silent again.
+  const [saveStatus, setSaveStatus] = useState<
+    { state: "idle" } | { state: "saving" } | { state: "saved" } | { state: "error"; message: string }
+  >({ state: "idle" });
 
   /* ── Store hydration: load the selected row into the shared Zustand
    * store (same store the old /notebook builder uses — only one page is
@@ -199,11 +204,21 @@ function CanvasInner() {
   const clusterIds = (activeBlock?.sources ?? [])
     .filter((s) => s.startsWith("topic:"))
     .map((s) => s.slice(6));
+  // A connection source (conn:) means this notebook was built from a whole
+  // source (e.g. "Build Notebook from YouTube") rather than assembled cluster
+  // by cluster. It's already scoped and configured, so it must NOT be treated
+  // as a fresh notebook that owes the cluster/appType onboarding — otherwise
+  // the step logic below (which counts only topic: clusters) would trap it in
+  // an empty "add a cluster" step and hide its real config. Repairs existing
+  // rows at render time, no DB write needed.
+  const isConnectionScoped = (activeBlock?.sources ?? []).some((s) =>
+    s.startsWith("conn:"),
+  );
   const persona = compute?.inputBindings?.instructions?.type === "templated"
     ? (compute.inputBindings.instructions as { template: string }).template
     : "";
   const model = (compute?.stateSettings?.model as string) ?? "gemini-3-flash";
-  const appType: AppType | null = canvasMeta?.appTypeChosen
+  const appType: AppType | null = (canvasMeta?.appTypeChosen || isConnectionScoped)
     ? ((activeBlock?.blockTypeId as AppType) ?? null)
     : null;
   const ceiling: Ceiling = canvasMeta?.ceiling ?? "private";
@@ -218,7 +233,7 @@ function CanvasInner() {
   };
 
   const step: 1 | 2 | 3 | null =
-    !row || !canvasMeta || canvasMeta.onboardingComplete
+    !row || !canvasMeta || canvasMeta.onboardingComplete || isConnectionScoped
       ? null
       : clusterIds.length === 0
         ? 1
@@ -230,42 +245,52 @@ function CanvasInner() {
     if (step === 3) setNotebookSettingsOpen(true);
   }, [step]);
 
-  /* ── Autosave: 2s debounce, mirrors the old builder's pattern. Payload
-   * is read from getState() at fire time with an id guard so a picker
-   * switch mid-debounce can never save one notebook's state under
-   * another's id. patchLocal (not refresh) keeps the picker fresh. ──── */
+  /* ── Persist: the single write path, shared by the debounced autosave and
+   * the manual Save button. Reads getState() at call time with an id guard
+   * so a picker switch mid-flight can never save one notebook's state under
+   * another's id. Surfaces success/failure via saveStatus so a failed write
+   * (e.g. an expired session throwing Unauthorized) is never silent. ──── */
+  const persistNow = useCallback(async () => {
+    if (!row || !canvasMeta) return;
+    const id = row.id;
+    const s = useNotebookStore.getState();
+    if (s.notebookId !== id) return;
+    const config = {
+      ...extraConfigRef.current,
+      name: s.name,
+      activeBlocks: s.activeBlocks,
+      blocks: s.blocks,
+      uiComponents: s.uiComponents,
+      appScreens: s.appScreens,
+      theme: s.theme,
+      canvas: canvasMeta,
+    };
+    setSaveStatus({ state: "saving" });
+    try {
+      await saveNotebook(id, config);
+      const { name: savedName, ...rest } = config;
+      patchLocal(id, {
+        name: savedName,
+        config: rest,
+        updated_at: new Date().toISOString(),
+      });
+      setSaveStatus({ state: "saved" });
+    } catch (err: any) {
+      console.error("Canvas save failed:", err);
+      const message = /unauthorized/i.test(err?.message ?? "")
+        ? "Not saved — your session expired. Reload and sign in to keep editing."
+        : `Not saved — ${err?.message ?? "unknown error"}`;
+      setSaveStatus({ state: "error", message });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [row?.id, canvasMeta, patchLocal]);
+
   useEffect(() => {
     if (!hydrationComplete || !row || !canvasMeta) return;
-    const id = row.id;
-    const meta = canvasMeta;
-    const timer = setTimeout(async () => {
-      const s = useNotebookStore.getState();
-      if (s.notebookId !== id) return;
-      const config = {
-        ...extraConfigRef.current,
-        name: s.name,
-        activeBlocks: s.activeBlocks,
-        blocks: s.blocks,
-        uiComponents: s.uiComponents,
-        appScreens: s.appScreens,
-        theme: s.theme,
-        canvas: meta,
-      };
-      try {
-        await saveNotebook(id, config);
-        const { name: savedName, ...rest } = config;
-        patchLocal(id, {
-          name: savedName,
-          config: rest,
-          updated_at: new Date().toISOString(),
-        });
-      } catch (err) {
-        console.error("Canvas autosave failed:", err);
-      }
-    }, 2000);
+    const timer = setTimeout(() => void persistNow(), 2000);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeBlocks, blocks, uiComponents, appScreens, theme, storeName, canvasMeta, hydrationComplete, row?.id]);
+  }, [activeBlocks, blocks, uiComponents, appScreens, theme, storeName, canvasMeta, hydrationComplete, row?.id, persistNow]);
 
   const byId = new Map((topics ?? []).map((t) => [t.topic_id, t]));
   const clusterName = (id: string) => byId.get(id)?.label ?? id;
@@ -315,6 +340,14 @@ function CanvasInner() {
     renameNotebookAction(row.id, newName).catch((err) =>
       console.error("Rename failed:", err),
     );
+  };
+
+  const handleSlugSave = async (newSlug: string): Promise<string | null> => {
+    if (!row) return "Notebook not found.";
+    const res = await renameSlug(row.id, newSlug);
+    if ("error" in res) return res.error;
+    if (!row.slug) markDone("deployedNotebook");
+    return null;
   };
 
   const handleAddCluster = (topicId: string) => {
@@ -507,7 +540,7 @@ function CanvasInner() {
     }
 
     if (/\b(deploy|publish)\b/i.test(text)) {
-      if (published) return `"${nbName}" is already published at /p/${row.slug}.`;
+      if (published) return `"${nbName}" is already published at /${row.slug}.`;
       void handleDeploy();
       return `Publishing — the share link will appear in the settings bar in a moment.`;
     }
@@ -922,6 +955,32 @@ function CanvasInner() {
             ⚙
           </div>
           <div
+            onClick={() => {
+              if (saveStatus.state !== "saving") void persistNow();
+            }}
+            title="Save now"
+            style={{
+              cursor: saveStatus.state === "saving" ? "default" : "pointer",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              border: `1px solid ${saveStatus.state === "error" ? "#7E3A33" : "#E4DECC"}`,
+              fontSize: "12.5px",
+              fontWeight: 600,
+              color: saveStatus.state === "error" ? "#7E3A33" : "#262922",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            {saveStatus.state === "saving"
+              ? "Saving…"
+              : saveStatus.state === "error"
+                ? "Retry save"
+                : saveStatus.state === "saved"
+                  ? "Saved ✓"
+                  : "Save"}
+          </div>
+          <div
             onClick={() => void handleDeploy()}
             style={{
               cursor: published || deploying ? "default" : "pointer",
@@ -955,16 +1014,17 @@ function CanvasInner() {
             <>
               {" · "}
               <a
-                href={`/p/${row.slug}`}
+                href={`/${row.slug}`}
                 target="_blank"
                 rel="noreferrer"
                 style={{ color: "#4B6B49", fontWeight: 600 }}
               >
-                /p/{row.slug}
+                /{row.slug}
               </a>
             </>
           )}
         </div>
+        <SaveStatusRow status={saveStatus} />
       </div>
 
       {/* Add-cluster dropdown */}
@@ -1119,6 +1179,7 @@ function CanvasInner() {
             setRefusedMessage(null);
             setRedirectFocus(null);
           }}
+          onRename={handleRename}
           onCeilingChange={(target) =>
             applyCeilingChange("notebook", row.id, target)
           }
@@ -1128,6 +1189,7 @@ function CanvasInner() {
           onConfirm={confirmProposal}
           onCancel={() => setProposal(null)}
           onDeploy={() => void handleDeploy()}
+          onSlugSave={handleSlugSave}
           onPersonaChange={(text) => {
             if (activeBlock) setTemplatedInput(activeBlock.id, "instructions", text);
           }}
@@ -1185,6 +1247,58 @@ function CanvasInner() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+/* ── Save status row ───────────────────────────────────────────────── */
+
+function SaveStatusRow({
+  status,
+}: {
+  status:
+    | { state: "idle" }
+    | { state: "saving" }
+    | { state: "saved" }
+    | { state: "error"; message: string };
+}) {
+  if (status.state === "idle") return null;
+
+  const dot =
+    status.state === "saving" ? "#C99A5C" : status.state === "saved" ? "#4B6B49" : "#7E3A33";
+  const text =
+    status.state === "saving"
+      ? "Saving…"
+      : status.state === "saved"
+        ? "All changes saved"
+        : status.message;
+  const color = status.state === "error" ? "#7E3A33" : "#8A9488";
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "7px",
+        fontSize: "11.5px",
+        color,
+        paddingLeft: "2px",
+        lineHeight: 1.4,
+      }}
+    >
+      <span
+        style={{
+          width: "7px",
+          height: "7px",
+          borderRadius: "50%",
+          background: dot,
+          flexShrink: 0,
+          ...(status.state === "saving"
+            ? { animation: "pulseSync 1.4s infinite" }
+            : {}),
+        }}
+      />
+      <span>{text}</span>
     </div>
   );
 }
@@ -1566,11 +1680,13 @@ function NotebookSettingsDrawer({
   refusedMessage,
   focusField,
   onClose,
+  onRename,
   onCeilingChange,
   onToggleChecked,
   onConfirm,
   onCancel,
   onDeploy,
+  onSlugSave,
   onPersonaChange,
   onMemoryChange,
   onModelTierChange,
@@ -1591,11 +1707,13 @@ function NotebookSettingsDrawer({
   refusedMessage: string | null;
   focusField: FocusField | null;
   onClose: () => void;
+  onRename: (name: string) => void;
   onCeilingChange: (target: Ceiling) => void;
   onToggleChecked: () => void;
   onConfirm: () => void;
   onCancel: () => void;
   onDeploy: () => void;
+  onSlugSave: (slug: string) => Promise<string | null>;
   onPersonaChange: (persona: string) => void;
   onMemoryChange: (memory: MemoryMode) => void;
   onModelTierChange: (tier: ModelTier) => void;
@@ -1609,6 +1727,32 @@ function NotebookSettingsDrawer({
   const resultLimit = (compute?.stateSettings?.limit as number) ?? 5;
   const [showAppearance, setShowAppearance] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [nameDraft, setNameDraft] = useState(name);
+  const [slugDraft, setSlugDraft] = useState(slug ?? "");
+  const [slugError, setSlugError] = useState<string | null>(null);
+  const [slugSaving, setSlugSaving] = useState(false);
+  const [slugSaved, setSlugSaved] = useState(false);
+
+  // Keep drafts in sync with the canonical prop — covers both an external
+  // rename (e.g. the chat assistant's "rename to X" command) and the slug
+  // being re-sanitized server-side (renameSlug lowercases/strips characters,
+  // so the saved value can differ slightly from what was typed).
+  useEffect(() => setNameDraft(name), [name]);
+  useEffect(() => setSlugDraft(slug ?? ""), [slug]);
+
+  const handleSlugSave = async () => {
+    if (!slugDraft.trim() || slugDraft === slug) return;
+    setSlugSaving(true);
+    setSlugError(null);
+    const err = await onSlugSave(slugDraft);
+    setSlugSaving(false);
+    if (err) {
+      setSlugError(err);
+    } else {
+      setSlugSaved(true);
+      setTimeout(() => setSlugSaved(false), 2000);
+    }
+  };
 
   return (
     <>
@@ -1665,9 +1809,28 @@ function NotebookSettingsDrawer({
         </div>
 
         <SettingsFieldCard label="Name">
-          <div style={{ fontSize: "14px", color: "#262922", lineHeight: 1.5 }}>
-            {name}
-          </div>
+          <input
+            value={nameDraft}
+            onChange={(e) => setNameDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+            }}
+            onBlur={() => {
+              const trimmed = nameDraft.trim();
+              if (trimmed && trimmed !== name) onRename(trimmed);
+              else setNameDraft(name);
+            }}
+            style={{
+              width: "100%",
+              fontFamily: "var(--font-source-serif), serif",
+              fontSize: "14px",
+              fontWeight: 600,
+              color: "#262922",
+              border: "1px solid #E4DECC",
+              borderRadius: "8px",
+              padding: "8px 10px",
+            }}
+          />
         </SettingsFieldCard>
 
         <SettingsFieldCard label="Effective ceiling">
@@ -1978,28 +2141,62 @@ function NotebookSettingsDrawer({
           )}
         </CollapsibleSection>
 
-        <SettingsFieldCard label="Deployment">
-          <div style={{ fontSize: "14px", color: "#262922", lineHeight: 1.5 }}>
-            {published && slug ? (
-              <>
-                Live at{" "}
-                <a
-                  href={`/p/${slug}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: "#4B6B49", fontWeight: 600 }}
-                >
-                  /p/{slug}
-                </a>
-              </>
-            ) : (
-              "Not deployed"
-            )}
+        <SettingsFieldCard label="Link">
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ fontSize: "14px", color: "#8A9488", flexShrink: 0 }}>/</span>
+            <input
+              value={slugDraft}
+              onChange={(e) => {
+                setSlugDraft(e.target.value);
+                setSlugError(null);
+                setSlugSaved(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.currentTarget.blur();
+                  handleSlugSave();
+                }
+              }}
+              onBlur={handleSlugSave}
+              placeholder="your-notebook-name"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: "13px",
+                color: "#262922",
+                border: "1px solid #E4DECC",
+                borderRadius: "8px",
+                padding: "7px 10px",
+              }}
+            />
           </div>
-          {!published && (
+          {slugError && (
+            <div style={{ fontSize: "12px", color: "#7E3A33", marginTop: "6px" }}>
+              {slugError}
+            </div>
+          )}
+          {slugSaved && (
+            <div style={{ fontSize: "12px", color: "#4B6B49", marginTop: "6px" }}>
+              ✓ Saved
+            </div>
+          )}
+          {published && slug ? (
+            <div style={{ fontSize: "12.5px", color: "#8A9488", marginTop: "9px" }}>
+              Live at{" "}
+              <a
+                href={`/${slug}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: "#4B6B49", fontWeight: 600 }}
+              >
+                /{slug}
+              </a>
+            </div>
+          ) : (
             <button
               onClick={onDeploy}
-              disabled={deploying}
+              disabled={deploying || slugSaving}
               style={{
                 cursor: deploying ? "default" : "pointer",
                 marginTop: "9px",
@@ -2013,7 +2210,7 @@ function NotebookSettingsDrawer({
                 opacity: deploying ? 0.7 : 1,
               }}
             >
-              {deploying ? "Publishing…" : "Deploy this notebook"}
+              {deploying ? "Publishing…" : "Auto-generate & publish"}
             </button>
           )}
         </SettingsFieldCard>

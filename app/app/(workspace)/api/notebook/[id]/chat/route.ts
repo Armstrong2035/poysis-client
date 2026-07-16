@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "../../../../../../utils/supabase/server";
 import { getWorkspaceId } from "@/lib/workspace";
+import { resolveConnectionSourceTypes } from "@/lib/connectionScope";
 import { cookies } from "next/headers";
 
 const WORKER_URL = process.env.WORKER_URL ?? process.env.LOCAL_WORKER_URL ?? "";
@@ -55,6 +56,7 @@ export async function POST(
     }
 
     const isOwner = user.id === notebook.user_id;
+    const notebookCeiling = notebook.config?.canvas?.ceiling ?? "private";
     let effectiveTopicIds: string[] | undefined = allowed_topic_ids;
     let effectiveConnectionIds: string[] | undefined = allowed_connection_ids;
 
@@ -74,12 +76,25 @@ export async function POST(
       const { data: publicTopics } = await publicTopicsQuery;
       effectiveTopicIds = (publicTopics ?? []).map((row) => row.topic_id);
 
-      // No ceiling concept exists for connections yet, so there's nothing to
-      // validate a non-owner's requested connection scope against — the only
-      // safe default is none at all, not "trust the client."
-      effectiveConnectionIds = undefined;
+      // Connections have no per-connection ceiling. Instead, a public
+      // NOTEBOOK's own connection scope is authoritative for non-owners:
+      // publishing it public is the owner's explicit decision to expose those
+      // connections. Derive it from the STORED config — never the request
+      // body — so a non-owner can't swap in a connection the notebook isn't
+      // actually scoped to. A non-public notebook exposes no connections.
+      if (notebookCeiling === "public") {
+        const storedSources: string[] = (notebook.config?.activeBlocks ?? [])
+          .flatMap((b: any) => b.sources ?? []);
+        effectiveConnectionIds = storedSources
+          .filter((s: string) => s.startsWith("conn:"))
+          .map((s: string) => s.slice(5));
+      } else {
+        effectiveConnectionIds = undefined;
+      }
 
-      if (effectiveTopicIds.length === 0) {
+      // Nothing the owner has exposed to non-owners → stop before any worker
+      // call.
+      if (!effectiveTopicIds.length && !effectiveConnectionIds?.length) {
         return new Response(
           "No public information is available for this notebook yet.",
           { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } }
@@ -95,6 +110,29 @@ export async function POST(
       return NextResponse.json(
         { error: "Workspace not found" },
         { status: 404 }
+      );
+    }
+
+    // The client scopes by connection row id (conn:<id>), but the worker's
+    // allowed_connection_ids is a source_type allowlist — translate before
+    // sending, or the filter matches nothing. See lib/connectionScope.ts.
+    const connectionSourceTypes = effectiveConnectionIds?.length
+      ? await resolveConnectionSourceTypes(
+          supabase,
+          workspaceId,
+          notebook.user_id,
+          effectiveConnectionIds,
+        )
+      : [];
+
+    // Fail closed: a non-owner must never reach an unfiltered workspace query.
+    // If neither a public-topic filter nor a resolved connection source_type
+    // survived (e.g. a Drive connection a non-owner can't read through RLS),
+    // return the empty-scope message rather than leaking the whole workspace.
+    if (!isOwner && !effectiveTopicIds?.length && !connectionSourceTypes.length) {
+      return new Response(
+        "No public information is available for this notebook yet.",
+        { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } }
       );
     }
 
@@ -118,7 +156,7 @@ export async function POST(
         ...(model ? { model } : {}),
         ...(instructions ? { instructions } : {}),
         ...(effectiveTopicIds?.length ? { allowed_topic_ids: effectiveTopicIds } : {}),
-        ...(effectiveConnectionIds?.length ? { allowed_connection_ids: effectiveConnectionIds } : {}),
+        ...(connectionSourceTypes.length ? { allowed_connection_ids: connectionSourceTypes } : {}),
       }),
     });
 

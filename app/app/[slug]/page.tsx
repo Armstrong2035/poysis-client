@@ -1,6 +1,8 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
-import { createClient } from "../../../utils/supabase/server";
+import type { Metadata } from "next";
+import { createClient } from "@/utils/supabase/server";
 import { getNotebookBySlug } from "@/lib/actions";
 import { PlaygroundView } from "./PlaygroundView";
 
@@ -8,21 +10,38 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
+// Deduped via React's per-request cache so generateMetadata and the page
+// body share one lookup instead of querying twice for the same request.
+const getNotebook = cache(getNotebookBySlug);
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const notebook = await getNotebook(slug);
+  if (!notebook) return {};
+  const appLabel = notebook.config?.theme?.appLabel ?? notebook.name ?? "Playground";
+  return { title: appLabel };
+}
+
 export default async function PlaygroundPage({ params }: Props) {
   const { slug } = await params;
 
-  const notebook = await getNotebookBySlug(slug);
+  const notebook = await getNotebook(slug);
   if (!notebook) notFound();
-
-  // End users must be authenticated — redirect to login if not.
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect(`/login?next=/p/${slug}`);
 
   const config = notebook.config ?? {};
   const theme = config.theme ?? {};
   const activeBlocks: any[] = config.activeBlocks ?? [];
+
+  // Only public notebooks skip the login wall — private/team ones still
+  // require a session, since ceiling is what actually governs who can
+  // reach this notebook's contents (see lib/ceiling.ts).
+  const ceiling = config.canvas?.ceiling ?? "private";
+  if (ceiling !== "public") {
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect(`/login?next=/${slug}`);
+  }
 
   // Find the first chat, generate, or search block to power the playground
   // chat. Search notebooks (from Canvas) render through the same chat UI for

@@ -3,6 +3,7 @@
 import { useNotebookStore } from "../../../store/notebookStore";
 import { SearchBar } from "../../../components/ui/input/SearchBar";
 import { SourceAccordion } from "../../../components/ui/display/SourceAccordion";
+import { ChatThread } from "../../../components/ui/display/ChatThread";
 import { Chat } from "../../../components/ui/chat/Chat";
 import Link from "next/link";
 import { useState, useEffect, Suspense } from "react";

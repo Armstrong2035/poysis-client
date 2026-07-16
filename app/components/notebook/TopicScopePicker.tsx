@@ -175,8 +175,8 @@ export function TopicScopePicker({ selectedIds, onToggle }: TopicScopePickerProp
                 stroke="#E8A547"
                 strokeWidth="1.2"
                 className="flex-shrink-0"
-                title="User-modified — protected from recluster"
               >
+                <title>User-modified — protected from recluster</title>
                 <rect x="2" y="4.5" width="6" height="4.5" rx="1" />
                 <path d="M3 4.5V3a2 2 0 0 1 4 0v1.5" />
               </svg>

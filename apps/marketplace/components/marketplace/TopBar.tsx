@@ -1,0 +1,139 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { WaitlistModal } from "./WaitlistModal";
+
+const LOGO_PATH =
+  "M 58.73 8.92 L 60.61 9.48 L 64.25 10.86 L 67.73 12.56 L 71.01 14.56 L 74.08 16.85 L 76.91 19.41 L 79.47 22.20 L 81.75 25.19 L 83.73 28.37 L 85.39 31.71 L 86.73 35.16 L 87.74 38.70 L 88.41 42.30 L 88.74 45.93 L 88.73 49.55 L 88.38 53.13 L 87.71 56.65 L 86.72 60.07 L 85.42 63.36 L 83.83 66.50 L 81.96 69.46 L 79.84 72.22 L 77.49 74.75 L 74.92 77.04 L 72.17 79.07 L 69.26 80.83 L 66.22 82.30 L 63.07 83.47 L 59.85 84.34 L 56.57 84.90 L 53.28 85.15 L 50.00 85.10 L 46.76 84.74 L 43.58 84.09 L 40.49 83.15 L 37.53 81.93 L 34.70 80.46 L 32.04 78.74 L 29.57 76.78 L 27.30 74.63 L 25.26 72.28 L 23.45 69.77 L 21.89 67.11 L 20.59 64.34 L 19.56 61.48 L 18.81 58.55 L 18.33 55.58 L 18.13 52.60 L 18.21 49.63 L 18.56 46.70 L 19.17 43.82 L 20.05 41.03 L 21.17 38.35 L 22.52 35.80 L 24.10 33.39 L 25.88 31.15 L 27.74 29.00 L 29.79 27.02 L 32.01 25.24 L 34.39 23.68 L 36.20 24.04 L 33.84 25.44 L 31.63 27.04 L 29.58 28.85 L 27.70 30.84 L 26.09 33.05 L 24.75 35.42 L 23.66 37.90 L 22.81 40.46 L 22.21 43.07 L 21.85 45.71 L 21.75 48.35 L 21.90 50.98 L 22.30 53.57 L 22.93 56.08 L 23.79 58.52 L 24.86 60.84 L 26.15 63.04 L 27.62 65.10 L 29.27 66.99 L 31.08 68.70 L 33.02 70.23 L 35.09 71.56 L 37.25 72.68 L 39.50 73.58 L 41.80 74.27 L 44.14 74.73 L 46.49 74.96 L 48.84 74.98 L 51.15 74.77 L 53.42 74.35 L 55.62 73.73 L 57.74 72.90 L 59.75 71.89 L 61.64 70.71 L 63.39 69.36 L 65.00 67.87 L 66.44 66.25 L 67.72 64.52 L 68.81 62.69 L 69.72 60.78 L 70.44 58.81 L 70.96 56.81 L 71.29 54.78 L 71.42 52.76 L 71.37 50.75 L 71.12 48.77 L 70.70 46.84 L 70.10 44.99 L 69.34 43.22 L 68.42 41.54 L 67.36 39.98 L 66.17 38.54 L 64.86 37.23 L 63.46 36.07 L 61.96 35.05 L 60.39 34.20 L 58.77 33.50 L 57.11 32.97 L 55.43 32.60 L 53.74 32.39 A 12.00 12.00 0 0 1 58.73 8.92 Z";
+
+export function TopBar() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [draft, setDraft] = useState(searchParams.get("q") ?? "");
+
+  // The top bar is the directory shell. It belongs on the browse pages (home
+  // feed and search); a notebook page (/[slug]) renders the notebook exactly
+  // as built in Studio — its own theme and header, full screen — so the shell
+  // steps out of the way entirely there.
+  const isHome = pathname === "/";
+  const isSearch = pathname === "/search";
+
+  // No search box on the home feed (it has its own hero); show it on /search.
+  const showSearch = isSearch;
+
+  const submitSearch = () => {
+    const q = draft.trim();
+    if (q) router.push(`/search?q=${encodeURIComponent(q)}`);
+  };
+
+  if (!isHome && !isSearch) return null;
+
+  return (
+    <>
+      <div
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 40,
+          background: "rgba(241,238,226,0.92)",
+          backdropFilter: "blur(8px)",
+          borderBottom: "1px solid #E4DECC",
+        }}
+      >
+        <div style={{ maxWidth: 960, margin: "0 auto", padding: "13px 18px", display: "flex", alignItems: "center", gap: 14 }}>
+          <div
+            style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer", flexShrink: 0 }}
+            onClick={() => router.push("/")}
+          >
+            <svg width="24" height="24" viewBox="0 0 100 100" fill="none">
+              <path d={LOGO_PATH} fill="#3C4A3A" />
+            </svg>
+            <span style={{ fontFamily: "'Source Serif 4', serif", fontWeight: 600, fontSize: 19, letterSpacing: "-0.3px", color: "#262922" }}>
+              poysis
+            </span>
+          </div>
+
+          {showSearch && (
+            <div
+              style={{
+                flex: 1,
+                maxWidth: 380,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                background: "#FAF8F0",
+                border: "1px solid #E4DECC",
+                borderRadius: 999,
+                padding: "7px 14px",
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#55594D" strokeWidth="2">
+                <circle cx="11" cy="11" r="7" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") submitSearch();
+                }}
+                placeholder="Search people to learn from…"
+                style={{
+                  border: "none",
+                  outline: "none",
+                  background: "transparent",
+                  fontFamily: "'Albert Sans', sans-serif",
+                  fontSize: 14,
+                  color: "#262922",
+                  flex: 1,
+                  minWidth: 0,
+                }}
+              />
+            </div>
+          )}
+
+          <div style={{ flex: 1 }} />
+
+          <button
+            onClick={() => setWaitlistOpen(true)}
+            style={{
+              fontFamily: "'Albert Sans', sans-serif",
+              fontWeight: 600,
+              fontSize: 13,
+              color: "#262922",
+              background: "transparent",
+              border: "none",
+              padding: "8px 6px",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            For Creators
+          </button>
+          <button
+            onClick={() => setWaitlistOpen(true)}
+            style={{
+              fontFamily: "'Albert Sans', sans-serif",
+              fontWeight: 600,
+              fontSize: 13,
+              color: "#262922",
+              background: "transparent",
+              border: "1px solid #262922",
+              borderRadius: 999,
+              padding: "8px 16px",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Join Beta
+          </button>
+        </div>
+      </div>
+
+      <WaitlistModal open={waitlistOpen} onClose={() => setWaitlistOpen(false)} />
+    </>
+  );
+}

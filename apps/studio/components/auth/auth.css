@@ -1,0 +1,26 @@
+.poy-auth-root {
+  --font-sans: var(--font-albert-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-source-serif-4), Georgia, serif;
+}
+
+@keyframes poy-auth-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.75;
+  }
+}
+
+.poy-auth-breathe {
+  animation: poy-auth-breathe 8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poy-auth-breathe {
+    animation: none;
+  }
+}

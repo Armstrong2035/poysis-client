@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500;1,8..60,600&family=Albert+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  @keyframes poy-breathe-soft { 0%,100% { transform: scale(1); opacity: .5; } 50% { transform: scale(1.08); opacity: .75; } }
+  @keyframes poy-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+  @keyframes poy-reel { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @keyframes poy-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(.82); } }
+</style>
+</helmet>
+
+<div style="min-height:100vh; background:#F2EEE2; font-family:'Albert Sans',sans-serif; color:#262922; display:flex; flex-direction:column;">
+
+  <!-- nav -->
+  <div style="display:flex; align-items:center; justify-content:space-between; padding:34px 60px; max-width:1440px; width:100%; margin:0 auto;">
+    <div style="display:flex; align-items:center; gap:11px;">
+      <svg width="30" height="30" viewBox="0 0 48 48" fill="none" style="display:block"><g transform="rotate(-90 24 24)" fill="none" stroke-width="7" stroke-linecap="round"><circle cx="24" cy="24" r="15.5" stroke="#C9985C" stroke-dasharray="16 97.4"/><circle cx="24" cy="24" r="15.5" stroke="#3C4A3A" stroke-dasharray="62 97.4" stroke-dashoffset="-20"/></g></svg>
+      <span style="font-family:'Source Serif 4',serif; font-size:27px; font-weight:600; letter-spacing:-.5px; color:#262922;">poysis</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:34px;">
+      <a href="#" style="font-size:15px; color:#55594D; text-decoration:none;">How it works</a>
+      <a href="#" style="font-size:15px; color:#55594D; text-decoration:none;">Sources</a>
+      <a href="#" style="font-size:15px; color:#55594D; text-decoration:none;">Sign in</a>
+      <span style="background:#3C4A3A; color:#F2EEE2; font-size:15px; font-weight:600; padding:11px 22px; border-radius:999px;">Get Started</span>
+    </div>
+  </div>
+
+  <!-- hero -->
+  <div style="flex:1; display:flex; align-items:center; gap:56px; max-width:1440px; width:100%; margin:0 auto; padding:20px 60px 72px;">
+
+    <!-- left copy -->
+    <div style="flex:1 1 0; max-width:580px;">
+      <span style="font-size:13px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:#849F7A;">Your living archive</span>
+      <h1 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:78px; line-height:1.02; letter-spacing:-1.6px; color:#262922; margin:20px 0 0;">Your best thinking, <span style="font-style:italic;">on demand.</span></h1>
+      <div style="max-width:530px; margin:28px 0 0;">
+        <p style="font-size:19px; line-height:1.6; color:#55594D; margin:0;">You've already created the knowledge. It's buried in documents, videos, notes, bookmarks, and years of work.</p>
+        <div style="margin-top:18px; min-height:150px;">
+          <div style="{{ roleFade }}">
+            <p style="font-size:22px; line-height:1.45; color:#262922; margin:0;">Poysis becomes your <span style="font-family:'Source Serif 4',serif; font-style:italic; font-weight:600; color:#3C4A3A;">{{ role }}</span></p>
+            <p style="font-size:17px; line-height:1.6; color:#55594D; margin:10px 0 0;">{{ desc }}</p>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:22px; margin-top:38px;">
+        <span style="background:#3C4A3A; color:#F2EEE2; font-size:17px; font-weight:600; padding:16px 34px; border-radius:999px; box-shadow:0 10px 24px -10px rgba(60,74,58,.6);">Get Started</span>
+        <span style="font-size:16px; color:#55594D;">See how it works →</span>
+      </div>
+    </div>
+
+    <!-- right visual -->
+    <div style="flex:1 1 0; position:relative; align-self:stretch; min-height:620px; margin:20px 0;">
+      <div style="position:absolute; inset:0; background:#F6F1F0; border:1px solid #E4DFCC; border-radius:26px; overflow:hidden;">
+        <!-- concentric rings -->
+        <div style="position:absolute; top:42%; left:50%; width:460px; height:460px; transform:translate(-50%,-50%);">
+          <div style="position:absolute; inset:0; border:1.5px solid rgba(132,159,122,.35); border-radius:50%; animation:poy-breathe-soft 8s ease-in-out infinite;"></div>
+          <div style="position:absolute; inset:70px; border:1.5px solid rgba(132,159,122,.5); border-radius:50%; animation:poy-breathe-soft 8s ease-in-out infinite .6s;"></div>
+          <div style="position:absolute; inset:140px; border:1.5px solid rgba(201,152,92,.5); border-radius:50%; animation:poy-breathe-soft 8s ease-in-out infinite 1.2s;"></div>
+        </div>
+        <!-- glow -->
+        <div style="position:absolute; top:42%; left:50%; width:340px; height:340px; transform:translate(-50%,-50%); background:radial-gradient(closest-side, rgba(132,159,122,.30), rgba(242,238,226,0) 72%); filter:blur(4px);"></div>
+        <!-- center orb -->
+        <div style="position:absolute; top:42%; left:50%; transform:translate(-50%,-50%); animation:poy-float 7s ease-in-out infinite;">
+          <svg width="150" height="150" viewBox="0 0 48 48" fill="none" style="display:block; filter:drop-shadow(0 12px 22px rgba(60,74,58,.28));"><g transform="rotate(-90 24 24)" fill="none" stroke-width="6.5" stroke-linecap="round"><circle cx="24" cy="24" r="15.5" stroke="#C9985C" stroke-dasharray="18 97.4"/><circle cx="24" cy="24" r="15.5" stroke="#3C4A3A" stroke-dasharray="60 97.4" stroke-dashoffset="-22"/></g></svg>
+        </div>
+        <!-- orbiting source chips -->
+        <div style="position:absolute; top:20%; left:14%; display:flex; align-items:center; gap:7px; background:#F2EEE2; border:1px solid #E4DFCC; border-radius:999px; padding:8px 13px; box-shadow:0 8px 18px -10px rgba(38,41,34,.3); animation:poy-float 6.5s ease-in-out infinite;">
+          <span style="width:7px; height:7px; border-radius:50%; background:#849F7A;"></span><span style="font-size:13px; color:#55594D;">Sunday sermon · 2019</span>
+        </div>
+        <div style="position:absolute; top:60%; left:8%; display:flex; align-items:center; gap:7px; background:#F2EEE2; border:1px solid #E4DFCC; border-radius:999px; padding:8px 13px; box-shadow:0 8px 18px -10px rgba(38,41,34,.3); animation:poy-float 7.5s ease-in-out infinite .8s;">
+          <span style="width:7px; height:7px; border-radius:50%; background:#C9985C;"></span><span style="font-size:13px; color:#55594D;">Field notes.pdf</span>
+        </div>
+        <div style="position:absolute; top:30%; right:9%; display:flex; align-items:center; gap:7px; background:#F2EEE2; border:1px solid #E4DFCC; border-radius:999px; padding:8px 13px; box-shadow:0 8px 18px -10px rgba(38,41,34,.3); animation:poy-float 6.8s ease-in-out infinite 1.1s;">
+          <span style="width:7px; height:7px; border-radius:50%; background:#7E3A33;"></span><span style="font-size:13px; color:#55594D;">Keynote transcript</span>
+        </div>
+        <!-- ask bar -->
+        <div style="position:absolute; left:32px; right:32px; bottom:30px; display:flex; align-items:center; gap:12px; background:#FFFFFF; border:1px solid #E4DFCC; border-radius:999px; padding:12px 12px 12px 20px; box-shadow:0 14px 30px -16px rgba(38,41,34,.35);">
+          <span style="font-size:15px; color:#9a9789; flex:1;">Ask your archive anything…</span>
+          <span style="display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:50%; background:#3C4A3A; color:#F2EEE2; font-size:17px;">→</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SOCIAL PROOF ===================== -->
+<div style="position:relative; overflow:hidden; background:#2B3427; font-family:'Albert Sans',sans-serif; padding:112px 40px 116px;">
+ <div style="position:absolute; inset:0; background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E&quot;); background-size:180px; opacity:.12; mix-blend-mode:overlay; pointer-events:none;"></div>
+ <div style="position:relative;">
+
+  <!-- heading + chips -->
+  <div style="max-width:1000px; margin:0 auto; padding:0 60px; text-align:center;">
+    <span style="font-size:13px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:#C9985C;">Who it's for</span>
+    <h2 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:48px; line-height:1.1; letter-spacing:-1px; color:#F2EEE2; margin:16px 0 0;">Built for people who create and use knowledge.</h2>
+
+    <div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:36px;">
+      <span style="background:#C9985C; color:#2C2416; font-size:16px; font-weight:600; padding:11px 22px; border-radius:999px;">Founders</span>
+      <span style="border:1px solid rgba(242,238,226,.34); color:#F2EEE2; font-size:16px; font-weight:500; padding:11px 22px; border-radius:999px;">Law Firms</span>
+      <span style="background:#849F7A; color:#22301F; font-size:16px; font-weight:600; padding:11px 22px; border-radius:999px;">Consultants</span>
+      <span style="border:1px solid rgba(242,238,226,.34); color:#F2EEE2; font-size:16px; font-weight:500; padding:11px 22px; border-radius:999px;">Pastors</span>
+      <span style="background:#7E3A33; color:#F2EEE2; font-size:16px; font-weight:600; padding:11px 22px; border-radius:999px;">Thought Leaders</span>
+      <span style="border:1px solid rgba(242,238,226,.34); color:#F2EEE2; font-size:16px; font-weight:500; padding:11px 22px; border-radius:999px;">Teachers</span>
+      <span style="border:1px solid rgba(242,238,226,.34); color:#F2EEE2; font-size:16px; font-weight:500; padding:11px 22px; border-radius:999px;">Solo Operators</span>
+    </div>
+  </div>
+
+  <!-- sources: a quiet current, dissolving into the paper -->
+  <div style="text-align:center; margin-top:60px;">
+    <span style="font-size:12px; font-weight:600; letter-spacing:2.5px; text-transform:uppercase; color:rgba(242,238,226,.42);">Draws from where your work already lives</span>
+  </div>
+  <div style="position:relative; margin-top:22px; overflow:hidden; -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 15%, #000 85%, transparent 100%); mask-image:linear-gradient(90deg, transparent 0, #000 15%, #000 85%, transparent 100%);">
+    <div style="display:flex; width:max-content; align-items:center; animation:poy-reel 40s linear infinite;">
+      <!-- group 1 -->
+      <div style="display:flex; align-items:center;">
+        <div style="display:flex; align-items:center; gap:10px; margin:0 9px; padding:11px 20px; border:1px solid rgba(242,238,226,.16); border-radius:999px; background:rgba(242,238,226,.045); white-space:nowrap;"><span style="width:8px; height:8px; border-radius:50%; background:#C9985C;"></span><span style="font-size:16px; font-weight:500; color:#EDE7D8;">Google Drive</span></div>
+        <div style="display:flex; align-items:center; gap:10px; margin:0 9px; padding:11px 20px; border:1px solid rgba(242,238,226,.16); border-radius:999px; background:rgba(242,238,226,.045); white-space:nowrap;"><span style="width:8px; height:8px; border-radius:50%; background:#C77B6F;"></span><span style="font-size:16px; font-weight:500; color:#EDE7D8;">YouTube</span></div>
+        <div style="display:flex; align-items:center; gap:10px; margin:0 9px; padding:11px 20px; border:1px solid rgba(242,238,226,.16); border-radius:999px; background:rgba(242,238,226,.045); white-space:nowrap;"><span style="width:8px; height:8px; border-radius:50%; background:#849F7A;"></span><span style="font-size:16px; font-weight:500; color:#EDE7D8;">Notion</span></div>
+        <div style="display:flex; align-items:center; gap:10px; margin:0 9px; padding:11px 20px; border:1px solid rgba(242,238,226,.16); border-radius:999px; background:rgba(242,238,226,.045); white-space:nowrap;"><span style="width:8px; height:8px; border-radius:50%; background:#C9985C;"></span><span style="font-size:16px; font-weight:500; color:#EDE7D8;">Claude</span></div>
+        <div style="display:flex; align-items:center; gap:10px; margin:0 9px; padding:11px 20px; border:1px solid rgba(242,238,226,.16); border-radius:999px; background:rgba(242,238,226,.045); white-space:nowrap;"><span style="width:8px; height:8px; border-radius:50%; background:#C77B6F;"></span><span style="font-size:16px; font-weight:500; color:#EDE7D8;">ChatGPT</span></div>
+        <div style="display:flex; align-items:center; gap:10px; margin:0 9px; padding:11px 20px; border:1px solid rgba(242,238,226,.16); border-radius:999px; background:rgba(242,238,226,.045); white-space:nowrap;"><span style="width:8px; height:8px; border-radius:50%; background:#849F7A;"></span><span style="font-size:16px; font-weight:500; color:#EDE7D8;">Slack</span></div>
+        <div style="display:flex; align-items:center; gap:10px; margin:0 9px; padding:11px 20px; border:1px solid rgba(242,238,226,.16); border-radius:999px; background:rgba(242,238,226,.045); white-space:nowrap;"><span style="width:8px; height:8px; border-radius:50%; background:#C9985C;"></span><span style="font-size:16px; font-weight:500; color:#EDE7D8;">Social bookmarks</span></div>
+      </div>
+      <!-- group 2 (duplicate for seamless loop) -->
+      <div style="display:flex; align-items:center;">
+        <div style="display:flex; align-items:center; gap:10px; margin:0 9px; padding:11px 20px; border:1px solid rgba(242,238,226,.16); border-radius:999px; background:rgba(242,238,226,.045); white-space:nowrap;"><span style="width:8px; height:8px; border-radius:50%; background:#C9985C;"></span><span style="font-size:16px; font-weight:500; color:#EDE7D8;">Google Drive</span></div>
+        <div style="display:flex; align-items:center; gap:10px; margin:0 9px; padding:11px 20px; border:1px solid rgba(242,238,226,.16); border-radius:999px; background:rgba(242,238,226,.045); white-space:nowrap;"><span style="width:8px; height:8px; border-radius:50%; background:#C77B6F;"></span><span style="font-size:16px; font-weight:500; color:#EDE7D8;">YouTube</span></div>
+        <div style="display:flex; align-items:center; gap:10px; margin:0 9px; padding:11px 20px; border:1px solid rgba(242,238,226,.16); border-radius:999px; background:rgba(242,238,226,.045); white-space:nowrap;"><span style="width:8px; height:8px; border-radius:50%; background:#849F7A;"></span><span style="font-size:16px; font-weight:500; color:#EDE7D8;">Notion</span></div>
+        <div style="display:flex; align-items:center; gap:10px; margin:0 9px; padding:11px 20px; border:1px solid rgba(242,238,226,.16); border-radius:999px; background:rgba(242,238,226,.045); white-space:nowrap;"><span style="width:8px; height:8px; border-radius:50%; background:#C9985C;"></span><span style="font-size:16px; font-weight:500; color:#EDE7D8;">Claude</span></div>
+        <div style="display:flex; align-items:center; gap:10px; margin:0 9px; padding:11px 20px; border:1px solid rgba(242,238,226,.16); border-radius:999px; background:rgba(242,238,226,.045); white-space:nowrap;"><span style="width:8px; height:8px; border-radius:50%; background:#C77B6F;"></span><span style="font-size:16px; font-weight:500; color:#EDE7D8;">ChatGPT</span></div>
+        <div style="display:flex; align-items:center; gap:10px; margin:0 9px; padding:11px 20px; border:1px solid rgba(242,238,226,.16); border-radius:999px; background:rgba(242,238,226,.045); white-space:nowrap;"><span style="width:8px; height:8px; border-radius:50%; background:#849F7A;"></span><span style="font-size:16px; font-weight:500; color:#EDE7D8;">Slack</span></div>
+        <div style="display:flex; align-items:center; gap:10px; margin:0 9px; padding:11px 20px; border:1px solid rgba(242,238,226,.16); border-radius:999px; background:rgba(242,238,226,.045); white-space:nowrap;"><span style="width:8px; height:8px; border-radius:50%; background:#C9985C;"></span><span style="font-size:16px; font-weight:500; color:#EDE7D8;">Social bookmarks</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- product preview -->
+  <div style="max-width:1000px; margin:88px auto 0; padding:0 60px;">
+    <div style="background:#F6F1F0; border:1px solid #E4DFCC; border-radius:16px; box-shadow:0 46px 100px -46px rgba(38,41,34,.45); overflow:hidden;">
+      <!-- window header with the stat -->
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:20px 26px; border-bottom:1px solid #E7E1D0; background:#F2EEE2;">
+        <div style="display:flex; align-items:center; gap:11px;">
+          <svg width="24" height="24" viewBox="0 0 48 48" fill="none" style="display:block"><g transform="rotate(-90 24 24)" fill="none" stroke-width="7" stroke-linecap="round"><circle cx="24" cy="24" r="15.5" stroke="#C9985C" stroke-dasharray="16 97.4"/><circle cx="24" cy="24" r="15.5" stroke="#3C4A3A" stroke-dasharray="62 97.4" stroke-dashoffset="-20"/></g></svg>
+          <span style="font-family:'Source Serif 4',serif; font-size:20px; font-weight:600; color:#262922;">Your Archive</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:9px; font-size:15px; color:#55594D;">
+          <span style="width:8px; height:8px; border-radius:50%; background:#849F7A; animation:poy-pulse 2.4s ease-in-out infinite;"></span>
+          <span><strong style="color:#262922; font-weight:600;">1,500 documents</strong> indexed across <strong style="color:#262922; font-weight:600;">10 sources</strong></span>
+        </div>
+      </div>
+      <!-- product screenshot slot -->
+      <image-slot id="poysis-product" shape="rect" placeholder="Drop a product screenshot" style="display:block; width:100%; height:470px;"></image-slot>
+    </div>
+    <p style="text-align:center; font-size:14px; color:rgba(242,238,226,.6); margin:18px 0 0;">Everything you've made, in one place — and everything it says points back to the source.</p>
+  </div>
+ </div>
+</div>
+<!-- ===================== PROBLEM ===================== -->
+<div style="background:#F2EEE2; font-family:'Albert Sans',sans-serif; padding:96px 40px 104px;">
+  <div style="max-width:1440px; margin:0 auto; display:flex; flex-direction:row-reverse; gap:24px; align-items:stretch;">
+
+    <!-- LEFT 70%: list over blurred photo -->
+    <div style="flex:0 0 70%; position:relative; border-radius:32px; overflow:hidden; min-height:640px; box-shadow:0 50px 120px -50px rgba(38,41,34,.55);">
+      <!-- blurred photo -->
+      <div style="position:absolute; inset:0; filter:blur(9px) saturate(1.05); transform:scale(1.08);">
+        <image-slot id="problem-blur-image" shape="rect" placeholder="Drop a photo (blurred behind the list)" style="display:block; width:100%; height:100%;"></image-slot>
+      </div>
+      <!-- fallback tone + darkening for legibility -->
+      <div style="position:absolute; inset:0; background:linear-gradient(155deg, #3C4A3A 0%, #2A2E25 100%); opacity:.5; pointer-events:none;"></div>
+      <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(20,22,16,.45) 0%, rgba(20,22,16,.28) 40%, rgba(20,22,16,.55) 100%); pointer-events:none;"></div>
+
+      <!-- overlaid list -->
+      <div style="position:relative; height:100%; min-height:640px; display:flex; flex-direction:column; justify-content:center; padding:64px 76px 150px;">
+        <span style="font-size:13px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:rgba(233,220,197,.85);">The problem</span>
+        <div style="display:flex; flex-direction:column; gap:6px; margin-top:28px;">
+          <p style="font-family:'Source Serif 4',serif; font-weight:400; font-size:36px; line-height:1.18; letter-spacing:-.5px; color:#F5F0E4; margin:0; opacity:1; text-shadow:0 2px 24px rgba(20,22,16,.5);">You've solved this before.</p>
+          <p style="font-family:'Source Serif 4',serif; font-weight:400; font-size:36px; line-height:1.18; letter-spacing:-.5px; color:#F5F0E4; margin:0; opacity:.86; text-shadow:0 2px 24px rgba(20,22,16,.5);">You wrote it down.</p>
+          <p style="font-family:'Source Serif 4',serif; font-weight:400; font-size:36px; line-height:1.18; letter-spacing:-.5px; color:#F5F0E4; margin:0; opacity:.72; text-shadow:0 2px 24px rgba(20,22,16,.5);">You bookmarked it.</p>
+          <p style="font-family:'Source Serif 4',serif; font-weight:400; font-size:36px; line-height:1.18; letter-spacing:-.5px; color:#F5F0E4; margin:0; opacity:.58; text-shadow:0 2px 24px rgba(20,22,16,.5);">You saved the video.</p>
+          <p style="font-family:'Source Serif 4',serif; font-weight:400; font-size:36px; line-height:1.18; letter-spacing:-.5px; color:#F5F0E4; margin:0; opacity:.44; text-shadow:0 2px 24px rgba(20,22,16,.5);">You had the meeting.</p>
+        </div>
+        <p style="font-family:'Source Serif 4',serif; font-weight:600; font-style:italic; font-size:46px; line-height:1.08; letter-spacing:-1px; color:#E8B4A8; margin:32px 0 0; text-shadow:0 2px 24px rgba(20,22,16,.5);">Now you can't find it.</p>
+      </div>
+
+      <!-- ask bar: the payoff, floating over the blur -->
+      <div style="position:absolute; left:76px; right:76px; bottom:56px; display:flex; align-items:center; gap:14px; background:rgba(246,241,240,.9); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,.5); border-radius:999px; padding:14px 14px 14px 24px; box-shadow:0 24px 50px -20px rgba(20,22,16,.6);">
+        <span style="width:9px; height:9px; border-radius:50%; background:#849F7A; animation:poy-pulse 2.4s ease-in-out infinite;"></span>
+        <span style="font-family:'Source Serif 4',serif; font-style:italic; font-size:20px; color:#3C4A3A; flex:1;">“What did I decide about pricing last spring?”</span>
+        <span style="display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:50%; background:#3C4A3A; color:#F2EEE2; font-size:19px;">→</span>
+      </div>
+    </div>
+
+    <!-- RIGHT 30%: headline copy -->
+    <div style="flex:1 1 0; display:flex; flex-direction:column; justify-content:center; padding:24px 32px 24px 20px;">
+      <span style="font-size:13px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:#C9985C;">The answer</span>
+      <h2 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:46px; line-height:1.08; letter-spacing:-1.2px; color:#262922; margin:22px 0 0;">Stop searching.<br><span style="font-style:italic; color:#7E3A33;">Start asking.</span></h2>
+      <p style="font-size:20px; line-height:1.55; color:#55594D; margin:26px 0 0;">Get answers grounded in your own knowledge.</p>
+      <div style="margin-top:34px;">
+        <span style="background:#3C4A3A; color:#F2EEE2; font-size:17px; font-weight:600; padding:15px 32px; border-radius:999px; box-shadow:0 10px 24px -10px rgba(60,74,58,.6);">Ask your archive</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- ===================== HOW IT WORKS (FEATURES) ===================== -->
+<div style="background:#F2EEE2; font-family:'Albert Sans',sans-serif; padding:120px 60px 40px;">
+  <div style="max-width:640px; margin:0 auto 24px; text-align:center;">
+    <span style="font-size:13px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:#C9985C;">How it works</span>
+    <h2 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:52px; line-height:1.08; letter-spacing:-1.2px; color:#262922; margin:16px 0 0;">Three steps to a mind <span style="font-style:italic;">that remembers</span>.</h2>
+  </div>
+
+  <!-- Row 1 — Connect -->
+  <div style="max-width:1180px; margin:0 auto; display:flex; align-items:center; gap:76px; padding:64px 0;">
+    <div style="flex:1 1 0;">
+      <span style="font-size:13px; font-weight:600; letter-spacing:2px; color:#849F7A;">01 &mdash; Connect</span>
+      <h3 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:52px; line-height:1.05; letter-spacing:-1.2px; color:#262922; margin:14px 0 0;">Connect.</h3>
+      <p style="font-size:20px; line-height:1.6; color:#55594D; margin:22px 0 0; max-width:420px;">Your documents, videos, notes, and bookmarks become one connected knowledge base.</p>
+    </div>
+    <div style="flex:1 1 0; position:relative; background:#2E3A2A; border-radius:28px; padding:30px; box-shadow:0 44px 100px -50px rgba(38,41,34,.6); overflow:hidden;">
+      <div style="position:absolute; inset:0; background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E&quot;); background-size:170px; opacity:.1; mix-blend-mode:overlay; pointer-events:none;"></div>
+      <div style="position:relative;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+          <span style="font-family:'Source Serif 4',serif; font-size:19px; font-weight:600; color:#F5F0E4;">Your sources</span>
+          <span style="font-size:13px; color:rgba(233,220,197,.6);">6 connected</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; align-items:center; gap:12px; background:rgba(242,238,226,.06); border:1px solid rgba(242,238,226,.12); border-radius:14px; padding:13px 16px;"><span style="width:9px; height:9px; border-radius:50%; background:#C9985C;"></span><span style="flex:1; font-size:15px; color:#EDE7D8;">Google Drive</span><span style="font-size:12px; font-weight:600; color:#9DBE90;">Synced</span></div>
+          <div style="display:flex; align-items:center; gap:12px; background:rgba(242,238,226,.06); border:1px solid rgba(242,238,226,.12); border-radius:14px; padding:13px 16px;"><span style="width:9px; height:9px; border-radius:50%; background:#C77B6F;"></span><span style="flex:1; font-size:15px; color:#EDE7D8;">YouTube</span><span style="font-size:12px; font-weight:600; color:#9DBE90;">Synced</span></div>
+          <div style="display:flex; align-items:center; gap:12px; background:rgba(242,238,226,.06); border:1px solid rgba(242,238,226,.12); border-radius:14px; padding:13px 16px;"><span style="width:9px; height:9px; border-radius:50%; background:#849F7A;"></span><span style="flex:1; font-size:15px; color:#EDE7D8;">Notion</span><span style="font-size:12px; font-weight:600; color:#9DBE90;">Synced</span></div>
+          <div style="display:flex; align-items:center; gap:12px; background:rgba(242,238,226,.06); border:1px solid rgba(242,238,226,.12); border-radius:14px; padding:13px 16px;"><span style="width:9px; height:9px; border-radius:50%; background:#C9985C;"></span><span style="flex:1; font-size:15px; color:#EDE7D8;">Claude &amp; ChatGPT</span><span style="font-size:12px; font-weight:600; color:#9DBE90;">Synced</span></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; margin-top:14px; padding:15px 16px; background:rgba(201,152,92,.16); border-radius:14px;">
+          <svg width="22" height="22" viewBox="0 0 48 48" fill="none" style="display:block; flex-shrink:0;"><g transform="rotate(-90 24 24)" fill="none" stroke-width="7" stroke-linecap="round"><circle cx="24" cy="24" r="15.5" stroke="#E0A968" stroke-dasharray="16 97.4"/><circle cx="24" cy="24" r="15.5" stroke="#849F7A" stroke-dasharray="62 97.4" stroke-dashoffset="-20"/></g></svg>
+          <span style="font-size:14px; color:#F5F0E4;"><strong style="font-weight:700;">1,500 documents</strong> &middot; one knowledge base</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2 — Ask -->
+  <div style="max-width:1180px; margin:0 auto; display:flex; flex-direction:row-reverse; align-items:center; gap:76px; padding:64px 0;">
+    <div style="flex:1 1 0;">
+      <span style="font-size:13px; font-weight:600; letter-spacing:2px; color:#C9985C;">02 &mdash; Ask</span>
+      <h3 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:52px; line-height:1.05; letter-spacing:-1.2px; color:#262922; margin:14px 0 0;">Ask.</h3>
+      <p style="font-size:20px; line-height:1.6; color:#55594D; margin:22px 0 0; max-width:420px;">Search, brainstorm, and reason across everything you've ever created &mdash; from Poysis, Claude, or ChatGPT.</p>
+    </div>
+    <div style="flex:1 1 0; position:relative; background:#2E3A2A; border-radius:28px; padding:30px; box-shadow:0 44px 100px -50px rgba(38,41,34,.6); overflow:hidden;">
+      <div style="position:absolute; inset:0; background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E&quot;); background-size:170px; opacity:.1; mix-blend-mode:overlay; pointer-events:none;"></div>
+      <div style="position:relative;">
+        <div style="display:flex; align-items:center; gap:12px; background:#F6F1F0; border-radius:999px; padding:13px 13px 13px 20px; margin-bottom:18px;">
+          <span style="flex:1; font-family:'Source Serif 4',serif; font-style:italic; font-size:16px; color:#3C4A3A;">What did I decide about pricing last spring?</span>
+          <span style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:50%; background:#3C4A3A; color:#F2EEE2; font-size:15px;">&rarr;</span>
+        </div>
+        <div style="background:rgba(242,238,226,.06); border:1px solid rgba(242,238,226,.12); border-radius:18px; padding:20px;">
+          <p style="font-size:15px; line-height:1.6; color:#EDE7D8; margin:0;">You landed on usage-based tiers after the March workshop &mdash; anchored to seats, with a volume discount above 50.</p>
+          <div style="display:inline-flex; align-items:center; gap:8px; margin-top:16px; background:rgba(201,152,92,.16); border:1px solid rgba(201,152,92,.3); border-radius:999px; padding:7px 13px;">
+            <span style="width:7px; height:7px; border-radius:50%; background:#E0A968;"></span>
+            <span style="font-size:12.5px; color:#EDD9BC;">Pricing workshop &middot; Mar 2025</span>
+          </div>
+        </div>
+        <p style="font-size:12.5px; color:rgba(233,220,197,.5); margin:16px 0 0; text-align:center;">Reasoned across Poysis &middot; Claude &middot; ChatGPT</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3 — Build -->
+  <div style="max-width:1180px; margin:0 auto; display:flex; align-items:center; gap:76px; padding:64px 0 24px;">
+    <div style="flex:1 1 0;">
+      <span style="font-size:13px; font-weight:600; letter-spacing:2px; color:#7E3A33;">03 &mdash; Build</span>
+      <h3 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:52px; line-height:1.05; letter-spacing:-1.2px; color:#262922; margin:14px 0 0;">Build.</h3>
+      <p style="font-size:20px; line-height:1.6; color:#55594D; margin:22px 0 0; max-width:420px;">Create knowledge bots for yourself, your team, your clients, or the world. Every answer stays grounded in your knowledge.</p>
+    </div>
+    <div style="flex:1 1 0; position:relative; background:#2E3A2A; border-radius:28px; padding:30px; box-shadow:0 44px 100px -50px rgba(38,41,34,.6); overflow:hidden;">
+      <div style="position:absolute; inset:0; background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E&quot;); background-size:170px; opacity:.1; mix-blend-mode:overlay; pointer-events:none;"></div>
+      <div style="position:relative;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+          <span style="font-family:'Source Serif 4',serif; font-size:19px; font-weight:600; color:#F5F0E4;">Your knowledge bots</span>
+          <span style="display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:50%; background:rgba(242,238,226,.12); color:#F5F0E4; font-size:18px;">+</span>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div style="background:rgba(242,238,226,.06); border:1px solid rgba(242,238,226,.12); border-radius:16px; padding:18px;"><span style="display:inline-flex; width:30px; height:30px; border-radius:9px; background:rgba(132,159,122,.3); align-items:center; justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:#849F7A;"></span></span><p style="font-size:15px; font-weight:600; color:#F5F0E4; margin:14px 0 4px;">Personal</p><p style="font-size:12.5px; color:rgba(233,220,197,.55); margin:0;">Just for you</p></div>
+          <div style="background:rgba(242,238,226,.06); border:1px solid rgba(242,238,226,.12); border-radius:16px; padding:18px;"><span style="display:inline-flex; width:30px; height:30px; border-radius:9px; background:rgba(201,152,92,.3); align-items:center; justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:#C9985C;"></span></span><p style="font-size:15px; font-weight:600; color:#F5F0E4; margin:14px 0 4px;">Team</p><p style="font-size:12.5px; color:rgba(233,220,197,.55); margin:0;">7 members</p></div>
+          <div style="background:rgba(242,238,226,.06); border:1px solid rgba(242,238,226,.12); border-radius:16px; padding:18px;"><span style="display:inline-flex; width:30px; height:30px; border-radius:9px; background:rgba(199,123,111,.3); align-items:center; justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:#C77B6F;"></span></span><p style="font-size:15px; font-weight:600; color:#F5F0E4; margin:14px 0 4px;">Clients</p><p style="font-size:12.5px; color:rgba(233,220,197,.55); margin:0;">Invite-only</p></div>
+          <div style="background:rgba(224,169,104,.14); border:1px solid rgba(224,169,104,.34); border-radius:16px; padding:18px;"><span style="display:inline-flex; width:30px; height:30px; border-radius:9px; background:rgba(224,169,104,.4); align-items:center; justify-content:center;"><span style="width:9px;height:9px;border-radius:50%;background:#E0A968;"></span></span><p style="font-size:15px; font-weight:600; color:#F5F0E4; margin:14px 0 4px;">Public</p><p style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; color:#EDD9BC; margin:0;"><span style="width:6px; height:6px; border-radius:50%; background:#9DBE90;"></span>Live</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ===================== POYSIS FOR EVERYONE ===================== -->
+<div style="background:#F2EEE2; font-family:'Albert Sans',sans-serif; padding:112px 0 128px;">
+  <!-- heading row -->
+  <div style="max-width:1440px; margin:0 auto; padding:0 60px; display:flex; align-items:flex-end; justify-content:space-between; gap:40px;">
+    <div style="max-width:620px;">
+      <span style="font-size:13px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:#C9985C;">Who it's for</span>
+      <h2 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:52px; line-height:1.08; letter-spacing:-1.2px; color:#262922; margin:16px 0 0;">Poysis for <span style="font-style:italic;">everyone</span>.</h2>
+      <p style="font-size:19px; line-height:1.55; color:#55594D; margin:20px 0 0;">However you create knowledge, Poysis turns it into something you can talk to.</p>
+    </div>
+    <div style="display:flex; gap:12px; flex-shrink:0;">
+      <span onClick="{{ scrollPrev }}" style="display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; border:1px solid #D8CEB6; background:#F6F1F0; color:#3C4A3A; font-size:20px; cursor:pointer;">←</span>
+      <span onClick="{{ scrollNext }}" style="display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; border:1px solid #3C4A3A; background:#3C4A3A; color:#F2EEE2; font-size:20px; cursor:pointer;">→</span>
+    </div>
+  </div>
+
+  <!-- carousel -->
+  <div data-poysis-carousel style="display:flex; gap:0; overflow-x:auto; scroll-snap-type:x mandatory; padding:0; margin-top:44px; scrollbar-width:none;">
+
+    <!-- Pastors -->
+    <div style="flex:0 0 100vw; scroll-snap-align:center; position:relative; overflow:hidden; background:#E4EAD9; border-top:1px solid #D0DCC5; border-bottom:1px solid #D0DCC5; padding:110px 60px; display:flex; align-items:center; justify-content:center; min-height:78vh;">
+      <div style="position:absolute; inset:0; background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E&quot;); background-size:170px; opacity:.6; mix-blend-mode:multiply; pointer-events:none;"></div>
+      <div style="position:relative; display:flex; flex-direction:column; max-width:760px; width:100%;">
+        <span style="align-self:flex-start; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#3C5A2E; background:rgba(132,159,122,.28); padding:7px 14px; border-radius:999px;">For Pastors</span>
+        <h3 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:46px; line-height:1.1; letter-spacing:-1px; color:#262922; margin:28px 0 0;">Every sermon you've preached should still be working.</h3>
+        <p style="font-size:19px; line-height:1.6; color:#55594D; margin:22px 0 0;">Your congregation shouldn't have to search through years of sermons. Poysis turns your archive into a living notebook they can talk to — every answer linked back to the exact moment you preached it.</p>
+        <div style="display:flex; align-items:center; gap:18px; margin-top:auto; padding-top:32px;">
+          <span style="background:#3C4A3A; color:#F2EEE2; font-size:15px; font-weight:600; padding:12px 24px; border-radius:999px;">Get Started</span>
+          <span style="font-size:15px; font-weight:600; color:#849F7A;">Show me →</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Thought Leaders -->
+    <div style="flex:0 0 100vw; scroll-snap-align:center; position:relative; overflow:hidden; background:#F3E7CC; border-top:1px solid #E6D5B0; border-bottom:1px solid #E6D5B0; padding:110px 60px; display:flex; align-items:center; justify-content:center; min-height:78vh;">
+      <div style="position:absolute; inset:0; background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E&quot;); background-size:170px; opacity:.6; mix-blend-mode:multiply; pointer-events:none;"></div>
+      <div style="position:relative; display:flex; flex-direction:column; max-width:760px; width:100%;">
+        <span style="align-self:flex-start; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#7A5A24; background:rgba(201,152,92,.28); padding:7px 14px; border-radius:999px;">For Thought Leaders</span>
+        <h3 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:46px; line-height:1.1; letter-spacing:-1px; color:#262922; margin:28px 0 0;">Your audience shouldn't have to consume everything you've ever created.</h3>
+        <p style="font-size:19px; line-height:1.6; color:#55594D; margin:22px 0 0;">Turn your essays, videos, podcasts, and frameworks into a conversational guide. Every new piece makes it smarter, and every answer points back to your original work.</p>
+        <div style="display:flex; align-items:center; gap:18px; margin-top:auto; padding-top:32px;">
+          <span style="background:#3C4A3A; color:#F2EEE2; font-size:15px; font-weight:600; padding:12px 24px; border-radius:999px;">Get Started</span>
+          <span style="font-size:15px; font-weight:600; color:#C9985C;">Show me →</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Law Firms -->
+    <div style="flex:0 0 100vw; scroll-snap-align:center; position:relative; overflow:hidden; background:#DCE4D6; border-top:1px solid #C7D3BF; border-bottom:1px solid #C7D3BF; padding:110px 60px; display:flex; align-items:center; justify-content:center; min-height:78vh;">
+      <div style="position:absolute; inset:0; background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E&quot;); background-size:170px; opacity:.6; mix-blend-mode:multiply; pointer-events:none;"></div>
+      <div style="position:relative; display:flex; flex-direction:column; max-width:760px; width:100%;">
+        <span style="align-self:flex-start; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#F2EEE2; background:rgba(60,74,58,.9); padding:7px 14px; border-radius:999px;">For Law Firms</span>
+        <h3 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:46px; line-height:1.1; letter-spacing:-1px; color:#262922; margin:28px 0 0;">Stop building research briefs from scratch.</h3>
+        <p style="font-size:19px; line-height:1.6; color:#55594D; margin:22px 0 0;">Your firm's best thinking already exists across previous matters and research. Poysis helps associates find it in seconds — with every answer cited back to the exact document it came from.</p>
+        <div style="display:flex; align-items:center; gap:18px; margin-top:auto; padding-top:32px;">
+          <span style="background:#3C4A3A; color:#F2EEE2; font-size:15px; font-weight:600; padding:12px 24px; border-radius:999px;">Get Started</span>
+          <span style="font-size:15px; font-weight:600; color:#3C4A3A;">Show me →</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Consulting Firms -->
+    <div style="flex:0 0 100vw; scroll-snap-align:center; position:relative; overflow:hidden; background:#F2E1DB; border-top:1px solid #E4CBBF; border-bottom:1px solid #E4CBBF; padding:110px 60px; display:flex; align-items:center; justify-content:center; min-height:78vh;">
+      <div style="position:absolute; inset:0; background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E&quot;); background-size:170px; opacity:.6; mix-blend-mode:multiply; pointer-events:none;"></div>
+      <div style="position:relative; display:flex; flex-direction:column; max-width:760px; width:100%;">
+        <span style="align-self:flex-start; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#F2EEE2; background:rgba(126,58,51,.9); padding:7px 14px; border-radius:999px;">For Consulting Firms</span>
+        <h3 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:46px; line-height:1.1; letter-spacing:-1px; color:#262922; margin:28px 0 0;">Your best thinking should be reusable, not repeatable.</h3>
+        <p style="font-size:19px; line-height:1.6; color:#55594D; margin:22px 0 0;">Every engagement creates valuable knowledge. Poysis turns your firm's accumulated expertise into something every consultant can reason with — so new work starts with proven thinking, not a blank page.</p>
+        <div style="display:flex; align-items:center; gap:18px; margin-top:auto; padding-top:32px;">
+          <span style="background:#3C4A3A; color:#F2EEE2; font-size:15px; font-weight:600; padding:12px 24px; border-radius:999px;">Get Started</span>
+          <span style="font-size:15px; font-weight:600; color:#7E3A33;">Show me →</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Solo Operators -->
+    <div style="flex:0 0 100vw; scroll-snap-align:center; position:relative; overflow:hidden; background:#F4EAD3; border-top:1px solid #E7D8B6; border-bottom:1px solid #E7D8B6; padding:110px 60px; display:flex; align-items:center; justify-content:center; min-height:78vh;">
+      <div style="position:absolute; inset:0; background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E&quot;); background-size:170px; opacity:.6; mix-blend-mode:multiply; pointer-events:none;"></div>
+      <div style="position:relative; display:flex; flex-direction:column; max-width:760px; width:100%;">
+        <span style="align-self:flex-start; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#7A5A24; background:rgba(201,152,92,.28); padding:7px 14px; border-radius:999px;">For Solo Operators</span>
+        <h3 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:46px; line-height:1.1; letter-spacing:-1px; color:#262922; margin:28px 0 0;">Your knowledge should be as searchable as the internet.</h3>
+        <p style="font-size:19px; line-height:1.6; color:#55594D; margin:22px 0 0;">Notes, documents, client work, research — it's all valuable if you can find it. Poysis turns your scattered work into a personal knowledge archive you can talk to, with answers you can verify.</p>
+        <div style="display:flex; align-items:center; gap:18px; margin-top:auto; padding-top:32px;">
+          <span style="background:#3C4A3A; color:#F2EEE2; font-size:15px; font-weight:600; padding:12px 24px; border-radius:999px;">Get Started</span>
+          <span style="font-size:15px; font-weight:600; color:#C9985C;">Show me →</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Teachers -->
+    <div style="flex:0 0 100vw; scroll-snap-align:center; position:relative; overflow:hidden; background:#E8EBDC; border-top:1px solid #D5DCC7; border-bottom:1px solid #D5DCC7; padding:110px 60px; display:flex; align-items:center; justify-content:center; min-height:78vh;">
+      <div style="position:absolute; inset:0; background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E&quot;); background-size:170px; opacity:.6; mix-blend-mode:multiply; pointer-events:none;"></div>
+      <div style="position:relative; display:flex; flex-direction:column; max-width:760px; width:100%;">
+        <span style="align-self:flex-start; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#3C5A2E; background:rgba(132,159,122,.28); padding:7px 14px; border-radius:999px;">For Teachers</span>
+        <h3 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:46px; line-height:1.1; letter-spacing:-1px; color:#262922; margin:28px 0 0;">Your teaching should live beyond the classroom.</h3>
+        <p style="font-size:19px; line-height:1.6; color:#55594D; margin:22px 0 0;">Years of lesson plans, resources, and subject expertise deserve more than folders and files. Poysis turns your teaching into a living archive students can explore, grounded in the material you've created.</p>
+        <div style="display:flex; align-items:center; gap:18px; margin-top:auto; padding-top:32px;">
+          <span style="background:#3C4A3A; color:#F2EEE2; font-size:15px; font-weight:600; padding:12px 24px; border-radius:999px;">Get Started</span>
+          <span style="font-size:15px; font-weight:600; color:#849F7A;">Show me →</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- ===================== TESTIMONIALS ===================== -->
+<div style="background:#F2EEE2; font-family:'Albert Sans',sans-serif; padding:120px 60px 128px;">
+  <div style="max-width:1200px; margin:0 auto;">
+    <div style="text-align:center; max-width:640px; margin:0 auto 64px;">
+      <span style="font-size:13px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:#C9985C;">What people are saying</span>
+      <h2 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:52px; line-height:1.08; letter-spacing:-1.2px; color:#262922; margin:16px 0 0;">Knowledge, <span style="font-style:italic;">found again</span>.</h2>
+    </div>
+
+    <div style="columns:3 320px; column-gap:24px;">
+
+      <div style="break-inside:avoid; margin:0 0 24px; background:#F6F1F0; border:1px solid #E4DFCC; border-radius:22px; padding:32px 30px; box-shadow:0 22px 50px -34px rgba(38,41,34,.4);">
+        <span style="font-family:'Source Serif 4',serif; font-size:44px; line-height:0; color:#C9985C;">&ldquo;</span>
+        <p style="font-family:'Source Serif 4',serif; font-weight:400; font-size:24px; line-height:1.38; letter-spacing:-.3px; color:#262922; margin:14px 0 0;">A client came back after months, and I'd completely forgotten where I'd saved all my research. Poysis found everything in minutes.</p>
+        <div style="display:flex; align-items:center; gap:11px; margin-top:24px;">
+          <span style="width:34px; height:34px; border-radius:50%; background:#849F7A; color:#F2EEE2; display:inline-flex; align-items:center; justify-content:center; font-size:14px; font-weight:600;">M</span>
+          <span style="font-size:15px; font-weight:600; color:#55594D;">Muthainat</span>
+        </div>
+      </div>
+
+      <div style="break-inside:avoid; margin:0 0 24px; background:#3C4A3A; border-radius:22px; padding:32px 30px; box-shadow:0 22px 50px -34px rgba(38,41,34,.5);">
+        <span style="font-family:'Source Serif 4',serif; font-size:44px; line-height:0; color:#C9985C;">&ldquo;</span>
+        <p style="font-family:'Source Serif 4',serif; font-weight:400; font-size:24px; line-height:1.38; letter-spacing:-.3px; color:#F5F0E4; margin:14px 0 0;">I didn't know I had this many valuable documents in my Google Drive.</p>
+        <div style="display:flex; align-items:center; gap:11px; margin-top:24px;">
+          <span style="width:34px; height:34px; border-radius:50%; background:#C9985C; color:#2C2416; display:inline-flex; align-items:center; justify-content:center; font-size:14px; font-weight:600;">I</span>
+          <span style="font-size:15px; font-weight:600; color:rgba(242,238,226,.85);">Ifeoluwa</span>
+        </div>
+      </div>
+
+      <div style="break-inside:avoid; margin:0 0 24px; background:#F2E1DB; border:1px solid #E4CBBF; border-radius:22px; padding:32px 30px; box-shadow:0 22px 50px -34px rgba(38,41,34,.4);">
+        <span style="font-family:'Source Serif 4',serif; font-size:44px; line-height:0; color:#B0564A;">&ldquo;</span>
+        <p style="font-family:'Source Serif 4',serif; font-weight:400; font-size:24px; line-height:1.38; letter-spacing:-.3px; color:#3A2320; margin:14px 0 0;">We spend way too much time onboarding new staff. Poysis could handle most of that for us.</p>
+        <div style="display:flex; align-items:center; gap:11px; margin-top:24px;">
+          <span style="width:34px; height:34px; border-radius:50%; background:#7E3A33; color:#F2EEE2; display:inline-flex; align-items:center; justify-content:center; font-size:14px; font-weight:600;">O</span>
+          <span style="font-size:15px; font-weight:600; color:#55594D;">Ope</span>
+        </div>
+      </div>
+
+      <div style="break-inside:avoid; margin:0 0 24px; background:#E4EAD9; border:1px solid #D0DCC5; border-radius:22px; padding:32px 30px; box-shadow:0 22px 50px -34px rgba(38,41,34,.4);">
+        <span style="font-family:'Source Serif 4',serif; font-size:44px; line-height:0; color:#5E7D4F;">&ldquo;</span>
+        <p style="font-family:'Source Serif 4',serif; font-weight:400; font-size:24px; line-height:1.38; letter-spacing:-.3px; color:#233019; margin:14px 0 0;">I used to spend way too much time starting research from scratch.</p>
+        <div style="display:flex; align-items:center; gap:11px; margin-top:24px;">
+          <span style="width:34px; height:34px; border-radius:50%; background:#849F7A; color:#F2EEE2; display:inline-flex; align-items:center; justify-content:center; font-size:14px; font-weight:600;">B</span>
+          <span style="font-size:15px; font-weight:600; color:#55594D;">Becca</span>
+        </div>
+      </div>
+
+      <div style="break-inside:avoid; margin:0 0 24px; background:#F3E7CC; border:1px solid #E6D5B0; border-radius:22px; padding:32px 30px; box-shadow:0 22px 50px -34px rgba(38,41,34,.4);">
+        <span style="font-family:'Source Serif 4',serif; font-size:44px; line-height:0; color:#B0842F;">&ldquo;</span>
+        <p style="font-family:'Source Serif 4',serif; font-weight:400; font-size:24px; line-height:1.38; letter-spacing:-.3px; color:#3A2E12; margin:14px 0 0;">I can't wait to build an operations dashboard with this.</p>
+        <div style="display:flex; align-items:center; gap:11px; margin-top:24px;">
+          <span style="width:34px; height:34px; border-radius:50%; background:#C9985C; color:#2C2416; display:inline-flex; align-items:center; justify-content:center; font-size:14px; font-weight:600;">A</span>
+          <span style="font-size:15px; font-weight:600; color:#55594D;">Armstrong</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- ===================== MANIFESTO ===================== -->
+<div style="position:relative; overflow:hidden; background:#2B3427; font-family:'Albert Sans',sans-serif; padding:150px 60px 158px;">
+  <!-- paper grain -->
+  <div style="position:absolute; inset:0; background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E&quot;); background-size:180px; opacity:.14; mix-blend-mode:overlay; pointer-events:none;"></div>
+  <!-- warm glow -->
+  <div style="position:absolute; top:-10%; left:50%; width:900px; height:520px; transform:translateX(-50%); background:radial-gradient(closest-side, rgba(201,152,92,.18), rgba(43,52,39,0) 72%); pointer-events:none;"></div>
+
+  <div style="position:relative; max-width:960px; margin:0 auto; text-align:center;">
+    <span style="font-size:13px; font-weight:600; letter-spacing:4px; text-transform:uppercase; color:#C9985C;">Our belief</span>
+    <h2 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:56px; line-height:1.14; letter-spacing:-1.6px; color:#F5F0E4; margin:32px auto 0; max-width:900px;">We're building a future where every piece of knowledge stays alive, keeps teaching, and continues creating value <span style="font-style:italic; color:#E0A968;">long after it was first written down.</span></h2>
+
+    <div style="margin-top:56px;">
+      <span style="display:inline-block; background:#E0A968; color:#2B3427; font-size:17px; font-weight:700; letter-spacing:.2px; padding:18px 40px; border-radius:999px; box-shadow:0 18px 40px -16px rgba(224,169,104,.6);">Join the future of knowledge</span>
+    </div>
+  </div>
+</div>
+<!-- ===================== ARCHIVE IMAGE BAND ===================== -->
+<div style="position:relative; width:100%; height:660px; overflow:hidden; background:#2A2E25; font-family:'Albert Sans',sans-serif;">
+  <!-- the image the user drops -->
+  <image-slot id="library-image" shape="rect" placeholder="Drop a library / archive image (e.g. grand library, stacks, manuscripts)" style="display:block; width:100%; height:100%;"></image-slot>
+
+  <!-- warm brand tint (multiplies onto the photo) -->
+  <div style="position:absolute; inset:0; background:linear-gradient(160deg, rgba(60,74,58,.62) 0%, rgba(126,58,51,.5) 100%); mix-blend-mode:multiply; pointer-events:none;"></div>
+  <!-- legibility darkening -->
+  <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(26,28,22,.28) 0%, rgba(26,28,22,.12) 42%, rgba(26,28,22,.66) 100%); pointer-events:none;"></div>
+
+  <!-- overlaid copy -->
+  <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 60px; pointer-events:none;">
+    <span style="font-size:13px; font-weight:600; letter-spacing:3.5px; text-transform:uppercase; color:rgba(233,220,197,.85);">Your living archive</span>
+    <h2 style="font-family:'Source Serif 4',serif; font-weight:500; font-size:60px; line-height:1.08; letter-spacing:-1.4px; color:#F5F0E4; margin:20px 0 0; max-width:900px; text-shadow:0 2px 24px rgba(20,22,16,.4);">The library of <span style="font-style:italic;">everything you know</span>.</h2>
+    <p style="font-size:20px; line-height:1.5; color:rgba(240,235,224,.9); margin:24px 0 0; max-width:560px;">Gathered in one place. Cited to the source. Never lost again.</p>
+  </div>
+</div></x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  states = [
+    { role: "Knowledge Companion.", desc: "Helping you think, explore ideas, and make better decisions \u2014 with every answer pointing back to the original source." },
+    { role: "Research Assistant.", desc: "Find answers across years of documents, meetings, and videos in seconds, always backed by the original source." },
+    { role: "Brainstorming Buddy.", desc: "Develop better ideas by building on everything you've already learned instead of starting from a blank page." },
+    { role: "Thought Partner.", desc: "Connect ideas, challenge assumptions, and uncover patterns hidden across your work." },
+    { role: "Decision Partner.", desc: "Make faster, more confident decisions by drawing on your past work instead of relying on memory." },
+    { role: "Living Notebook.", desc: "Turn years of work into something you \u2014 and everyone you choose \u2014 can explore through conversation." },
+  ];
+  state = { idx: 0, vis: true };
+  componentDidMount() {
+    this._t = setInterval(() => {
+      this.setState({ vis: false });
+      this._s = setTimeout(() => {
+        this.setState(s => ({ idx: (s.idx + 1) % this.states.length, vis: true }));
+      }, 480);
+    }, 3600);
+  }
+  componentWillUnmount() { clearInterval(this._t); clearTimeout(this._s); }
+  scrollCards = (dir) => {
+    const el = document.querySelector("[data-poysis-carousel]");
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    const target = Math.max(0, Math.min(max, el.scrollLeft + dir * el.clientWidth));
+    try { el.scrollTo({ left: target, behavior: "smooth" }); } catch (e) {}
+    el.scrollLeft = target;
+  };
+  renderVals() {
+    const cur = this.states[this.state.idx];
+    const vis = this.state.vis;
+    return {
+      role: cur.role,
+      desc: cur.desc,
+      roleFade: {
+        opacity: vis ? 1 : 0,
+        transform: vis ? "translateY(0)" : "translateY(8px)",
+        transition: "opacity .48s ease, transform .48s ease",
+      },
+      scrollPrev: () => this.scrollCards(-1),
+      scrollNext: () => this.scrollCards(1),
+    };
+  }
+}
+</script>
+</body>
+</html>

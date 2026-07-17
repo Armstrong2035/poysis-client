@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Albert+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #F1EEE2; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: #C9C2AC; border-radius: 4px; }
+    @keyframes pulseSync { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+  </style>
+</helmet>
+
+<div style="display:flex; width:100%; height:100vh; font-family:'Albert Sans',sans-serif; background:#F1EEE2; color:#262922; overflow:hidden;">
+
+  <!-- SIDEBAR -->
+  <aside style="width:236px; flex-shrink:0; background:#2B362A; display:flex; flex-direction:column; padding:22px 16px; gap:4px;">
+    <div style="display:flex; align-items:center; gap:9px; padding:4px 8px 20px 8px;">
+      <img src="poysis-icon-reversed.svg" style="width:22px; height:22px;" />
+      <span style="font-family:'Source Serif 4',serif; font-weight:600; font-size:19px; color:#FAF8F0;">poysis</span>
+    </div>
+
+    <div data-nav="map" onClick="{{ goTo_map }}" style="cursor:pointer; display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; font-size:14px; font-weight:{{ navWeight_map }}; background:{{ navBg_map }}; color:{{ navColor_map }};">
+      <span style="font-size:15px;">◈</span> Knowledge Map
+    </div>
+    <div data-nav="canvas" onClick="{{ goTo_canvas }}" style="cursor:pointer; display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; font-size:14px; font-weight:{{ navWeight_canvas }}; background:{{ navBg_canvas }}; color:{{ navColor_canvas }};">
+      <span style="font-size:15px;">✎</span> Canvas
+    </div>
+    <div data-nav="sources" onClick="{{ goTo_sources }}" style="cursor:pointer; display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; font-size:14px; font-weight:{{ navWeight_sources }}; background:{{ navBg_sources }}; color:{{ navColor_sources }};">
+      <span style="font-size:15px;">⇄</span> Sources
+    </div>
+    <div data-nav="teams" onClick="{{ goTo_teams }}" style="cursor:pointer; display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; font-size:14px; font-weight:{{ navWeight_teams }}; background:{{ navBg_teams }}; color:{{ navColor_teams }};">
+      <span style="font-size:15px;">◎</span> Teams &amp; Permissions
+    </div>
+
+    <div style="flex:1;"></div>
+
+    <button onClick="{{ openQuickAsk }}" style="cursor:pointer; border:1px solid #4A5748; background:#3C4A3A; color:#F1EEE2; border-radius:9px; padding:11px 14px; font-family:'Albert Sans',sans-serif; font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:8px; justify-content:center;">
+      <span style="color:#C99A5C;">✦</span> Quick Ask
+    </button>
+    <div style="font-size:11px; color:#8A9488; padding:10px 4px 14px 4px;">Runs across everything you can access</div>
+
+    <button onClick="{{ toggleChecklist }}" style="cursor:pointer; border:1px solid #4A5748; background:transparent; color:#F1EEE2; border-radius:9px; padding:11px 14px; font-family:'Albert Sans',sans-serif; font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+      <span style="display:flex; align-items:center; gap:8px;"><span style="color:#849777;">◐</span> Getting Started</span>
+      <span style="font-size:11px; color:#B7C0B4;">{{ onboardingCountLabel }}</span>
+    </button>
+    <div style="height:3px; border-radius:2px; background:#46523F; margin-top:2px; overflow:hidden;">
+      <div style="height:100%; background:#849777; width:{{ onboardingPct }};"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main style="flex:1; overflow-y:auto; position:relative;">
+
+    <!-- KNOWLEDGE MAP -->
+    <sc-if value="{{ isMap }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:36px 44px; max-width:1180px;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:28px;">
+          <div>
+            <div style="font-family:'Source Serif 4',serif; font-size:30px; font-weight:600; margin-bottom:4px;">Knowledge Map</div>
+            <div style="font-size:14px; color:#55594D;">What you have, and how it's organized.</div>
+          </div>
+          <button onClick="{{ openConnectMap }}" style="cursor:pointer; flex-shrink:0; display:flex; align-items:center; gap:8px; padding:11px 16px; border-radius:9px; border:1px solid #E4DECC; background:#FAF8F0; font-family:'Albert Sans',sans-serif; font-weight:600; font-size:13px; color:#262922;">
+            <span style="color:#C99A5C;">✦</span> Connect to Claude
+          </button>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:22px;">
+          <sc-for list="{{ clusterCards }}" as="c" hint-placeholder-count="5">
+            <div onClick="{{ c.select }}" style="cursor:pointer; width:266px; background:#FAF8F0; border:1px solid #E4DECC; border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:10px; transition:box-shadow .15s;" style-hover="box-shadow:0 6px 18px rgba(60,74,58,0.12); border-color:#C9C2AC;">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div style="width:11px; height:11px; border-radius:50%; background:{{ c.dotColor }};"></div>
+                <div style="font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:3px 9px; border-radius:20px; background:{{ c.badgeBg }}; color:{{ c.badgeColor }};">{{ c.ceilingLabel }}</div>
+              </div>
+              <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:17px; line-height:1.25;">{{ c.name }}</div>
+              <div style="font-size:12.5px; color:#55594D; display:flex; gap:12px;">
+                <span>{{ c.docCount }} docs</span>
+                <span>{{ c.subCount }} sub-clusters</span>
+              </div>
+              <div style="font-size:11.5px; color:#8A9488;">Synced {{ c.lastSynced }}</div>
+
+              <sc-if value="{{ c.hasSubs }}" hint-placeholder-val="{{ false }}">
+                <div style="border-top:1px solid #E4DECC; margin-top:2px; padding-top:8px; display:flex; flex-direction:column; gap:5px;">
+                  <sc-for list="{{ c.subs }}" as="s" hint-placeholder-count="2">
+                    <div style="font-size:11.5px; color:#55594D; padding-left:10px; border-left:2px solid #E4DECC;">{{ s.name }} · {{ s.docCount }}</div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <div style="font-size:11px; color:#7E3A33; margin-top:2px;">{{ c.dependentsLabel }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- Cluster detail drawer (shared: Knowledge Map + Canvas) -->
+    <sc-if value="{{ hasSelectedCluster }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ closeClusterDrawer }}" style="position:fixed; inset:0; background:rgba(38,41,34,0.28); z-index:20;"></div>
+      <div style="position:fixed; top:0; right:0; bottom:0; width:440px; background:#FAF8F0; border-left:1px solid #E4DECC; z-index:21; padding:26px; display:flex; flex-direction:column; gap:14px; box-shadow:-8px 0 24px rgba(0,0,0,0.08); overflow-y:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <div style="font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:3px 9px; border-radius:20px; display:inline-block; margin-bottom:8px; background:{{ selectedCluster.badgeBg }}; color:{{ selectedCluster.badgeColor }};">{{ selectedCluster.ceilingLabel }}</div>
+            <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:20px;">{{ selectedCluster.name }}</div>
+          </div>
+          <div onClick="{{ closeClusterDrawer }}" style="cursor:pointer; color:#8A9488; font-size:18px;">✕</div>
+        </div>
+        <div style="font-size:13px; color:#55594D; display:flex; gap:16px;">
+          <span>{{ selectedCluster.docCount }} documents</span>
+          <span>{{ selectedCluster.subCount }} sub-clusters</span>
+        </div>
+        <div style="font-size:12px; color:#8A9488;">Last synced {{ selectedCluster.lastSynced }}</div>
+
+        <div style="border-top:1px solid #E4DECC; padding-top:14px;">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#8A9488; margin-bottom:8px;">Ceiling (source of truth)</div>
+          <select value="{{ selectedCluster.ceiling }}" onChange="{{ selectedCluster.onCeilingChange }}" style="font-family:'Albert Sans',sans-serif; font-size:13px; padding:8px 10px; border-radius:8px; border:1px solid #E4DECC; background:#FAF8F0; color:#262922;">
+            <option value="private">Private</option>
+            <option value="team">Team</option>
+            <option value="public">Public-eligible</option>
+          </select>
+          <sc-if value="{{ selectedCluster.ceilingPending }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:10px; border:1px dashed #C99A5C; background:#FBF3E4; border-radius:9px; padding:12px;">
+              <div style="font-size:13px; color:#262922; margin-bottom:10px; line-height:1.5;">{{ selectedCluster.ceilingPendingConsequence }}</div>
+              <label style="display:flex; align-items:flex-start; gap:8px; font-size:12.5px; color:#55594D; cursor:pointer; margin-bottom:10px;">
+                <input type="checkbox" checked="{{ selectedCluster.ceilingPendingChecked }}" onChange="{{ selectedCluster.toggleCeilingCheck }}" style="margin-top:2px;" />
+                <span>I understand the consequence and want to proceed.</span>
+              </label>
+              <div style="display:flex; gap:8px;">
+                <button onClick="{{ selectedCluster.confirmCeiling }}" disabled="{{ selectedCluster.ceilingConfirmDisabled }}" style="cursor:pointer; padding:8px 14px; border-radius:8px; border:none; background:{{ selectedCluster.ceilingConfirmBg }}; color:#FAF8F0; font-weight:600; font-size:12.5px;">Apply change</button>
+                <button onClick="{{ selectedCluster.cancelCeiling }}" style="cursor:pointer; padding:8px 14px; border-radius:8px; border:1px solid #E4DECC; background:transparent; font-weight:600; font-size:12.5px; color:#55594D;">Cancel</button>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="border-top:1px solid #E4DECC; padding-top:14px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+            <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#8A9488;">Documents</div>
+            <div style="font-size:11.5px; color:#8A9488;">{{ selectedCluster.pageLabel }}</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:2px;">
+            <sc-for list="{{ selectedCluster.docsPageItems }}" as="doc" hint-placeholder-count="5">
+              <label style="display:flex; align-items:center; gap:9px; padding:7px 4px; font-size:13px; color:#262922; cursor:pointer; border-radius:6px;" style-hover="background:#F1EEE2;">
+                <input type="checkbox" checked="{{ doc.checked }}" onChange="{{ doc.toggle }}" />
+                <span>{{ doc.name }}</span>
+              </label>
+            </sc-for>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px;">
+            <div onClick="{{ selectedCluster.prevPage }}" style="cursor:pointer; font-size:12px; font-weight:600; color:{{ selectedCluster.prevColor }};">← Prev</div>
+            <div style="font-size:11.5px; color:#8A9488;">{{ selectedCluster.pageOfLabel }}</div>
+            <div onClick="{{ selectedCluster.nextPage }}" style="cursor:pointer; font-size:12px; font-weight:600; color:{{ selectedCluster.nextColor }};">Next →</div>
+          </div>
+        </div>
+
+        <sc-if value="{{ selectedCluster.hasSelection }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px dashed #C99A5C; background:#FBF3E4; border-radius:9px; padding:12px; display:flex; flex-direction:column; gap:8px;">
+            <div style="font-size:12.5px; color:#262922;">{{ selectedCluster.selectionLabel }} selected. Split them into a new cluster:</div>
+            <input value="{{ newClusterName }}" onChange="{{ onNewClusterNameChange }}" placeholder="New cluster name…" style="padding:9px 11px; border-radius:7px; border:1px solid #E4DECC; background:#FAF8F0; font-family:'Albert Sans',sans-serif; font-size:13px; outline:none;" />
+            <button onClick="{{ selectedCluster.createFromSelection }}" style="cursor:pointer; padding:9px 12px; border-radius:8px; border:none; background:#3C4A3A; color:#FAF8F0; font-weight:600; font-size:12.5px;">Create cluster from selection</button>
+          </div>
+        </sc-if>
+
+        <div style="border-top:1px solid #E4DECC; padding-top:14px;">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#8A9488; margin-bottom:8px;">Depends on this cluster</div>
+          <div style="font-size:13px; color:#262922;">{{ selectedCluster.dependentsList }}</div>
+        </div>
+        <div style="flex:1;"></div>
+        <sc-if value="{{ selectedCluster.removableFromCurrentNotebook }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ selectedCluster.removeFromCurrentNotebook }}" style="cursor:pointer; padding:12px 14px; border-radius:9px; border:1px solid #E4DECC; background:#FAF8F0; font-family:'Albert Sans',sans-serif; font-weight:600; font-size:13.5px; text-align:left; color:#7E3A33;">Remove from this notebook</button>
+        </sc-if>
+        <button onClick="{{ selectedCluster.buildAction }}" style="cursor:pointer; padding:12px 14px; border-radius:9px; border:none; background:#3C4A3A; color:#FAF8F0; font-family:'Albert Sans',sans-serif; font-weight:600; font-size:13.5px; text-align:left;">Build a notebook from this cluster →</button>
+      </div>
+    </sc-if>
+
+    <!-- CANVAS: fixed frame, contents swap per selected notebook -->
+    <sc-if value="{{ isCanvas }}" hint-placeholder-val="{{ false }}">
+      <div style="position:relative; height:100%; overflow:hidden;">
+
+        <div style="position:absolute; inset:0; overflow:auto; padding:100px 40px 140px 40px; display:flex; flex-wrap:wrap; align-content:flex-start; gap:22px;">
+          <sc-for list="{{ realNodes }}" as="node" hint-placeholder-count="3">
+            <div onClick="{{ node.onClick }}" style="width:210px; cursor:pointer; user-select:none; background:#FAF8F0; border:1px solid #E4DECC; border-radius:14px; padding:16px 17px; box-shadow:0 2px 8px rgba(60,74,58,0.08);">
+              <div style="width:10px; height:10px; border-radius:50%; background:{{ node.dotColor }}; margin-bottom:9px;"></div>
+              <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:15px; margin-bottom:5px; line-height:1.3;">{{ node.name }}</div>
+              <div style="font-size:11.5px; color:#8A9488;">{{ node.docCount }} docs</div>
+            </div>
+          </sc-for>
+
+          <sc-if value="{{ noRealNodes }}" hint-placeholder-val="{{ false }}">
+            <div style="color:#8A9488; font-size:14px; padding:14px 0;">No clusters in this notebook yet — use "+ Cluster" below to add one.</div>
+          </sc-if>
+        </div>
+
+        <!-- notebook picker -->
+        <div style="position:absolute; top:20px; left:20px; z-index:6; width:260px;">
+          <sc-if value="{{ pickerClosed }}" hint-placeholder-val="{{ true }}">
+            <div onClick="{{ togglePicker }}" style="cursor:pointer; display:flex; align-items:center; gap:10px; background:#FAF8F0; border:1px solid #E4DECC; border-radius:10px; padding:11px 14px; box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+              <div style="width:9px; height:9px; border-radius:50%; background:{{ currentNotebookDot }};"></div>
+              <div style="flex:1; font-weight:600; font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ currentNotebookName }}</div>
+              <div style="color:#8A9488; font-size:12px;">▾</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ pickerOpenState }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#FAF8F0; border:1px solid #E4DECC; border-radius:12px; padding:10px; box-shadow:0 8px 24px rgba(0,0,0,0.1);">
+              <div onClick="{{ togglePicker }}" style="cursor:pointer; display:flex; align-items:center; justify-content:space-between; padding:4px 6px 10px 6px;">
+                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#8A9488;">Notebooks</div>
+                <div style="color:#8A9488; font-size:12px;">▴</div>
+              </div>
+              <sc-for list="{{ pickerRows }}" as="r" hint-placeholder-count="3">
+                <div onClick="{{ r.select }}" style="cursor:pointer; display:flex; align-items:center; gap:10px; padding:9px 8px; border-radius:8px;" style-hover="background:#F1EEE2;">
+                  <div style="width:14px; height:14px; border-radius:50%; border:1.5px solid {{ r.dotColor }}; background:{{ r.fillColor }}; flex-shrink:0;"></div>
+                  <div style="font-size:13.5px; font-weight:{{ r.weight }};">{{ r.name }}</div>
+                </div>
+              </sc-for>
+              <div onClick="{{ createNewNotebook }}" style="cursor:pointer; margin-top:6px; padding:9px 8px; border-radius:8px; font-size:13px; font-weight:600; color:#7E3A33;">+ New notebook</div>
+            </div>
+          </sc-if>
+        </div>
+
+        <!-- notebook settings bar -->
+        <div style="position:absolute; bottom:20px; left:20px; z-index:6; display:flex; align-items:center; gap:10px; background:#FAF8F0; border:1px solid #E4DECC; border-radius:12px; padding:10px 12px; box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+          <div style="font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:3px 9px; border-radius:20px; background:{{ currentNotebookBadgeBg }}; color:{{ currentNotebookBadgeColor }};">{{ currentNotebookCeilingLabel }}</div>
+          <div style="font-weight:600; font-size:13.5px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ currentNotebookName }}</div>
+          <div onClick="{{ openAddCluster }}" style="cursor:pointer; padding:8px 12px; border-radius:8px; border:1px solid #E4DECC; font-size:12.5px; font-weight:600; color:#262922;">+ Cluster</div>
+          <div onClick="{{ openNotebookSettings }}" style="cursor:pointer; padding:8px 10px; border-radius:8px; border:1px solid #E4DECC; font-size:13px;">⚙</div>
+          <div onClick="{{ publishCurrentNotebook }}" style="cursor:pointer; padding:8px 14px; border-radius:8px; border:none; background:#3C4A3A; color:#FAF8F0; font-size:12.5px; font-weight:600;">{{ publishLabel }}</div>
+        </div>
+
+        <!-- add cluster dropdown -->
+        <sc-if value="{{ addClusterOpenState }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ closeAddCluster }}" style="position:fixed; inset:0; z-index:7;"></div>
+          <div style="position:absolute; bottom:70px; left:20px; z-index:8; width:240px; background:#FAF8F0; border:1px solid #E4DECC; border-radius:12px; padding:10px; box-shadow:0 8px 24px rgba(0,0,0,0.1);">
+            <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#8A9488; padding:4px 6px 8px 6px;">Add a cluster</div>
+            <sc-for list="{{ addableClusters }}" as="ac" hint-placeholder-count="2">
+              <div onClick="{{ ac.add }}" style="cursor:pointer; padding:9px 8px; border-radius:8px; font-size:13px;" style-hover="background:#F1EEE2;">{{ ac.name }}</div>
+            </sc-for>
+            <sc-if value="{{ noAddableClusters }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:9px 8px; font-size:12.5px; color:#8A9488;">All clusters already added.</div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- chat panel -->
+        <div style="position:absolute; bottom:20px; right:20px; z-index:6; width:320px; height:400px; background:#FAF8F0; border:1px solid #E4DECC; border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,0.1); display:flex; flex-direction:column; overflow:hidden;">
+          <div style="padding:12px 16px; border-bottom:1px solid #E4DECC; font-size:12px; font-weight:700; color:#8A9488; text-transform:uppercase; letter-spacing:.04em;">Converse</div>
+          <div style="flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:10px;">
+            <sc-for list="{{ chatMessages }}" as="m" hint-placeholder-count="2">
+              <div style="max-width:88%; align-self:{{ m.align }}; background:{{ m.bg }}; color:{{ m.color }}; padding:9px 12px; border-radius:11px; font-size:12.5px; line-height:1.45; white-space:pre-wrap;">{{ m.text }}</div>
+            </sc-for>
+          </div>
+          <div style="padding:0 16px 8px 16px; display:flex; gap:6px; flex-wrap:wrap;">
+            <sc-for list="{{ suggestedPrompts }}" as="p" hint-placeholder-count="2">
+              <div onClick="{{ p.use }}" style="cursor:pointer; font-size:10.5px; padding:4px 9px; border-radius:14px; border:1px solid #E4DECC; color:#55594D;">{{ p.label }}</div>
+            </sc-for>
+          </div>
+          <div style="padding:10px 14px 14px 14px; border-top:1px solid #E4DECC; display:flex; gap:8px;">
+            <input value="{{ chatInput }}" onChange="{{ onChatInputChange }}" onKeyDown="{{ onChatKeyDown }}" placeholder="Tell it what to change…" style="flex:1; padding:9px 11px; border-radius:8px; border:1px solid #E4DECC; background:#F1EEE2; font-family:'Albert Sans',sans-serif; font-size:12.5px; outline:none;" />
+            <button onClick="{{ sendChat }}" style="cursor:pointer; padding:0 12px; border-radius:8px; border:none; background:#3C4A3A; color:#FAF8F0; font-weight:600; font-size:12px;">Send</button>
+          </div>
+        </div>
+
+        <!-- notebook settings drawer -->
+        <sc-if value="{{ notebookSettingsOpenState }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ closeNotebookSettings }}" style="position:fixed; inset:0; background:rgba(38,41,34,0.28); z-index:20;"></div>
+          <div style="position:fixed; top:0; right:0; bottom:0; width:440px; background:#FAF8F0; border-left:1px solid #E4DECC; z-index:21; padding:26px; display:flex; flex-direction:column; gap:14px; box-shadow:-8px 0 24px rgba(0,0,0,0.08); overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:20px;">Notebook settings</div>
+              <div onClick="{{ closeNotebookSettings }}" style="cursor:pointer; color:#8A9488; font-size:18px;">✕</div>
+            </div>
+            <sc-for list="{{ settingsFields }}" as="f" hint-placeholder-count="6">
+              <div style="background:#FAF8F0; border:1px solid #E4DECC; border-radius:12px; padding:14px 16px;">
+                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#8A9488; margin-bottom:6px;">{{ f.label }}</div>
+
+                <sc-if value="{{ f.notPending }}" hint-placeholder-val="{{ true }}">
+                  <div style="font-size:14px; color:#262922; line-height:1.5;">{{ f.value }}</div>
+                  <sc-if value="{{ f.hasSub }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:12px; color:#8A9488; margin-top:3px;">{{ f.sub }}</div>
+                  </sc-if>
+                  <sc-if value="{{ f.hasDeploy }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ f.deployAction }}" style="cursor:pointer; margin-top:9px; padding:8px 14px; border-radius:8px; border:none; background:#3C4A3A; color:#FAF8F0; font-weight:600; font-size:12.5px;">Deploy this notebook</button>
+                  </sc-if>
+                </sc-if>
+
+                <sc-if value="{{ f.pending }}" hint-placeholder-val="{{ false }}">
+                  <div style="opacity:0.55; font-size:14px; margin-bottom:10px; text-decoration:line-through; color:#55594D;">{{ f.value }}</div>
+                  <div style="border:1px dashed #C99A5C; background:#FBF3E4; border-radius:9px; padding:12px;">
+                    <div style="font-size:13px; color:#262922; margin-bottom:10px; line-height:1.5;">{{ f.pendingConsequence }}</div>
+                    <label style="display:flex; align-items:flex-start; gap:8px; font-size:12.5px; color:#55594D; cursor:pointer; margin-bottom:10px;">
+                      <input type="checkbox" checked="{{ f.pendingChecked }}" onChange="{{ f.toggleCheck }}" style="margin-top:2px;" />
+                      <span>I understand the consequence and want to proceed.</span>
+                    </label>
+                    <div style="display:flex; gap:8px;">
+                      <button onClick="{{ f.confirm }}" disabled="{{ f.confirmDisabled }}" style="cursor:pointer; padding:8px 14px; border-radius:8px; border:none; background:{{ f.confirmBg }}; color:#FAF8F0; font-weight:600; font-size:12.5px;">Apply change</button>
+                      <button onClick="{{ f.cancel }}" style="cursor:pointer; padding:8px 14px; border-radius:8px; border:1px solid #E4DECC; background:transparent; font-weight:600; font-size:12.5px; color:#55594D;">Cancel</button>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+      </div>
+    </sc-if>
+
+    <!-- SOURCES -->
+    <sc-if value="{{ isSources }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:36px 44px; max-width:900px;">
+        <div style="font-family:'Source Serif 4',serif; font-size:30px; font-weight:600; margin-bottom:4px;">Sources</div>
+        <div style="font-size:14px; color:#55594D; margin-bottom:26px;">Inbound connectors and sync status.</div>
+
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <sc-for list="{{ sourceRows }}" as="s" hint-placeholder-count="4">
+            <div style="background:#FAF8F0; border:1px solid #E4DECC; border-radius:12px; padding:15px 18px; display:flex; align-items:center; gap:16px;">
+              <div style="width:34px; height:34px; border-radius:9px; background:#F1EEE2; display:flex; align-items:center; justify-content:center; font-size:15px;">{{ s.icon }}</div>
+              <div style="flex:1;">
+                <div style="font-weight:600; font-size:14.5px;">{{ s.name }}</div>
+                <div style="font-size:12px; color:#8A9488;">Last synced {{ s.lastSynced }}</div>
+              </div>
+              <div style="font-size:12.5px; font-weight:600; color:{{ s.statusColor }}; display:flex; align-items:center; gap:6px;">
+                <span style="width:7px; height:7px; border-radius:50%; background:{{ s.statusColor }}; animation:{{ s.statusAnim }};"></span>{{ s.statusLabel }}
+              </div>
+              <button onClick="{{ s.toggle }}" style="cursor:pointer; padding:8px 14px; border-radius:8px; border:1px solid #E4DECC; background:transparent; font-size:12.5px; font-weight:600; color:#55594D;">{{ s.toggleLabel }}</button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- TEAMS -->
+    <sc-if value="{{ isTeams }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:36px 44px; max-width:1000px;">
+        <div style="font-family:'Source Serif 4',serif; font-size:30px; font-weight:600; margin-bottom:4px;">Teams &amp; Permissions</div>
+        <div style="font-size:14px; color:#55594D; margin-bottom:26px;">Org-level identity: who exists, what role they hold.</div>
+
+        <div style="background:#FAF8F0; border:1px solid #E4DECC; border-radius:13px; overflow:hidden; margin-bottom:24px;">
+          <div style="display:grid; grid-template-columns:1.3fr 0.8fr 1fr 1.6fr 0.8fr; padding:12px 20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#8A9488; border-bottom:1px solid #E4DECC;">
+            <div>Person</div><div>Role</div><div>Team</div><div>Cluster access</div><div>Status</div>
+          </div>
+          <sc-for list="{{ peopleRows }}" as="p" hint-placeholder-count="4">
+            <div style="display:grid; grid-template-columns:1.3fr 0.8fr 1fr 1.6fr 0.8fr; padding:14px 20px; font-size:13.5px; border-bottom:1px solid #F1EEE2; align-items:center;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:28px; height:28px; border-radius:50%; background:#3C4A3A; color:#FAF8F0; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center;">{{ p.initials }}</div>
+                <div>
+                  <div style="font-weight:600;">{{ p.name }}</div>
+                  <div style="font-size:11.5px; color:#8A9488;">{{ p.email }}</div>
+                </div>
+              </div>
+              <div>{{ p.role }}</div>
+              <div>
+                <select value="{{ p.team }}" onChange="{{ p.onTeamChange }}" style="font-family:'Albert Sans',sans-serif; font-size:12.5px; padding:6px 8px; border-radius:7px; border:1px solid #E4DECC; background:#FAF8F0; color:#262922;">
+                  <sc-for list="{{ p.teamOptions }}" as="t" hint-placeholder-count="4">
+                    <option value="{{ t }}">{{ t }}</option>
+                  </sc-for>
+                </select>
+              </div>
+              <div style="font-size:12px; color:#55594D; line-height:1.4;">{{ p.clusterAccessLabel }}</div>
+              <div style="color:{{ p.statusColor }}; font-size:12.5px; font-weight:600;">{{ p.status }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ inviteFormClosed }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ openInviteForm }}" style="cursor:pointer; margin-bottom:30px; padding:10px 16px; border-radius:9px; border:1px solid #E4DECC; background:#FAF8F0; font-weight:600; font-size:13px; color:#262922;">+ Invite a teammate</button>
+        </sc-if>
+        <sc-if value="{{ inviteFormOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-bottom:30px; background:#FAF8F0; border:1px solid #E4DECC; border-radius:13px; padding:18px 20px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <input value="{{ inviteName }}" onChange="{{ onInviteNameChange }}" placeholder="Name" style="flex:1; min-width:160px; padding:10px 12px; border-radius:8px; border:1px solid #E4DECC; background:#F1EEE2; font-family:'Albert Sans',sans-serif; font-size:13.5px; outline:none;" />
+            <input value="{{ inviteEmail }}" onChange="{{ onInviteEmailChange }}" placeholder="Email" style="flex:1; min-width:180px; padding:10px 12px; border-radius:8px; border:1px solid #E4DECC; background:#F1EEE2; font-family:'Albert Sans',sans-serif; font-size:13.5px; outline:none;" />
+            <button onClick="{{ sendInvite }}" style="cursor:pointer; padding:10px 16px; border-radius:8px; border:none; background:#3C4A3A; color:#FAF8F0; font-weight:600; font-size:13px;">Send invite</button>
+            <button onClick="{{ closeInviteForm }}" style="cursor:pointer; padding:10px 14px; border-radius:8px; border:1px solid #E4DECC; background:transparent; font-weight:600; font-size:13px; color:#55594D;">Cancel</button>
+          </div>
+        </sc-if>
+
+        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#8A9488; margin-bottom:10px;">Cluster access by team</div>
+        <div style="background:#FAF8F0; border:1px solid #E4DECC; border-radius:13px; padding:16px 20px; margin-bottom:30px; display:flex; flex-direction:column; gap:13px;">
+          <sc-for list="{{ clusterAccessRows }}" as="row" hint-placeholder-count="5">
+            <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+              <div style="width:180px; flex-shrink:0; font-size:13.5px; font-weight:600;">{{ row.clusterName }}</div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <sc-for list="{{ row.teamChips }}" as="chip" hint-placeholder-count="4">
+                  <div onClick="{{ chip.toggle }}" style="cursor:pointer; font-size:12px; font-weight:600; padding:6px 12px; border-radius:20px; background:{{ chip.bg }}; color:{{ chip.color }}; border:1px solid {{ chip.border }};">{{ chip.label }}</div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#8A9488; margin-bottom:10px;">Audit trail</div>
+        <div style="background:#FAF8F0; border:1px solid #E4DECC; border-radius:13px; padding:6px 20px;">
+          <sc-if value="{{ hasAuditLog }}" hint-placeholder-val="{{ false }}">
+            <sc-for list="{{ auditRows }}" as="a" hint-placeholder-count="0">
+              <div style="padding:13px 0; border-bottom:1px solid #F1EEE2; font-size:13px;">
+                <span style="color:#8A9488;">{{ a.time }}</span> — {{ a.text }}
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{ hasNoAuditLog }}" hint-placeholder-val="{{ true }}">
+            <div style="padding:20px 0; font-size:13px; color:#8A9488;">No confirmations yet. Widening a notebook's ceiling or narrowing a live cluster will log here.</div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ONBOARDING CHECKLIST PANEL -->
+    <sc-if value="{{ checklistOpen }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ toggleChecklist }}" style="position:fixed; inset:0; background:rgba(38,41,34,0.28); z-index:24;"></div>
+      <div style="position:fixed; top:0; right:0; bottom:0; width:420px; background:#FAF8F0; border-left:1px solid #E4DECC; z-index:25; padding:26px; display:flex; flex-direction:column; gap:6px; box-shadow:-8px 0 24px rgba(0,0,0,0.08); overflow-y:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+          <div>
+            <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#849777; margin-bottom:6px;">Getting Started</div>
+            <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:20px;">{{ onboardingCountLabel }} complete</div>
+          </div>
+          <div onClick="{{ toggleChecklist }}" style="cursor:pointer; color:#8A9488; font-size:18px;">✕</div>
+        </div>
+        <div style="height:6px; border-radius:3px; background:#E4DECC; overflow:hidden; margin-bottom:12px;">
+          <div style="height:100%; background:#849777; width:{{ onboardingPct }};"></div>
+        </div>
+
+        <sc-for list="{{ checklistItems }}" as="item" hint-placeholder-count="7">
+          <div style="border:1px solid #E4DECC; border-radius:11px; margin-bottom:10px; overflow:hidden;">
+            <div onClick="{{ item.toggleExpand }}" style="cursor:pointer; display:flex; align-items:center; gap:12px; padding:13px 15px;">
+              <div style="width:22px; height:22px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; background:{{ item.badgeBg }}; color:{{ item.badgeColor }}; border:1.5px solid {{ item.badgeColor }};">{{ item.badgeGlyph }}</div>
+              <div style="flex:1; font-size:13.5px; font-weight:600; color:{{ item.titleColor }};">{{ item.title }}</div>
+              <div style="color:#8A9488; font-size:12px;">{{ item.chevron }}</div>
+            </div>
+            <sc-if value="{{ item.expanded }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:0 15px 15px 49px;">
+                <div style="font-size:12.5px; color:#55594D; line-height:1.55; margin-bottom:10px;">{{ item.desc }}</div>
+                <button onClick="{{ item.go }}" style="cursor:pointer; padding:8px 14px; border-radius:8px; border:none; background:#3C4A3A; color:#FAF8F0; font-weight:600; font-size:12.5px;">Go do it →</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+
+        <div onClick="{{ replayIntro }}" style="cursor:pointer; margin-top:6px; font-size:12.5px; color:#7E3A33; font-weight:600;">↻ Replay the intro</div>
+      </div>
+    </sc-if>
+
+    <!-- INTRO WALKTHROUGH -->
+    <sc-if value="{{ introOpen }}" hint-placeholder-val="{{ true }}">
+      <div style="position:fixed; inset:0; background:#2B362A; z-index:40; display:flex; align-items:center; justify-content:center;">
+        <div onClick="{{ skipIntro }}" style="position:absolute; top:28px; right:34px; cursor:pointer; color:#B7C0B4; font-size:13px; font-weight:600;">Skip</div>
+        <div style="width:560px; max-width:88vw; display:flex; flex-direction:column; align-items:flex-start; gap:20px;">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#C99A5C;">{{ introSlide.eyebrow }}</div>
+          <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:38px; line-height:1.2; color:#FAF8F0;">{{ introSlide.title }}</div>
+          <div style="font-size:15.5px; line-height:1.6; color:#D7DBCF; max-width:480px;">{{ introSlide.body }}</div>
+
+          <div style="display:flex; align-items:center; gap:20px; margin-top:14px; width:100%;">
+            <div style="display:flex; gap:7px;">
+              <sc-for list="{{ introDots }}" as="d" hint-placeholder-count="3">
+                <div style="width:7px; height:7px; border-radius:50%; background:{{ d.color }};"></div>
+              </sc-for>
+            </div>
+            <div style="flex:1;"></div>
+            <sc-if value="{{ introHasPrev }}" hint-placeholder-val="{{ false }}">
+              <div onClick="{{ prevIntroStep }}" style="cursor:pointer; color:#B7C0B4; font-size:14px; font-weight:600; padding:12px 8px;">Back</div>
+            </sc-if>
+            <button onClick="{{ introCtaAction }}" style="cursor:pointer; padding:13px 22px; border-radius:9px; border:none; background:#C99A5C; color:#2B362A; font-weight:700; font-size:14px;">{{ introSlide.cta }}</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- CONNECT MAP TO CLAUDE -->
+    <sc-if value="{{ connectMapOpen }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ closeConnectMap }}" style="position:fixed; inset:0; background:rgba(38,41,34,0.35); z-index:32;"></div>
+      <div style="position:fixed; top:8vh; left:50%; transform:translateX(-50%); width:600px; max-width:92vw; max-height:84vh; overflow-y:auto; background:#FAF8F0; border-radius:16px; z-index:33; box-shadow:0 20px 60px rgba(0,0,0,0.25); padding:28px 30px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+          <div style="display:flex; align-items:center; gap:9px;">
+            <span style="color:#C99A5C; font-size:17px;">✦</span>
+            <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:21px;">Connect the Knowledge Map to Claude</div>
+          </div>
+          <div onClick="{{ closeConnectMap }}" style="cursor:pointer; color:#8A9488; font-size:18px;">✕</div>
+        </div>
+        <div style="font-size:13.5px; color:#55594D; line-height:1.6; margin-bottom:20px;">One MCP endpoint for everything you can access — not a single notebook. Claude sees exactly what your account can see: cluster ceilings and ACLs still apply underneath, the same as Quick Ask.</div>
+
+        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#8A9488; margin-bottom:6px;">Your endpoint</div>
+        <div style="display:flex; gap:8px; margin-bottom:18px;">
+          <div style="flex:1; font-family:monospace; font-size:12.5px; background:#F1EEE2; border:1px solid #E4DECC; border-radius:7px; padding:10px 12px; overflow-x:auto; white-space:nowrap; color:#262922;">{{ mapConnect.endpoint }}</div>
+          <button onClick="{{ mapConnect.copyEndpoint }}" style="cursor:pointer; padding:0 14px; border-radius:7px; border:1px solid #E4DECC; background:#FAF8F0; font-size:12px; font-weight:600; color:#55594D; white-space:nowrap;">{{ mapConnect.copyEndpointLabel }}</button>
+        </div>
+
+        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#8A9488; margin-bottom:6px;">Setup steps</div>
+        <ol style="margin:0 0 18px 0; padding-left:18px; font-size:13px; color:#262922; line-height:1.9;">
+          <li>In Claude, open <b>Settings → Connectors → Add custom connector</b>.</li>
+          <li>Paste the endpoint above and name it "Poysis".</li>
+          <li>Approve the access request — this uses your existing login, so it only reaches what you can already reach.</li>
+          <li>Ask Claude anything about your knowledge; it queries live across every accessible cluster, citations included.</li>
+        </ol>
+
+        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#8A9488; margin-bottom:6px;">Or add manually (claude_desktop_config.json)</div>
+        <div style="display:flex; gap:8px; margin-bottom:6px;">
+          <div style="flex:1; font-family:monospace; font-size:11.5px; background:#F1EEE2; border:1px solid #E4DECC; border-radius:7px; padding:10px 12px; white-space:pre-wrap; color:#262922; line-height:1.5;">{{ mapConnect.configSnippet }}</div>
+          <button onClick="{{ mapConnect.copyConfig }}" style="cursor:pointer; padding:0 14px; border-radius:7px; border:1px solid #E4DECC; background:#FAF8F0; font-size:12px; font-weight:600; color:#55594D; white-space:nowrap; align-self:flex-start;">{{ mapConnect.copyConfigLabel }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- QUICK ASK OVERLAY -->
+    <sc-if value="{{ quickAskOpen }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ closeQuickAsk }}" style="position:fixed; inset:0; background:rgba(38,41,34,0.35); z-index:30;"></div>
+      <div style="position:fixed; top:5vh; left:50%; transform:translateX(-50%); width:820px; max-width:92vw; height:88vh; background:#F1EEE2; border-radius:18px; z-index:31; box-shadow:0 20px 60px rgba(0,0,0,0.25); display:flex; overflow:hidden;">
+        <div style="flex:1.2; display:flex; flex-direction:column; border-right:1px solid #E4DECC; background:#FAF8F0;">
+          <div style="padding:20px 26px; border-bottom:1px solid #E4DECC; display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#C99A5C;">Quick Ask</div>
+              <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:19px;">Across everything you can access</div>
+            </div>
+            <div onClick="{{ closeQuickAsk }}" style="cursor:pointer; color:#8A9488; font-size:18px;">✕</div>
+          </div>
+          <div style="flex:1; overflow-y:auto; padding:20px 26px; display:flex; flex-direction:column; gap:14px;">
+            <sc-for list="{{ quickThreads }}" as="q" hint-placeholder-count="2">
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <div style="align-self:flex-end; max-width:85%; background:#3C4A3A; color:#FAF8F0; padding:10px 14px; border-radius:12px; font-size:13.5px;">{{ q.question }}</div>
+                <div style="align-self:flex-start; max-width:85%; background:#F1EEE2; padding:10px 14px; border-radius:12px; font-size:13.5px; line-height:1.5;">{{ q.answer }}</div>
+                <div onClick="{{ q.promote }}" style="align-self:flex-start; cursor:pointer; font-size:11.5px; color:#7E3A33; font-weight:600; margin-left:4px;">Promote to notebook →</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="padding:16px 26px 22px 26px; border-top:1px solid #E4DECC; display:flex; gap:10px;">
+            <input value="{{ quickInput }}" onChange="{{ onQuickInputChange }}" onKeyDown="{{ onQuickKeyDown }}" placeholder="Ask anything…" style="flex:1; padding:12px 14px; border-radius:10px; border:1px solid #E4DECC; background:#F1EEE2; font-family:'Albert Sans',sans-serif; font-size:13.5px; outline:none;" />
+            <button onClick="{{ sendQuick }}" style="cursor:pointer; padding:0 18px; border-radius:10px; border:none; background:#3C4A3A; color:#FAF8F0; font-weight:600; font-size:13.5px;">Ask</button>
+          </div>
+        </div>
+        <div style="width:260px; padding:22px 20px; background:#F1EEE2;">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#8A9488; margin-bottom:12px;">Research log</div>
+          <div style="font-size:12.5px; color:#55594D; line-height:1.6;">Every question and answer here deposits automatically into your private, standing research log — not listed among your notebooks. Promote a thread to give it its own scope and a home on the Canvas.</div>
+        </div>
+      </div>
+    </sc-if>
+
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const CEILING_RANK = { private: 0, team: 1, public: 2 };
+const CEILING_LABEL = { private: 'Private', team: 'Team', public: 'Public-eligible' };
+const CEILING_BG = { private: '#F3E5E3', team: '#F7ECDC', public: '#EDF1E9' };
+const CEILING_COLOR = { private: '#7E3A33', team: '#9C6B2E', public: '#4B6B49' };
+const CEILING_DOT = { private: '#7E3A33', team: '#C99A5C', public: '#849777' };
+
+const CHECKLIST_META = [
+  { key: 'connectedSource', title: 'Connect a source', desc: 'Link Drive, Notion, or another source so Poysis has something to learn from.' },
+  { key: 'viewedCluster', title: 'Review your first cluster', desc: 'Poysis auto-organizes your documents into clusters. Open one on the Knowledge Map to see what it found.' },
+  { key: 'changedCeiling', title: "Set a cluster's ceiling", desc: 'Every cluster carries an exposure ceiling — the farthest its contents may ever reach. Try changing one right from its card on the Knowledge Map.' },
+  { key: 'builtNotebook', title: 'Build a notebook via chat', desc: 'Notebooks are built by asking, not filling out forms. Open a notebook on the Canvas and tell Poysis what you want.' },
+  { key: 'triedQuickAsk', title: 'Try Quick Ask', desc: 'Ask anything, across every cluster you already have access to, without picking one first.' },
+  { key: 'deployedNotebook', title: 'Deploy a notebook', desc: 'Publish a notebook so it can be reached outside of the Canvas.' },
+  { key: 'invitedTeammate', title: 'Invite a teammate', desc: 'Bring in a collaborator and give them a role on the Teams page.' }
+];
+
+const INTRO_SLIDES = [
+  { eyebrow: 'WELCOME', title: 'Turn your knowledge into a living archive anyone can talk to.', body: "Poysis organizes what you already have into clusters, then lets you build notebooks — chat assistants scoped to exactly the knowledge you choose.", cta: 'Next' },
+  { eyebrow: 'HOW IT WORKS', title: 'Querying is building.', body: "There's no separate builder mode for a notebook — the same conversation you use to ask it something is how you shape it. A cluster's own settings, including its ceiling, live directly on its card on the Knowledge Map.", cta: 'Next' },
+  { eyebrow: 'PERMISSIONS', title: 'Every cluster has a ceiling.', body: "A cluster's ceiling is the farthest its contents may ever reach. A notebook can never widen past the strictest ceiling among its clusters — and widening always asks you to confirm first.", cta: 'Start the checklist' }
+];
+
+class Component extends DCLogic {
+  state = {
+    introOpen: false,
+    introStep: 0,
+    checklistOpen: false,
+    expandedStep: null,
+    onboarding: { connectedSource: false, viewedCluster: false, changedCeiling: false, builtNotebook: false, triedQuickAsk: false, deployedNotebook: false, invitedTeammate: false },
+    inviteFormOpen: false,
+    inviteName: '',
+    inviteEmail: '',
+    docsPage: 0,
+    selectedDocIds: [],
+    newClusterName: '',
+    teams: ['Founding', 'Ops', 'Content', 'Guest'],
+    copyFeedback: null,
+    connectMapOpen: false,
+    sources: [
+      { name: 'Google Drive', icon: '📁', lastSynced: '12m ago', connected: true },
+      { name: 'Notion', icon: '◧', lastSynced: '1h ago', connected: true },
+      { name: 'Substack', icon: '✉', lastSynced: '5h ago', connected: true },
+      { name: 'Dropbox', icon: '⬚', lastSynced: '—', connected: false }
+    ],
+    people: [
+      { name: 'Armstrong Olusoji', email: 'armstrong@bezalel.dev', role: 'Owner', team: 'Founding', status: 'Active' },
+      { name: 'Funmi Adeyemi', email: 'funmi@bezalel.dev', role: 'Admin', team: 'Ops', status: 'Active' },
+      { name: 'Tolu Bakare', email: 'tolu@bezalel.dev', role: 'Editor', team: 'Content', status: 'Active' },
+      { name: 'Chidi Nwosu', email: 'chidi@partner.org', role: 'Viewer', team: 'Guest', status: 'Invited' }
+    ],
+    view: 'canvas',
+    selectedClusterId: null,
+
+    selectedNotebookId: 'nb1',
+    pickerOpen: false,
+    notebookSettingsOpen: false,
+    addClusterOpen: false,
+    proposal: null,
+
+    chatByAnchor: {},
+    chatInput: '',
+    quickAskOpen: false,
+    quickInput: '',
+    quickThreads: [
+      { id: 'q0', question: 'What did the board decide about the youth wing budget?', answer: 'The March board minutes approved ₦4.2M for the youth wing renovation, contingent on the facilities committee sign-off (cited: Board Minutes, Mar 12).' }
+    ],
+    auditLog: [],
+    clusters: [
+      { id: 'c1', name: 'Sermon Archive', ceiling: 'private', docCount: 342, lastSynced: '2h ago', subs: [
+        { name: 'Sunday Sermons', docCount: 210 }, { name: 'Wednesday Studies', docCount: 88 }, { name: 'Guest Messages', docCount: 44 }
+      ], accessTeams: ['Founding'], homeNotebookId: 'nb1', pos: { x: 410, y: 490 }, documents: [
+        'Sunday Service — The Prodigal\'s Return', 'Sunday Service — Faith Under Fire', 'Wednesday Study — Romans 8',
+        'Wednesday Study — The Fruit of Patience', 'Guest Message — Walking in Purpose (Pastor Dele Aro)',
+        'Sunday Service — Anchored in Hope', 'Wednesday Study — Names of God, Pt. 3', 'Sunday Service — New Year, New Mercies',
+        'Guest Message — Grace That Restores', 'Sunday Service — The Weight of Glory', 'Wednesday Study — Psalms of Ascent',
+        'Sunday Service — Living Water', 'Guest Message — Called and Equipped', 'Sunday Service — Rebuilding After the Storm',
+        'Wednesday Study — The Armor of God', 'Sunday Service — A Table for Enemies', 'Guest Message — The Long Obedience',
+        'Sunday Service — Sabbath and Rest'
+      ].map((n, i) => ({ id: 'c1-d' + i, name: n })) },
+      { id: 'c2', name: 'Board Minutes', ceiling: 'private', docCount: 58, lastSynced: '1d ago', subs: [], accessTeams: ['Founding'], homeNotebookId: null, pos: null, documents: [
+        'Board Minutes — Jan 2026', 'Board Minutes — Feb 2026', 'Board Minutes — Mar 2026', 'Board Minutes — Apr 2026',
+        'Board Minutes — May 2026', 'Board Minutes — Jun 2026', 'Facilities Committee Report — Q1', 'Finance Committee Report — Q1',
+        'Board Retreat Notes — 2025', 'Bylaws Amendment Proposal', 'Youth Wing Renovation Budget', 'Staffing Plan Review'
+      ].map((n, i) => ({ id: 'c2-d' + i, name: n })) },
+      { id: 'c3', name: 'Public Teachings', ceiling: 'public', docCount: 120, lastSynced: '4h ago', subs: [
+        { name: 'Articles', docCount: 76 }, { name: 'Q&A Sessions', docCount: 44 }
+      ], accessTeams: ['Founding', 'Content', 'Ops'], homeNotebookId: 'nb1', pos: { x: 650, y: 490 }, documents: [
+        'Article — Grace and Growth', 'Article — On Doubt Without Shame', 'Q&A Session — Suffering and Sovereignty',
+        'Article — Prayer as Practice', 'Q&A Session — Reading the Old Testament Well', 'Article — Community Over Comfort',
+        'Q&A Session — Faith and Mental Health', 'Article — What Forgiveness Isn\'t', 'Q&A Session — Raising Kids in a Digital Age',
+        'Article — The Discipline of Rest', 'Q&A Session — Money and Generosity', 'Article — Belonging Before Believing',
+        'Q&A Session — Doubt at the Dinner Table', 'Article — A Theology of Waiting', 'Q&A Session — Ask Us Anything, Vol. 4',
+        'Article — Why We Still Gather'
+      ].map((n, i) => ({ id: 'c3-d' + i, name: n })) },
+      { id: 'c4', name: 'Counseling Notes', ceiling: 'private', docCount: 210, lastSynced: '6h ago', subs: [], accessTeams: ['Founding'], homeNotebookId: null, pos: null, documents: [
+        'Session Notes — Case 114', 'Session Notes — Case 115', 'Session Notes — Case 116', 'Intake Form — New Client Template',
+        'Session Notes — Case 117', 'Referral Log — Q1', 'Session Notes — Case 118', 'Group Session Notes — Grief Circle',
+        'Session Notes — Case 119', 'Safety Plan Template'
+      ].map((n, i) => ({ id: 'c4-d' + i, name: n })) },
+      { id: 'c5', name: 'Staff Handbook', ceiling: 'team', docCount: 34, lastSynced: '3d ago', subs: [], accessTeams: ['Founding', 'Ops'], homeNotebookId: 'nb2', pos: { x: 1200, y: 490 }, documents: [
+        'Employee Onboarding Guide', 'PTO & Leave Policy', 'Code of Conduct', 'Expense Reimbursement Process',
+        'Facilities Use Policy', 'Payroll Schedule 2026', 'Performance Review Template', 'Remote Work Guidelines'
+      ].map((n, i) => ({ id: 'c5-d' + i, name: n })) }
+    ],
+    notebooks: [
+      { id: 'nb1', name: 'Sermons Public Assistant', clusterIds: ['c1', 'c3'], ceiling: 'private', acl: 'Owner only', persona: 'Warm pastoral guide, quotes sermons directly, always cites the source message.', memory: 'Remembers prior questions in-session, forgets on close.', deployment: 'Not deployed', billing: null, published: false, anchor: { x: 500, y: 380 } },
+      { id: 'nb2', name: 'Internal Ops Assistant', clusterIds: ['c5'], ceiling: 'private', acl: 'Staff team', persona: 'Direct, procedural, points to the exact policy line.', memory: 'Persistent across sessions for each staff member.', deployment: 'Not deployed', billing: null, published: false, anchor: { x: 1200, y: 380 } },
+      { id: 'nb3', name: 'Public FAQ Bot', clusterIds: ['c3'], ceiling: 'public', acl: 'Anyone with the link', persona: 'Friendly, concise, plain language for visitors.', memory: 'No memory between sessions.', deployment: 'Embedded widget · church website', billing: 'Free, no paywall', published: true, anchor: { x: 1900, y: 380 } }
+    ]
+  };
+
+  cluster(id) { return this.state.clusters.find(c => c.id === id); }
+  notebook(id) { return this.state.notebooks.find(n => n.id === id); }
+
+  floorRankFor(nb) {
+    return Math.min(...nb.clusterIds.map(id => CEILING_RANK[this.cluster(id).ceiling]));
+  }
+  floorClusterFor(nb) {
+    let best = null, bestRank = 99;
+    nb.clusterIds.forEach(id => { const c = this.cluster(id); const r = CEILING_RANK[c.ceiling]; if (r < bestRank) { bestRank = r; best = c; } });
+    return best;
+  }
+  dependentsOf(clusterId) {
+    return this.state.notebooks.filter(n => n.clusterIds.includes(clusterId));
+  }
+  publishedDependentsOf(clusterId) {
+    return this.dependentsOf(clusterId).filter(n => n.published);
+  }
+
+  chatLog() { return this.state.chatByAnchor[this.state.selectedNotebookId] || []; }
+  pushMsg(role, text) {
+    const key = this.state.selectedNotebookId;
+    const log = (this.state.chatByAnchor[key] || []).slice();
+    log.push({ role, text });
+    this.setState(s => ({ chatByAnchor: { ...s.chatByAnchor, [key]: log } }));
+  }
+
+  markDone(key) { this.setState(s => ({ onboarding: { ...s.onboarding, [key]: true } })); }
+
+  toggleChecklist() { this.setState(s => ({ checklistOpen: !s.checklistOpen })); }
+  toggleExpandStep(key) { this.setState(s => ({ expandedStep: s.expandedStep === key ? null : key })); }
+  goToOnboardingStep(key) {
+    this.setState({ checklistOpen: false });
+    if (key === 'connectedSource') this.goTo('sources');
+    else if (key === 'viewedCluster') this.goTo('map');
+    else if (key === 'changedCeiling') { this.goTo('map'); this.selectCluster('c1'); }
+    else if (key === 'builtNotebook') this.openNotebookOnCanvas('nb1');
+    else if (key === 'triedQuickAsk') this.openQuickAsk();
+    else if (key === 'deployedNotebook') this.openNotebookOnCanvas('nb1');
+    else if (key === 'invitedTeammate') { this.goTo('teams'); this.setState({ inviteFormOpen: true }); }
+  }
+
+  skipIntro() { this.setState({ introOpen: false }); }
+  nextIntroStep() {
+    if (this.state.introStep >= INTRO_SLIDES.length - 1) { this.setState({ introOpen: false, checklistOpen: true }); return; }
+    this.setState(s => ({ introStep: s.introStep + 1 }));
+  }
+  prevIntroStep() { this.setState(s => ({ introStep: Math.max(0, s.introStep - 1) })); }
+  replayIntro() { this.setState({ introOpen: true, introStep: 0, checklistOpen: false }); }
+
+  toggleSource(name) {
+    this.setState(s => ({ sources: s.sources.map(src => src.name === name ? { ...src, connected: !src.connected, lastSynced: !src.connected ? 'just now' : src.lastSynced } : src) }));
+    this.markDone('connectedSource');
+  }
+
+  deployNotebook(id) {
+    this.setState(s => ({ notebooks: s.notebooks.map(n => n.id === id ? { ...n, deployment: 'MCP endpoint · active', published: true } : n) }));
+    this.markDone('deployedNotebook');
+    this.pushMsg('assistant', `Deployed. This notebook now has an active MCP endpoint.`);
+  }
+
+  openInviteForm() { this.setState({ inviteFormOpen: true }); }
+  closeInviteForm() { this.setState({ inviteFormOpen: false }); }
+  onInviteNameChange(e) { this.setState({ inviteName: e.target.value }); }
+  onInviteEmailChange(e) { this.setState({ inviteEmail: e.target.value }); }
+  sendInvite() {
+    const name = this.state.inviteName.trim();
+    const email = this.state.inviteEmail.trim();
+    if (!name || !email) return;
+    this.setState(s => ({
+      people: [...s.people, { name, email, role: 'Viewer', team: 'Guest', status: 'Invited' }],
+      inviteFormOpen: false, inviteName: '', inviteEmail: ''
+    }));
+    this.markDone('invitedTeammate');
+  }
+
+  goTo(view) {
+    this.setState({ view, selectedClusterId: null });
+    if (view === 'canvas') this.scrollToNotebook(this.state.selectedNotebookId);
+  }
+  selectCluster(id) { this.setState({ selectedClusterId: id, docsPage: 0, selectedDocIds: [] }); this.markDone('viewedCluster'); }
+  closeClusterDrawer() { this.setState({ selectedClusterId: null }); }
+
+  docsPerPage() { return 5; }
+  nextDocsPage() {
+    const c = this.cluster(this.state.selectedClusterId);
+    if (!c) return;
+    const maxPage = Math.ceil(c.documents.length / this.docsPerPage()) - 1;
+    this.setState(s => ({ docsPage: Math.min(maxPage, s.docsPage + 1) }));
+  }
+  prevDocsPage() { this.setState(s => ({ docsPage: Math.max(0, s.docsPage - 1) })); }
+  toggleDocSelect(id) {
+    this.setState(s => {
+      const has = s.selectedDocIds.includes(id);
+      return { selectedDocIds: has ? s.selectedDocIds.filter(x => x !== id) : [...s.selectedDocIds, id] };
+    });
+  }
+  onNewClusterNameChange(e) { this.setState({ newClusterName: e.target.value }); }
+  createClusterFromSelection() {
+    const c = this.cluster(this.state.selectedClusterId);
+    const name = this.state.newClusterName.trim();
+    if (!c || !name || this.state.selectedDocIds.length === 0) return;
+    const movedDocs = c.documents.filter(d => this.state.selectedDocIds.includes(d.id));
+    const remainingDocs = c.documents.filter(d => !this.state.selectedDocIds.includes(d.id));
+    const newId = 'c-new-' + Date.now().toString().slice(-5);
+    const newCluster = {
+      id: newId, name, ceiling: c.ceiling, docCount: movedDocs.length, lastSynced: 'just now',
+      subs: [], accessTeams: [...c.accessTeams], homeNotebookId: null, pos: null, documents: movedDocs
+    };
+    this.setState(s => ({
+      clusters: s.clusters.map(cl => cl.id === c.id ? { ...cl, documents: remainingDocs, docCount: cl.docCount - movedDocs.length } : cl).concat(newCluster),
+      selectedClusterId: newId, docsPage: 0, selectedDocIds: [], newClusterName: ''
+    }));
+  }
+
+  openConnectMap() { this.setState({ connectMapOpen: true }); }
+  closeConnectMap() { this.setState({ connectMapOpen: false }); }
+
+  copyToClipboard(text, which) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {});
+    }
+    this.setState({ copyFeedback: which });
+    setTimeout(() => this.setState(s => s.copyFeedback === which ? { copyFeedback: null } : {}), 1500);
+  }
+
+  reassignPersonTeam(email, team) {
+    this.setState(s => ({ people: s.people.map(p => p.email === email ? { ...p, team } : p) }));
+  }
+  toggleClusterTeamAccess(clusterId, team) {
+    this.setState(s => ({
+      clusters: s.clusters.map(cl => {
+        if (cl.id !== clusterId) return cl;
+        const has = cl.accessTeams.includes(team);
+        return { ...cl, accessTeams: has ? cl.accessTeams.filter(t => t !== team) : [...cl.accessTeams, team] };
+      })
+    }));
+  }
+
+  onClusterCeilingChange(clusterId, target) {
+    const c = this.cluster(clusterId);
+    const curRank = CEILING_RANK[c.ceiling];
+    const targetRank = CEILING_RANK[target];
+    if (targetRank === curRank) return;
+    if (targetRank < curRank) {
+      const affected = this.publishedDependentsOf(c.id);
+      if (affected.length) {
+        this.setState({ proposal: { entity: 'cluster', id: clusterId, target, checked: false, affected: affected.map(n => n.name) } });
+      } else {
+        this.setState(s => ({ clusters: s.clusters.map(cl => cl.id === c.id ? { ...cl, ceiling: target } : cl) }));
+        this.markDone('changedCeiling');
+      }
+    } else {
+      this.setState(s => ({ clusters: s.clusters.map(cl => cl.id === c.id ? { ...cl, ceiling: target } : cl) }));
+      this.markDone('changedCeiling');
+    }
+  }
+
+  toggleProposalCheck() {
+    this.setState(s => ({ proposal: { ...s.proposal, checked: !s.proposal.checked } }));
+  }
+  confirmProposal() {
+    const p = this.state.proposal;
+    if (!p || !p.checked) return;
+    const time = 'Just now';
+    if (p.entity === 'notebook') {
+      const nb = this.notebook(p.id);
+      this.setState(s => ({
+        notebooks: s.notebooks.map(n => n.id === nb.id ? { ...n, ceiling: p.target } : n),
+        auditLog: [{ time, text: `Widened "${nb.name}" from ${CEILING_LABEL[nb.ceiling]} to ${CEILING_LABEL[p.target]}, confirmed.` }, ...s.auditLog]
+      }));
+      this.pushMsg('assistant', `Confirmed. "${nb.name}" is now ${CEILING_LABEL[p.target]}. Logged to the audit trail.`);
+    } else {
+      const c = this.cluster(p.id);
+      this.setState(s => ({
+        clusters: s.clusters.map(cl => cl.id === c.id ? { ...cl, ceiling: p.target } : cl),
+        auditLog: [{ time, text: `Narrowed "${c.name}" to ${CEILING_LABEL[p.target]}, affecting: ${p.affected.join(', ')}. Confirmed.` }, ...s.auditLog]
+      }));
+      this.markDone('changedCeiling');
+    }
+    this.setState({ proposal: null });
+  }
+  cancelProposal() {
+    if (this.state.proposal && this.state.proposal.entity === 'notebook') this.pushMsg('assistant', `Cancelled — no change made.`);
+    this.setState({ proposal: null });
+  }
+
+  nextAnchor(idx) {
+    const cols = 3, spacingX = 700, spacingY = 770, baseX = 500, baseY = 380;
+    const col = idx % cols, row = Math.floor(idx / cols);
+    return { x: baseX + col * spacingX, y: baseY + row * spacingY };
+  }
+
+  openNotebookOnCanvas(id) {
+    this.setState({ view: 'canvas', selectedNotebookId: id, selectedClusterId: null, pickerOpen: false });
+  }
+  pickNotebook(id) { this.openNotebookOnCanvas(id); }
+
+  togglePicker() { this.setState(s => ({ pickerOpen: !s.pickerOpen })); }
+  openAddCluster() { this.setState({ addClusterOpen: true }); }
+  closeAddCluster() { this.setState({ addClusterOpen: false }); }
+  openNotebookSettings() { this.setState({ notebookSettingsOpen: true }); }
+  closeNotebookSettings() { this.setState({ notebookSettingsOpen: false }); }
+
+  createNewNotebook() {
+    const idx = this.state.notebooks.length;
+    const id = 'nb-new-' + Date.now().toString().slice(-5);
+    const anchor = this.nextAnchor(idx);
+    const nb = { id, name: 'Untitled notebook', clusterIds: [], ceiling: 'private', acl: 'Owner only', persona: 'Not yet configured — describe the tone you want in chat.', memory: 'Default: remembers within session.', deployment: 'Not deployed', billing: null, published: false, anchor };
+    this.setState(s => ({ notebooks: [...s.notebooks, nb] }));
+    this.openNotebookOnCanvas(id);
+  }
+
+  buildNotebookFromCluster(clusterId) {
+    const c = this.cluster(clusterId);
+    const idx = this.state.notebooks.length;
+    const id = 'nb' + (idx + 1) + '-' + Date.now().toString().slice(-4);
+    const anchor = this.nextAnchor(idx);
+    const nb = { id, name: c.name + ' Notebook', clusterIds: [clusterId], ceiling: c.ceiling, acl: 'Owner only', persona: 'Not yet configured — describe the tone you want in chat.', memory: 'Default: remembers within session.', deployment: 'Not deployed', billing: null, published: false, anchor };
+    this.setState(s => {
+      let clusters = s.clusters;
+      if (!c.homeNotebookId) {
+        clusters = s.clusters.map(cl => cl.id === clusterId ? { ...cl, homeNotebookId: id, pos: { x: anchor.x, y: anchor.y + 110 } } : cl);
+      }
+      return { notebooks: [...s.notebooks, nb], clusters, selectedClusterId: null };
+    });
+    this.openNotebookOnCanvas(id);
+  }
+
+  addClusterToNotebook(notebookId, clusterId) {
+    this.setState(s => {
+      const notebooks = s.notebooks.map(n => n.id === notebookId ? { ...n, clusterIds: n.clusterIds.includes(clusterId) ? n.clusterIds : [...n.clusterIds, clusterId] } : n);
+      return { notebooks, addClusterOpen: false };
+    });
+  }
+  removeClusterFromNotebook(notebookId, clusterId) {
+    this.setState(s => ({ notebooks: s.notebooks.map(n => n.id === notebookId ? { ...n, clusterIds: n.clusterIds.filter(id => id !== clusterId) } : n) }));
+  }
+
+  ceilingTargetFromText(lower) {
+    if (/\bpublic\b/.test(lower)) return 'public';
+    if (/\bteam\b/.test(lower)) return 'team';
+    if (/\bprivate\b/.test(lower)) return 'private';
+    return null;
+  }
+
+  onChatInputChange(e) { this.setState({ chatInput: e.target.value }); }
+  onChatKeyDown(e) { if (e.key === 'Enter') this.sendChat(); }
+  useSuggestedPrompt(text) { this.setState({ chatInput: text }, () => this.sendChat()); }
+
+  sendChat() {
+    const text = this.state.chatInput.trim();
+    if (!text) return;
+    this.setState({ chatInput: '' });
+    this.pushMsg('user', text);
+    this.markDone('builtNotebook');
+    const nb = this.notebook(this.state.selectedNotebookId);
+    const lower = text.toLowerCase();
+
+    const target = this.ceilingTargetFromText(lower);
+    if (target) {
+      const floorRank = this.floorRankFor(nb);
+      const curRank = CEILING_RANK[nb.ceiling];
+      const targetRank = CEILING_RANK[target];
+      if (targetRank > floorRank) {
+        const capper = this.floorClusterFor(nb);
+        this.pushMsg('assistant', `I can't set this notebook wider than ${CEILING_LABEL[floorRank === 0 ? 'private' : floorRank === 1 ? 'team' : 'public']}. "${capper.name}" is scoped in and is Private, so it caps every notebook that draws from it.`);
+      } else if (targetRank > curRank) {
+        const capper = this.floorClusterFor(nb);
+        this.setState({ proposal: { entity: 'notebook', id: nb.id, target, checked: false, affected: null } });
+        this.pushMsg('assistant', `That widens "${nb.name}" from ${CEILING_LABEL[nb.ceiling]} to ${CEILING_LABEL[target]}. I've drafted it in Settings — it needs your confirmation since it changes who can reach content from "${capper.name}".`);
+      } else if (targetRank < curRank) {
+        this.setState(s => ({ notebooks: s.notebooks.map(n => n.id === nb.id ? { ...n, ceiling: target } : n) }));
+        this.pushMsg('assistant', `Done — narrowed "${nb.name}" to ${CEILING_LABEL[target]}. Narrowing never needs confirmation.`);
+      } else {
+        this.pushMsg('assistant', `"${nb.name}" is already set to ${CEILING_LABEL[target]}.`);
+      }
+      return;
+    }
+    const renameMatch = text.match(/rename (?:it |this |the notebook )?to ["“]?([^"”]+?)["”]?$/i);
+    if (renameMatch) {
+      const newName = renameMatch[1].trim();
+      this.setState(s => ({ notebooks: s.notebooks.map(n => n.id === nb.id ? { ...n, name: newName } : n) }));
+      this.pushMsg('assistant', `Renamed to "${newName}".`);
+      return;
+    }
+    this.pushMsg('assistant', `Got it. For this prototype I can act on: publishing/widening visibility ("make this public"), narrowing it ("make this private"), or renaming ("rename to ...").`);
+  }
+
+  openQuickAsk() { this.setState({ quickAskOpen: true }); }
+  closeQuickAsk() { this.setState({ quickAskOpen: false }); }
+  onQuickInputChange(e) { this.setState({ quickInput: e.target.value }); }
+  onQuickKeyDown(e) { if (e.key === 'Enter') this.sendQuick(); }
+  sendQuick() {
+    const q = this.state.quickInput.trim();
+    if (!q) return;
+    this.markDone('triedQuickAsk');
+    const answer = `Searched across every cluster you can access. Here's a synthesized answer citing the most relevant sources — in the full product this would ground each claim back to the original document.`;
+    this.setState(s => ({ quickInput: '', quickThreads: [...s.quickThreads, { id: 'q' + Date.now(), question: q, answer }] }));
+  }
+  promoteThread(threadId) {
+    const t = this.state.quickThreads.find(x => x.id === threadId);
+    if (!t) return;
+    const idx = this.state.notebooks.length;
+    const id = 'nb-promoted-' + Date.now().toString().slice(-4);
+    const anchor = this.nextAnchor(idx);
+    const nb = { id, name: t.question.length > 40 ? t.question.slice(0, 40) + '…' : t.question, clusterIds: ['c3'], ceiling: 'private', acl: 'Owner only', persona: 'Promoted from a Quick Ask thread.', memory: 'Default.', deployment: 'Not deployed', billing: null, published: false, anchor };
+    this.setState(s => ({ notebooks: [...s.notebooks, nb], quickAskOpen: false }));
+    this.openNotebookOnCanvas(id);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const navs = ['map', 'canvas', 'sources', 'teams'];
+    const navOut = {};
+    navs.forEach(n => {
+      const active = s.view === n;
+      navOut['navWeight_' + n] = active ? 600 : 500;
+      navOut['navBg_' + n] = active ? '#3C4A3A' : 'transparent';
+      navOut['navColor_' + n] = active ? '#FAF8F0' : '#B7C0B4';
+      navOut['goTo_' + n] = () => this.goTo(n);
+    });
+
+    const clusterCards = s.clusters.map(c => {
+      const deps = this.dependentsOf(c.id);
+      return {
+        id: c.id, name: c.name, ceilingLabel: CEILING_LABEL[c.ceiling],
+        badgeBg: CEILING_BG[c.ceiling], badgeColor: CEILING_COLOR[c.ceiling], dotColor: CEILING_DOT[c.ceiling],
+        docCount: c.docCount, subCount: c.subs.length, lastSynced: c.lastSynced,
+        hasSubs: c.subs.length > 0, subs: c.subs,
+        dependentsLabel: deps.length ? `Feeds ${deps.length} notebook${deps.length > 1 ? 's' : ''}` : 'No notebooks yet',
+        select: () => this.selectCluster(c.id)
+      };
+    });
+
+    const selCluster = s.selectedClusterId ? this.cluster(s.selectedClusterId) : null;
+    const selectedCluster = selCluster ? (() => {
+      const deps = this.dependentsOf(selCluster.id);
+      const perPage = this.docsPerPage();
+      const totalPages = Math.max(1, Math.ceil(selCluster.documents.length / perPage));
+      const page = Math.min(s.docsPage, totalPages - 1);
+      const pageDocs = selCluster.documents.slice(page * perPage, page * perPage + perPage);
+      const docsPageItems = pageDocs.map(d => ({
+        id: d.id, name: d.name, checked: s.selectedDocIds.includes(d.id),
+        toggle: () => this.toggleDocSelect(d.id)
+      }));
+      const prop = s.proposal && s.proposal.entity === 'cluster' && s.proposal.id === selCluster.id ? s.proposal : null;
+      const currentNb = s.view === 'canvas' ? this.notebook(s.selectedNotebookId) : null;
+      return {
+        id: selCluster.id, ceiling: selCluster.ceiling, name: selCluster.name, ceilingLabel: CEILING_LABEL[selCluster.ceiling],
+        badgeBg: CEILING_BG[selCluster.ceiling], badgeColor: CEILING_COLOR[selCluster.ceiling],
+        docCount: selCluster.docCount, subCount: selCluster.subs.length, lastSynced: selCluster.lastSynced,
+        dependentsList: deps.length ? deps.map(d => d.name).join(', ') : 'None yet',
+        docsPageItems,
+        pageLabel: `${selCluster.documents.length} shown of ${selCluster.docCount}`,
+        pageOfLabel: `Page ${page + 1} of ${totalPages}`,
+        prevColor: page > 0 ? '#262922' : '#C9C2AC',
+        nextColor: page < totalPages - 1 ? '#262922' : '#C9C2AC',
+        prevPage: () => this.prevDocsPage(), nextPage: () => this.nextDocsPage(),
+        hasSelection: s.selectedDocIds.length > 0,
+        selectionLabel: `${s.selectedDocIds.length} document${s.selectedDocIds.length === 1 ? '' : 's'}`,
+        createFromSelection: () => this.createClusterFromSelection(),
+        buildAction: () => this.buildNotebookFromCluster(selCluster.id),
+        onCeilingChange: (e) => this.onClusterCeilingChange(selCluster.id, e.target.value),
+        ceilingPending: !!prop,
+        ceilingPendingConsequence: prop ? `Narrowing to ${CEILING_LABEL[prop.target]} affects: ${prop.affected ? prop.affected.join(', ') : ''}.` : '',
+        ceilingPendingChecked: prop ? prop.checked : false,
+        ceilingConfirmDisabled: prop ? !prop.checked : true,
+        ceilingConfirmBg: prop && prop.checked ? '#3C4A3A' : '#B7BDB0',
+        toggleCeilingCheck: () => this.toggleProposalCheck(),
+        confirmCeiling: () => this.confirmProposal(),
+        cancelCeiling: () => this.cancelProposal(),
+        removableFromCurrentNotebook: !!currentNb && currentNb.clusterIds.includes(selCluster.id),
+        removeFromCurrentNotebook: () => currentNb && this.removeClusterFromNotebook(currentNb.id, selCluster.id)
+      };
+    })() : null;
+
+    const nb = this.notebook(s.selectedNotebookId);
+    const nbProp = s.proposal && s.proposal.entity === 'notebook' && s.proposal.id === nb.id ? s.proposal : null;
+    const floorRank = this.floorRankFor(nb);
+    const floorLabel = CEILING_LABEL[floorRank === 0 ? 'private' : floorRank === 1 ? 'team' : 'public'];
+    const settingsFields = [
+      { key: 'name', label: 'Name', value: nb.name, notPending: true, pending: false },
+      { key: 'ceiling', label: 'Effective ceiling', value: CEILING_LABEL[nb.ceiling], notPending: !nbProp, pending: !!nbProp,
+        hasSub: !nbProp, sub: `Capped at ${floorLabel} by its linked clusters. May be narrowed further anytime.`,
+        pendingConsequence: nbProp ? `Widens "${nb.name}" from ${CEILING_LABEL[nb.ceiling]} to ${CEILING_LABEL[nbProp.target]}.` : '',
+        pendingChecked: nbProp ? nbProp.checked : false,
+        confirmDisabled: nbProp ? !nbProp.checked : true,
+        confirmBg: nbProp && nbProp.checked ? '#3C4A3A' : '#B7BDB0',
+        toggleCheck: () => this.toggleProposalCheck(), confirm: () => this.confirmProposal(), cancel: () => this.cancelProposal() },
+      { key: 'acl', label: 'ACL', value: nb.acl, notPending: true, pending: false },
+      { key: 'sources', label: 'Sources (clusters feeding it)', value: nb.clusterIds.length ? nb.clusterIds.map(id => this.cluster(id).name).join(', ') : 'None yet — add one from the canvas.', notPending: true, pending: false },
+      { key: 'persona', label: 'Persona / instructions', value: nb.persona, notPending: true, pending: false },
+      { key: 'memory', label: 'Memory / chat behavior', value: nb.memory, notPending: true, pending: false },
+      { key: 'deployment', label: 'Deployment', value: nb.deployment, notPending: true, pending: false, hasDeploy: !nb.published, deployAction: () => this.deployNotebook(nb.id) }
+    ];
+    if (nb.billing) settingsFields.push({ key: 'billing', label: 'Billing / paywall', value: nb.billing, notPending: true, pending: false });
+
+    const realNodes = nb.clusterIds.map(id => this.cluster(id)).filter(Boolean).map(c => ({
+      id: c.id, name: c.name, docCount: c.docCount,
+      dotColor: CEILING_DOT[c.ceiling],
+      onClick: () => this.selectCluster(c.id)
+    }));
+
+    const pickerRows = s.notebooks.map(n => ({
+      id: n.id, name: n.name,
+      dotColor: CEILING_DOT[n.ceiling],
+      fillColor: n.id === s.selectedNotebookId ? CEILING_DOT[n.ceiling] : 'transparent',
+      weight: n.id === s.selectedNotebookId ? 600 : 500,
+      select: () => this.pickNotebook(n.id)
+    }));
+
+    const addableClusters = s.clusters.filter(c => !nb.clusterIds.includes(c.id)).map(c => ({
+      id: c.id, name: c.name, add: () => this.addClusterToNotebook(nb.id, c.id)
+    }));
+
+    const chatMessages = this.chatLog().map(m => ({
+      align: m.role === 'user' ? 'flex-end' : 'flex-start',
+      bg: m.role === 'user' ? '#3C4A3A' : '#FAF8F0',
+      color: m.role === 'user' ? '#FAF8F0' : '#262922',
+      text: m.text
+    }));
+
+    const suggestedPrompts = [
+      { label: 'Make this public', use: () => this.useSuggestedPrompt('Make this public') },
+      { label: 'Narrow to Private', use: () => this.useSuggestedPrompt('Make this private') },
+      { label: 'Rename notebook', use: () => this.useSuggestedPrompt('Rename it to "New name"') }
+    ];
+
+    const sourceRows = s.sources.map(src => ({
+      name: src.name, icon: src.icon, lastSynced: src.lastSynced,
+      statusColor: src.connected ? '#4B6B49' : '#8A9488',
+      statusAnim: src.connected ? 'pulseSync 2s infinite' : 'none',
+      statusLabel: src.connected ? 'Syncing' : 'Not connected',
+      toggleLabel: src.connected ? 'Sync now' : 'Connect',
+      toggle: () => this.toggleSource(src.name)
+    }));
+
+    const clustersForTeam = (team) => s.clusters.filter(cl => cl.accessTeams.includes(team)).map(cl => cl.name);
+    const peopleRows = s.people.map(p => {
+      const accessClusters = clustersForTeam(p.team);
+      return {
+        initials: p.name.split(' ').map(w => w[0]).join(''), name: p.name, email: p.email, role: p.role, team: p.team,
+        teamOptions: s.teams,
+        onTeamChange: (e) => this.reassignPersonTeam(p.email, e.target.value),
+        clusterAccessLabel: accessClusters.length ? accessClusters.join(', ') : 'None',
+        status: p.status, statusColor: p.status === 'Active' ? '#4B6B49' : '#9C6B2E'
+      };
+    });
+
+    const clusterAccessRows = s.clusters.map(cl => ({
+      clusterName: cl.name,
+      teamChips: s.teams.map(team => {
+        const has = cl.accessTeams.includes(team);
+        return {
+          team, label: team, toggle: () => this.toggleClusterTeamAccess(cl.id, team),
+          bg: has ? '#E9F0E6' : '#FAF8F0', color: has ? '#4B6B49' : '#8A9488', border: has ? '#BFD4B8' : '#E4DECC'
+        };
+      })
+    }));
+
+    const quickThreads = s.quickThreads.map(t => ({ id: t.id, question: t.question, answer: t.answer, promote: () => this.promoteThread(t.id) }));
+
+    const doneCount = Object.values(s.onboarding).filter(Boolean).length;
+    const total = CHECKLIST_META.length;
+    const checklistItems = CHECKLIST_META.map(item => {
+      const done = s.onboarding[item.key];
+      const expanded = s.expandedStep === item.key;
+      return {
+        key: item.key, title: item.title, desc: item.desc,
+        badgeGlyph: done ? '✓' : '',
+        badgeBg: done ? '#E9F0E6' : 'transparent',
+        badgeColor: done ? '#4B6B49' : '#C9C2AC',
+        titleColor: done ? '#8A9488' : '#262922',
+        chevron: expanded ? '▲' : '▼',
+        expanded,
+        toggleExpand: () => this.toggleExpandStep(item.key),
+        go: () => this.goToOnboardingStep(item.key)
+      };
+    });
+
+    const introSlide = INTRO_SLIDES[s.introStep];
+    const introDots = INTRO_SLIDES.map((_, i) => ({ color: i === s.introStep ? '#C99A5C' : '#4A5748' }));
+
+    const mapEndpoint = 'https://mcp.poysis.com/u/armstrong-workspace';
+    const mapConfigSnippet = `{
+  "mcpServers": {
+    "poysis": {
+      "url": "${mapEndpoint}"
+    }
+  }
+}`;
+    const mapConnect = {
+      endpoint: mapEndpoint, configSnippet: mapConfigSnippet,
+      copyEndpointLabel: s.copyFeedback === 'endpoint' ? 'Copied ✓' : 'Copy',
+      copyConfigLabel: s.copyFeedback === 'config' ? 'Copied ✓' : 'Copy',
+      copyEndpoint: () => this.copyToClipboard(mapEndpoint, 'endpoint'),
+      copyConfig: () => this.copyToClipboard(mapConfigSnippet, 'config')
+    };
+
+    return {
+      isMap: s.view === 'map', isCanvas: s.view === 'canvas',
+      isSources: s.view === 'sources', isTeams: s.view === 'teams',
+      ...navOut,
+      clusterCards,
+      hasSelectedCluster: !!selCluster, selectedCluster,
+      closeClusterDrawer: () => this.closeClusterDrawer(),
+
+      realNodes, noRealNodes: realNodes.length === 0,
+      pickerClosed: !s.pickerOpen, pickerOpenState: s.pickerOpen, togglePicker: () => this.togglePicker(),
+      pickerRows, createNewNotebook: () => this.createNewNotebook(),
+      currentNotebookName: nb.name, currentNotebookDot: CEILING_DOT[nb.ceiling],
+      currentNotebookBadgeBg: CEILING_BG[nb.ceiling], currentNotebookBadgeColor: CEILING_COLOR[nb.ceiling],
+      currentNotebookCeilingLabel: CEILING_LABEL[nb.ceiling],
+      openAddCluster: () => this.openAddCluster(), closeAddCluster: () => this.closeAddCluster(),
+      addClusterOpenState: s.addClusterOpen, addableClusters, noAddableClusters: addableClusters.length === 0,
+      openNotebookSettings: () => this.openNotebookSettings(), closeNotebookSettings: () => this.closeNotebookSettings(),
+      notebookSettingsOpenState: s.notebookSettingsOpen, settingsFields,
+      publishLabel: nb.published ? 'Published' : 'Publish',
+      publishCurrentNotebook: () => { if (!nb.published) this.deployNotebook(nb.id); },
+
+      chatMessages, suggestedPrompts,
+      chatInput: s.chatInput, onChatInputChange: (e) => this.onChatInputChange(e), onChatKeyDown: (e) => this.onChatKeyDown(e), sendChat: () => this.sendChat(),
+
+      connectMapOpen: s.connectMapOpen, openConnectMap: () => this.openConnectMap(), closeConnectMap: () => this.closeConnectMap(), mapConnect,
+      sourceRows, peopleRows, clusterAccessRows,
+      newClusterName: s.newClusterName, onNewClusterNameChange: (e) => this.onNewClusterNameChange(e),
+      hasAuditLog: s.auditLog.length > 0, hasNoAuditLog: s.auditLog.length === 0,
+      auditRows: s.auditLog,
+      quickAskOpen: s.quickAskOpen, openQuickAsk: () => this.openQuickAsk(), closeQuickAsk: () => this.closeQuickAsk(),
+      quickThreads, quickInput: s.quickInput, onQuickInputChange: (e) => this.onQuickInputChange(e), onQuickKeyDown: (e) => this.onQuickKeyDown(e), sendQuick: () => this.sendQuick(),
+
+      onboardingCountLabel: `${doneCount}/${total}`,
+      onboardingPct: Math.round((doneCount / total) * 100) + '%',
+      checklistOpen: s.checklistOpen, toggleChecklist: () => this.toggleChecklist(),
+      checklistItems,
+      replayIntro: () => this.replayIntro(),
+
+      introOpen: s.introOpen, introSlide, introDots,
+      introHasPrev: s.introStep > 0,
+      prevIntroStep: () => this.prevIntroStep(),
+      introCtaAction: () => this.nextIntroStep(),
+      skipIntro: () => this.skipIntro(),
+
+      inviteFormOpen: s.inviteFormOpen, inviteFormClosed: !s.inviteFormOpen,
+      openInviteForm: () => this.openInviteForm(), closeInviteForm: () => this.closeInviteForm(),
+      inviteName: s.inviteName, inviteEmail: s.inviteEmail,
+      onInviteNameChange: (e) => this.onInviteNameChange(e), onInviteEmailChange: (e) => this.onInviteEmailChange(e),
+      sendInvite: () => this.sendInvite()
+    };
+  }
+}
+
+</script>
+</body>
+</html>

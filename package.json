@@ -1,0 +1,7 @@
+{
+  "name": "poysis",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ]
+}

@@ -24,3 +24,9 @@ input::placeholder, textarea::placeholder { color: #8A8C7E; opacity: 1; }
 /* Rendered Markdown in chat bubbles: no trailing margin on the last block */
 .poysis-md > *:last-child { margin-bottom: 0 !important; }
 .poysis-md > *:first-child { margin-top: 0 !important; }
+
+/* Home-feed card hover lift (inline styles can't express :hover) */
+.mkt-lift { transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
+.mkt-lift:hover { transform: translateY(-2px); }
+.mkt-chip { transition: border-color 140ms ease, color 140ms ease; }
+.mkt-chip:hover { border-color: #84977A; color: #262922; }

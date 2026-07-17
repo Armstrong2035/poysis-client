@@ -6,7 +6,8 @@ import { Chat } from "@/components/ui/chat/Chat";
 import { BlueprintDesigner } from "@/components/notebook/BlueprintDesigner";
 import { useNotebookStore } from "@/store/notebookStore";
 import { saveNotebook, renameNotebook as renameNotebookAction } from "@/lib/actions";
-import { MARKETPLACE_URL } from "@/lib/marketplace";
+import { MARKETPLACE_URL, type MarketplaceMeta } from "@/lib/marketplace";
+import { MarketplaceFields } from "@/components/notebook/MarketplaceFields";
 import { useConsolidation } from "../ConsolidationContext";
 import { useMockPermissions } from "../MockPermissionsContext";
 import {
@@ -165,6 +166,7 @@ function CanvasInner() {
   const hydratedForIdRef = useRef<string | null>(null);
   const extraConfigRef = useRef<Record<string, any>>({});
   const [canvasMeta, setCanvasMeta] = useState<CanvasMeta | null>(null);
+  const [marketplaceMeta, setMarketplaceMeta] = useState<MarketplaceMeta>({});
   const [hydrationComplete, setHydrationComplete] = useState(false);
 
   useEffect(() => {
@@ -182,10 +184,12 @@ function CanvasInner() {
       appScreens: _s,
       theme: _t,
       canvas: _c,
+      marketplace: _m,
       ...extra
     } = row.config ?? {};
     extraConfigRef.current = extra;
     setCanvasMeta(rowCanvasMeta(row));
+    setMarketplaceMeta(row.config?.marketplace ?? {});
     const t = setTimeout(() => setHydrationComplete(true), 100);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -265,6 +269,7 @@ function CanvasInner() {
       appScreens: s.appScreens,
       theme: s.theme,
       canvas: canvasMeta,
+      ...(Object.keys(marketplaceMeta).length > 0 ? { marketplace: marketplaceMeta } : {}),
     };
     setSaveStatus({ state: "saving" });
     try {
@@ -284,14 +289,14 @@ function CanvasInner() {
       setSaveStatus({ state: "error", message });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [row?.id, canvasMeta, patchLocal]);
+  }, [row?.id, canvasMeta, marketplaceMeta, patchLocal]);
 
   useEffect(() => {
     if (!hydrationComplete || !row || !canvasMeta) return;
     const timer = setTimeout(() => void persistNow(), 2000);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeBlocks, blocks, uiComponents, appScreens, theme, storeName, canvasMeta, hydrationComplete, row?.id, persistNow]);
+  }, [activeBlocks, blocks, uiComponents, appScreens, theme, storeName, canvasMeta, marketplaceMeta, hydrationComplete, row?.id, persistNow]);
 
   const byId = new Map((topics ?? []).map((t) => [t.topic_id, t]));
   const clusterName = (id: string) => byId.get(id)?.label ?? id;
@@ -1167,6 +1172,9 @@ function CanvasInner() {
           appType={appType}
           published={published}
           slug={row.slug}
+          notebookId={row.id}
+          marketplace={marketplaceMeta}
+          onMarketplaceChange={setMarketplaceMeta}
           blockId={activeBlock?.id ?? null}
           deploying={deploying}
           floorLabel={floorLabel}
@@ -1673,6 +1681,9 @@ function NotebookSettingsDrawer({
   appType,
   published,
   slug,
+  notebookId,
+  marketplace,
+  onMarketplaceChange,
   blockId,
   deploying,
   floorLabel,
@@ -1700,6 +1711,9 @@ function NotebookSettingsDrawer({
   appType: AppType | null;
   published: boolean;
   slug: string | null;
+  notebookId: string;
+  marketplace: MarketplaceMeta;
+  onMarketplaceChange: (meta: MarketplaceMeta) => void;
   blockId: string | null;
   deploying: boolean;
   floorLabel: string;
@@ -1728,6 +1742,7 @@ function NotebookSettingsDrawer({
   const resultLimit = (compute?.stateSettings?.limit as number) ?? 5;
   const [showAppearance, setShowAppearance] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showMarketplace, setShowMarketplace] = useState(false);
   const [nameDraft, setNameDraft] = useState(name);
   const [slugDraft, setSlugDraft] = useState(slug ?? "");
   const [slugError, setSlugError] = useState<string | null>(null);
@@ -2140,6 +2155,19 @@ function NotebookSettingsDrawer({
               />
             </SettingsFieldCard>
           )}
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="Marketplace listing"
+          hint="How this notebook appears in the public directory"
+          open={showMarketplace}
+          onToggle={() => setShowMarketplace((o) => !o)}
+        >
+          <MarketplaceFields
+            notebookId={notebookId}
+            meta={marketplace}
+            onChange={onMarketplaceChange}
+          />
         </CollapsibleSection>
 
         <SettingsFieldCard label="Link">

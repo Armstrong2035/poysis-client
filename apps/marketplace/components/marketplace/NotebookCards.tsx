@@ -6,65 +6,90 @@ function subtitleOf(creator: ResolvedCreator): string {
   return [creator.creator, creator.sourceCount ? `${creator.sourceCount} videos indexed` : ""].filter(Boolean).join(" · ");
 }
 
-function ArrowIcon() {
+function TalkCTA() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#84977A" strokeWidth="2.4" style={{ flexShrink: 0 }}>
-      <line x1="5" y1="12" x2="19" y2="12" />
-      <polyline points="12 5 19 12 12 19" />
-    </svg>
+    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 600, color: "#3C4A3A", flexShrink: 0 }}>
+      Talk
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#84977A" strokeWidth="2.6">
+        <line x1="5" y1="12" x2="19" y2="12" />
+        <polyline points="12 5 19 12 12 19" />
+      </svg>
+    </div>
   );
 }
 
+// Elevated "Just Dropped" hero — dark, with a warm radial glow. The header and
+// each suggested question are their own links (a question deep-links straight
+// into the chat via ?q=), so the card is a plain container rather than one big
+// anchor (no nested <a>).
 export function FeaturedCard({ creator }: { creator: ResolvedCreator }) {
+  const subtitle = subtitleOf(creator);
   return (
-    <Link
-      href={`/${creator.slug}`}
+    <div
+      className="mkt-lift"
       style={{
-        display: "block",
-        background: "#FAF8F0",
-        border: "1px solid #E4DECC",
-        borderRadius: 22,
-        padding: 22,
-        cursor: "pointer",
-        textDecoration: "none",
-        color: "inherit",
+        position: "relative",
+        overflow: "hidden",
+        background: "#262922",
+        borderRadius: 26,
+        padding: 26,
+        boxShadow: "0 2px 4px rgba(38,41,34,0.08), 0 20px 44px -20px rgba(38,41,34,0.5)",
       }}
     >
-      <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 16 }}>
-        <Avatar initial={creator.initial} color={creator.color} size={64} fontSize={26} />
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontFamily: "'Source Serif 4', serif", fontWeight: 600, fontSize: 21, color: "#262922", lineHeight: 1.15 }}>
-            {creator.title}
+      <div
+        style={{
+          position: "absolute",
+          top: -70,
+          right: -50,
+          width: 220,
+          height: 220,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(201,138,93,0.28), transparent 68%)",
+          pointerEvents: "none",
+        }}
+      />
+      <Link href={`/${creator.slug}`} style={{ display: "block", textDecoration: "none", color: "inherit", position: "relative" }}>
+        <div style={{ display: "flex", gap: 17, alignItems: "center", marginBottom: 18 }}>
+          <Avatar initial={creator.initial} color={creator.color} size={68} fontSize={28} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontFamily: "'Source Serif 4', serif", fontWeight: 600, fontSize: 23, color: "#FAF8F0", lineHeight: 1.12, letterSpacing: "-0.3px" }}>
+              {creator.title}
+            </div>
+            {subtitle && <div style={{ fontSize: 13, color: "#C98A5D", fontWeight: 600, marginTop: 3 }}>{subtitle}</div>}
           </div>
-          {subtitleOf(creator) && (
-            <div style={{ fontSize: 13, color: "#7E3A33", fontWeight: 600, marginTop: 2 }}>{subtitleOf(creator)}</div>
-          )}
         </div>
-      </div>
-      <p style={{ fontSize: 14.5, color: "#55594D", lineHeight: 1.5, margin: "0 0 16px" }}>{creator.tagline}</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {creator.questions.slice(0, 2).map((q) => (
-          <div
-            key={q}
-            style={{
-              background: "#F1EEE2",
-              border: "1px solid #E4DECC",
-              borderRadius: 12,
-              padding: "12px 14px",
-              fontSize: 14,
-              color: "#262922",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 10,
-            }}
-          >
-            <span>{q}</span>
-            <ArrowIcon />
-          </div>
-        ))}
-      </div>
-    </Link>
+        <p style={{ fontSize: 14.5, color: "#CBD3C2", lineHeight: 1.55, margin: "0 0 18px" }}>{creator.tagline}</p>
+      </Link>
+      {creator.questions.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, position: "relative" }}>
+          {creator.questions.slice(0, 2).map((q) => (
+            <Link
+              key={q}
+              href={`/${creator.slug}?q=${encodeURIComponent(q)}`}
+              style={{
+                background: "rgba(250,248,240,0.06)",
+                border: "1px solid rgba(250,248,240,0.14)",
+                borderRadius: 13,
+                padding: "13px 15px",
+                fontSize: 14,
+                color: "#FAF8F0",
+                textDecoration: "none",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 10,
+              }}
+            >
+              <span>{q}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C98A5D" strokeWidth="2.4" style={{ flexShrink: 0 }}>
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -72,28 +97,31 @@ export function TrendingCard({ creator }: { creator: ResolvedCreator }) {
   return (
     <Link
       href={`/${creator.slug}`}
+      className="mkt-lift"
       style={{
-        background: "#FAF8F0",
-        border: "1px solid #E4DECC",
-        borderRadius: 18,
-        padding: 18,
-        minWidth: 210,
-        maxWidth: 210,
-        cursor: "pointer",
+        background: "#FFFDF9",
+        border: "1px solid #EFE9D8",
+        borderRadius: 20,
+        padding: 19,
+        minWidth: 216,
+        maxWidth: 216,
         flexShrink: 0,
         textDecoration: "none",
         color: "inherit",
-        display: "block",
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: "0 1px 2px rgba(38,41,34,0.04), 0 10px 26px -16px rgba(38,41,34,0.24)",
       }}
     >
-      <div style={{ marginBottom: 12 }}>
-        <Avatar initial={creator.initial} color={creator.color} size={48} fontSize={19} />
+      <div style={{ marginBottom: 13 }}>
+        <Avatar initial={creator.initial} color={creator.color} size={50} fontSize={20} />
       </div>
-      <div style={{ fontFamily: "'Source Serif 4', serif", fontWeight: 600, fontSize: 16, color: "#262922", lineHeight: 1.2, marginBottom: 3 }}>
+      <div style={{ fontFamily: "'Source Serif 4', serif", fontWeight: 600, fontSize: 16.5, color: "#262922", lineHeight: 1.18, marginBottom: 3 }}>
         {creator.title}
       </div>
-      {creator.creator && <div style={{ fontSize: 12, color: "#7E3A33", fontWeight: 600, marginBottom: 9 }}>{creator.creator}</div>}
-      <div style={{ fontSize: 12.5, color: "#55594D", lineHeight: 1.4 }}>{creator.tagline}</div>
+      {creator.creator && <div style={{ fontSize: 12, color: "#7E3A33", fontWeight: 600, marginBottom: 10 }}>{creator.creator}</div>}
+      <div style={{ fontSize: 12.5, color: "#55594D", lineHeight: 1.45, marginBottom: 15, flex: 1 }}>{creator.tagline}</div>
+      <TalkCTA />
     </Link>
   );
 }
@@ -102,33 +130,30 @@ export function LatestRow({ creator }: { creator: ResolvedCreator }) {
   return (
     <Link
       href={`/${creator.slug}`}
+      className="mkt-lift"
       style={{
-        background: "#FAF8F0",
-        border: "1px solid #E4DECC",
-        borderRadius: 16,
-        padding: "15px 16px",
-        cursor: "pointer",
+        background: "#FFFDF9",
+        border: "1px solid #EFE9D8",
+        borderRadius: 17,
+        padding: "15px 17px",
         display: "flex",
-        gap: 13,
+        gap: 14,
         alignItems: "center",
         textDecoration: "none",
         color: "inherit",
+        boxShadow: "0 1px 2px rgba(38,41,34,0.04), 0 8px 22px -16px rgba(38,41,34,0.22)",
       }}
     >
-      <Avatar initial={creator.initial} color={creator.color} size={46} fontSize={18} />
+      <Avatar initial={creator.initial} color={creator.color} size={48} fontSize={19} />
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontFamily: "'Source Serif 4', serif", fontWeight: 600, fontSize: 16, color: "#262922", lineHeight: 1.2 }}>
+        <div style={{ fontFamily: "'Source Serif 4', serif", fontWeight: 600, fontSize: 16.5, color: "#262922", lineHeight: 1.2 }}>
           {creator.title}
         </div>
         <div style={{ fontSize: 13, color: "#55594D", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {creator.tagline}
         </div>
       </div>
-      <div style={{ fontSize: 11, color: "#8A8C7E", flexShrink: 0, textAlign: "right" }}>
-        {creator.domain}
-        <br />
-        {creator.sourceCount ? `${creator.sourceCount} videos` : ""}
-      </div>
+      <TalkCTA />
     </Link>
   );
 }

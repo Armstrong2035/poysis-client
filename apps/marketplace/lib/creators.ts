@@ -125,6 +125,19 @@ export interface DomainCard {
   color: CreatorColor;
 }
 
+// Unique topics across all listed notebooks, most-common first, for the home
+// page's quick-filter chips. Capped so the row stays a single tidy cluster.
+export function getTopics(creators: ResolvedCreator[], limit = 8): string[] {
+  const counts = new Map<string, number>();
+  for (const c of creators) {
+    for (const t of c.topics) counts.set(t, (counts.get(t) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([name]) => name);
+}
+
 export function getDomains(creators: ResolvedCreator[]): DomainCard[] {
   const counts = new Map<string, number>();
   for (const c of creators) counts.set(c.domain, (counts.get(c.domain) ?? 0) + 1);

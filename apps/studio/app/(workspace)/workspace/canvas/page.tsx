@@ -55,6 +55,18 @@ function parseCeilingTarget(text: string): Ceiling | null {
  * view this session," derivable fresh each visit. */
 type FocusField = "persona" | "model" | "schema" | "memory" | "acl" | "sources";
 
+/* The settings drawer shows one section at a time — the full config stacked
+ * into a single scroll was too long to find anything in. Each section is
+ * reachable directly from the canvas bar. */
+type SettingsSection = "setup" | "look" | "tuning" | "listing";
+
+const SETTINGS_SECTIONS: { id: SettingsSection; label: string; hint: string }[] = [
+  { id: "setup", label: "Setup", hint: "Name, access, sources, persona, model, memory" },
+  { id: "look", label: "Look & feel", hint: "How the published app looks to visitors" },
+  { id: "tuning", label: "Tuning", hint: "Fine-tune how answers are generated" },
+  { id: "listing", label: "Listing", hint: "Public link and how it appears in the marketplace" },
+];
+
 const FOCUS_COLOR: Record<FocusField, string> = {
   persona: "#6B7FD7",
   model: "#B589C9",
@@ -145,6 +157,7 @@ function CanvasInner() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [addClusterOpen, setAddClusterOpen] = useState(false);
   const [notebookSettingsOpen, setNotebookSettingsOpen] = useState(false);
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>("setup");
   const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [refusedMessage, setRefusedMessage] = useState<string | null>(null);
@@ -247,7 +260,10 @@ function CanvasInner() {
           : 3;
 
   useEffect(() => {
-    if (step === 3) setNotebookSettingsOpen(true);
+    if (step === 3) {
+      setSettingsSection("setup");
+      setNotebookSettingsOpen(true);
+    }
   }, [step]);
 
   /* ── Persist: the single write path, shared by the debounced autosave and
@@ -490,6 +506,7 @@ function CanvasInner() {
           applyModelTier(picked.id);
           if (appType === "search") {
             setStep3SubStep("schema");
+            setSettingsSection("setup");
             setNotebookSettingsOpen(true);
             return `Set. Now design your result card in the settings drawer — add and arrange the fields end users should see, then continue.`;
           }
@@ -558,6 +575,10 @@ function CanvasInner() {
     // as a genuine settings request would get missed by different wording.
     if (marker.startsWith("redirect:")) {
       const field = marker.slice("redirect:".length) as FocusField;
+      // Every focusable field (persona, model, schema, memory, ACL, sources)
+      // lives in Setup — force it so a chat redirect can't land on a section
+      // that doesn't contain the field being highlighted.
+      setSettingsSection("setup");
       setNotebookSettingsOpen(true);
       setRedirectFocus(field);
       if (field === "acl") {
@@ -895,7 +916,9 @@ function CanvasInner() {
           position: "absolute",
           bottom: "20px",
           left: "20px",
-          maxWidth: "460px",
+          // Wide enough to hold the four config tabs on one line at equal
+          // width; still shrinks rather than overflowing on narrow canvases.
+          width: "min(620px, calc(100% - 40px))",
           zIndex: 6,
           display: "flex",
           flexDirection: "column",
@@ -949,18 +972,6 @@ function CanvasInner() {
             + Cluster
           </div>
           <div
-            onClick={() => setNotebookSettingsOpen(true)}
-            style={{
-              cursor: "pointer",
-              padding: "8px 10px",
-              borderRadius: "8px",
-              border: "1px solid #E4DECC",
-              fontSize: "13px",
-            }}
-          >
-            ⚙
-          </div>
-          <div
             onClick={() => {
               if (saveStatus.state !== "saving") void persistNow();
             }}
@@ -1003,6 +1014,37 @@ function CanvasInner() {
             {published ? "Published" : deploying ? "Publishing…" : "Publish"}
           </div>
         </div>
+
+        {/* Config sections — jump straight to one part of the config instead
+            of hunting through a single long drawer. */}
+        <div style={{ display: "flex", gap: "6px" }}>
+          {SETTINGS_SECTIONS.map((s) => (
+            <div
+              key={s.id}
+              onClick={() => {
+                setSettingsSection(s.id);
+                setNotebookSettingsOpen(true);
+              }}
+              title={s.hint}
+              style={{
+                flex: 1,
+                textAlign: "center",
+                whiteSpace: "nowrap",
+                cursor: "pointer",
+                padding: "6px 10px",
+                borderRadius: "999px",
+                border: "1px solid #E4DECC",
+                background: "#FFFDF9",
+                fontSize: "11.5px",
+                fontWeight: 600,
+                color: "#55594D",
+              }}
+            >
+              {s.label}
+            </div>
+          ))}
+        </div>
+
         <div
           style={{
             fontSize: "11.5px",
@@ -1173,6 +1215,8 @@ function CanvasInner() {
           published={published}
           slug={row.slug}
           notebookId={row.id}
+          section={settingsSection}
+          onSectionChange={setSettingsSection}
           marketplace={marketplaceMeta}
           onMarketplaceChange={setMarketplaceMeta}
           blockId={activeBlock?.id ?? null}
@@ -1682,6 +1726,8 @@ function NotebookSettingsDrawer({
   published,
   slug,
   notebookId,
+  section,
+  onSectionChange,
   marketplace,
   onMarketplaceChange,
   blockId,
@@ -1712,6 +1758,8 @@ function NotebookSettingsDrawer({
   published: boolean;
   slug: string | null;
   notebookId: string;
+  section: SettingsSection;
+  onSectionChange: (section: SettingsSection) => void;
   marketplace: MarketplaceMeta;
   onMarketplaceChange: (meta: MarketplaceMeta) => void;
   blockId: string | null;
@@ -1740,9 +1788,6 @@ function NotebookSettingsDrawer({
   const creativity = (compute?.stateSettings?.creativity as number) ?? 0.5;
   const maxTokens = (compute?.stateSettings?.maxTokens as number) ?? 1000;
   const resultLimit = (compute?.stateSettings?.limit as number) ?? 5;
-  const [showAppearance, setShowAppearance] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showMarketplace, setShowMarketplace] = useState(false);
   const [nameDraft, setNameDraft] = useState(name);
   const [slugDraft, setSlugDraft] = useState(slug ?? "");
   const [slugError, setSlugError] = useState<string | null>(null);
@@ -1824,6 +1869,39 @@ function NotebookSettingsDrawer({
           </div>
         </div>
 
+        {/* Section tabs — one part of the config at a time. */}
+        <div style={{ display: "flex", gap: "5px" }}>
+          {SETTINGS_SECTIONS.map((s) => {
+            const active = s.id === section;
+            return (
+              <div
+                key={s.id}
+                onClick={() => onSectionChange(s.id)}
+                style={{
+                  flex: 1,
+                  textAlign: "center",
+                  whiteSpace: "nowrap",
+                  cursor: "pointer",
+                  padding: "6px 8px",
+                  borderRadius: "999px",
+                  border: `1px solid ${active ? "#3C4A3A" : "#E4DECC"}`,
+                  background: active ? "#3C4A3A" : "#FFFDF9",
+                  color: active ? "#FAF8F0" : "#55594D",
+                  fontSize: "11.5px",
+                  fontWeight: 600,
+                }}
+              >
+                {s.label}
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ fontSize: "11.5px", color: "#8A9488", marginTop: "-8px" }}>
+          {SETTINGS_SECTIONS.find((s) => s.id === section)?.hint}
+        </div>
+
+        {section === "setup" && (
+          <>
         <SettingsFieldCard label="Name">
           <input
             value={nameDraft}
@@ -2052,12 +2130,11 @@ function NotebookSettingsDrawer({
           </div>
         </SettingsFieldCard>
 
-        <CollapsibleSection
-          title="Look & feel"
-          hint="How the published app looks to visitors"
-          open={showAppearance}
-          onToggle={() => setShowAppearance((o) => !o)}
-        >
+          </>
+        )}
+
+        {section === "look" && (
+          <>
           <SettingsFieldCard label="App name (shown to visitors)">
             <input
               value={theme.appLabel}
@@ -2105,14 +2182,11 @@ function NotebookSettingsDrawer({
               Show the &quot;Powered by Poysis&quot; banner on the public app
             </label>
           </SettingsFieldCard>
-        </CollapsibleSection>
+          </>
+        )}
 
-        <CollapsibleSection
-          title="Advanced tuning"
-          hint="Fine-tune how answers are generated"
-          open={showAdvanced}
-          onToggle={() => setShowAdvanced((o) => !o)}
-        >
+        {section === "tuning" && (
+          <>
           {appType !== "search" && (
             <>
               <SettingsFieldCard label="Creativity">
@@ -2155,20 +2229,16 @@ function NotebookSettingsDrawer({
               />
             </SettingsFieldCard>
           )}
-        </CollapsibleSection>
+          </>
+        )}
 
-        <CollapsibleSection
-          title="Marketplace listing"
-          hint="How this notebook appears in the public directory"
-          open={showMarketplace}
-          onToggle={() => setShowMarketplace((o) => !o)}
-        >
-          <MarketplaceFields
-            notebookId={notebookId}
-            meta={marketplace}
-            onChange={onMarketplaceChange}
-          />
-        </CollapsibleSection>
+        {section === "listing" && (
+          <>
+            <MarketplaceFields
+              notebookId={notebookId}
+              meta={marketplace}
+              onChange={onMarketplaceChange}
+            />
 
         <SettingsFieldCard label="Link">
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -2243,62 +2313,10 @@ function NotebookSettingsDrawer({
             </button>
           )}
         </SettingsFieldCard>
+          </>
+        )}
       </div>
     </>
-  );
-}
-
-function CollapsibleSection({
-  title,
-  hint,
-  open,
-  onToggle,
-  children,
-}: {
-  title: string;
-  hint: string;
-  open: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <div
-        onClick={onToggle}
-        style={{
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "10px 4px",
-        }}
-      >
-        <div>
-          <div
-            style={{
-              fontSize: "11px",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              color: "#55594D",
-            }}
-          >
-            {title}
-          </div>
-          <div style={{ fontSize: "11.5px", color: "#8A9488", marginTop: "2px" }}>
-            {hint}
-          </div>
-        </div>
-        <div style={{ color: "#8A9488", fontSize: "12px" }}>
-          {open ? "▴" : "▾"}
-        </div>
-      </div>
-      {open && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          {children}
-        </div>
-      )}
-    </div>
   );
 }
 

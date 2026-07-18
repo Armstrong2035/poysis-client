@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Albert+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #F1EEE2; }
+  ::selection { background: #C98A5D; color: #FAF8F0; }
+  input::placeholder, textarea::placeholder { color: #8A8C7E; opacity: 1; }
+  ::-webkit-scrollbar { height: 0; width: 0; }
+  @keyframes poyblink { 0%,80%,100% { opacity:.25; } 40% { opacity:1; } }
+</style>
+</helmet>
+
+<div style="min-height:100vh; background:#F1EEE2; font-family:'Albert Sans',sans-serif; color:#262922; display:flex; flex-direction:column;">
+
+  <!-- TOP BAR -->
+  <div style="position:sticky; top:0; z-index:40; background:rgba(241,238,226,0.92); backdrop-filter:blur(8px); border-bottom:1px solid #E4DECC;">
+    <div style="max-width:960px; margin:0 auto; padding:13px 18px; display:flex; align-items:center; gap:14px;">
+      <div style="display:flex; align-items:center; gap:9px; cursor:pointer; flex-shrink:0;" onClick="{{ goHome }}">
+        <svg width="24" height="24" viewBox="0 0 100 100" fill="none"><path d="M 58.73 8.92 L 60.61 9.48 L 64.25 10.86 L 67.73 12.56 L 71.01 14.56 L 74.08 16.85 L 76.91 19.41 L 79.47 22.20 L 81.75 25.19 L 83.73 28.37 L 85.39 31.71 L 86.73 35.16 L 87.74 38.70 L 88.41 42.30 L 88.74 45.93 L 88.73 49.55 L 88.38 53.13 L 87.71 56.65 L 86.72 60.07 L 85.42 63.36 L 83.83 66.50 L 81.96 69.46 L 79.84 72.22 L 77.49 74.75 L 74.92 77.04 L 72.17 79.07 L 69.26 80.83 L 66.22 82.30 L 63.07 83.47 L 59.85 84.34 L 56.57 84.90 L 53.28 85.15 L 50.00 85.10 L 46.76 84.74 L 43.58 84.09 L 40.49 83.15 L 37.53 81.93 L 34.70 80.46 L 32.04 78.74 L 29.57 76.78 L 27.30 74.63 L 25.26 72.28 L 23.45 69.77 L 21.89 67.11 L 20.59 64.34 L 19.56 61.48 L 18.81 58.55 L 18.33 55.58 L 18.13 52.60 L 18.21 49.63 L 18.56 46.70 L 19.17 43.82 L 20.05 41.03 L 21.17 38.35 L 22.52 35.80 L 24.10 33.39 L 25.88 31.15 L 27.74 29.00 L 29.79 27.02 L 32.01 25.24 L 34.39 23.68 L 36.20 24.04 L 33.84 25.44 L 31.63 27.04 L 29.58 28.85 L 27.70 30.84 L 26.09 33.05 L 24.75 35.42 L 23.66 37.90 L 22.81 40.46 L 22.21 43.07 L 21.85 45.71 L 21.75 48.35 L 21.90 50.98 L 22.30 53.57 L 22.93 56.08 L 23.79 58.52 L 24.86 60.84 L 26.15 63.04 L 27.62 65.10 L 29.27 66.99 L 31.08 68.70 L 33.02 70.23 L 35.09 71.56 L 37.25 72.68 L 39.50 73.58 L 41.80 74.27 L 44.14 74.73 L 46.49 74.96 L 48.84 74.98 L 51.15 74.77 L 53.42 74.35 L 55.62 73.73 L 57.74 72.90 L 59.75 71.89 L 61.64 70.71 L 63.39 69.36 L 65.00 67.87 L 66.44 66.25 L 67.72 64.52 L 68.81 62.69 L 69.72 60.78 L 70.44 58.81 L 70.96 56.81 L 71.29 54.78 L 71.42 52.76 L 71.37 50.75 L 71.12 48.77 L 70.70 46.84 L 70.10 44.99 L 69.34 43.22 L 68.42 41.54 L 67.36 39.98 L 66.17 38.54 L 64.86 37.23 L 63.46 36.07 L 61.96 35.05 L 60.39 34.20 L 58.77 33.50 L 57.11 32.97 L 55.43 32.60 L 53.74 32.39 A 12.00 12.00 0 0 1 58.73 8.92 Z" fill="#3C4A3A"></path></svg>
+        <span style="font-family:'Source Serif 4',serif; font-weight:600; font-size:19px; letter-spacing:-0.3px; color:#262922;">poysis</span>
+      </div>
+
+      <sc-if value="{{ showTopSearch }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1; max-width:380px; display:flex; align-items:center; gap:8px; background:#FAF8F0; border:1px solid #E4DECC; border-radius:999px; padding:7px 14px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#55594D" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input value="{{ searchDraft }}" onChange="{{ onSearchDraftChange }}" onKeyDown="{{ onSearchKeyDown }}" placeholder="Search people to learn from…" style="border:none; outline:none; background:transparent; font-family:'Albert Sans',sans-serif; font-size:14px; color:#262922; flex:1; min-width:0;"></input>
+        </div>
+      </sc-if>
+
+      <div style="flex:1;"></div>
+
+      <button onClick="{{ openCreators }}" style="font-family:'Albert Sans',sans-serif; font-weight:600; font-size:13px; color:#262922; background:transparent; border:none; padding:8px 6px; cursor:pointer; white-space:nowrap;" style-hover="color:#7E3A33;">For Creators</button>
+      <button onClick="{{ openWaitlist }}" style="font-family:'Albert Sans',sans-serif; font-weight:600; font-size:13px; color:#262922; background:transparent; border:1px solid #262922; border-radius:999px; padding:8px 16px; cursor:pointer; white-space:nowrap;" style-hover="background:#262922; color:#FAF8F0;">Join Beta</button>
+    </div>
+  </div>
+
+  <!-- HOME FEED -->
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="Home Feed" style="flex:1;">
+      <div style="max-width:640px; margin:0 auto; padding:24px 18px 90px;">
+
+        <div style="margin-bottom:18px;">
+          <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:clamp(22px,5.4vw,30px); line-height:1.14; letter-spacing:-0.6px; color:#262922; margin-bottom:8px;">Get trusted answers from the world's best thinkers.</div>
+          <p style="font-size:14.5px; color:#55594D; line-height:1.5; margin:0;">Ask specific questions and trace every answer back to the exact talk, interview, article or book it came from.</p>
+        </div>
+
+        <!-- SEARCH -->
+        <div style="display:flex; align-items:center; gap:11px; background:#FFFDF9; border:1px solid #EFE9D8; border-radius:999px; padding:14px 19px; margin-bottom:13px; box-shadow:0 1px 2px rgba(38,41,34,0.04), 0 10px 26px -18px rgba(38,41,34,0.3);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7E3A33" stroke-width="2" style="flex-shrink:0;"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input value="{{ searchDraft }}" onChange="{{ onSearchDraftChange }}" onKeyDown="{{ onSearchKeyDown }}" placeholder="Search people, topics or ideas…" style="border:none; outline:none; background:transparent; flex:1; font-family:'Albert Sans',sans-serif; font-size:15px; color:#262922; min-width:0;">
+        </div>
+
+        <!-- TOPIC FILTERS -->
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:34px;">
+          <sc-for list="{{ topicChips }}" as="t" hint-placeholder-count="7">
+            <button onClick="{{ t.onClick }}" style="font-family:'Albert Sans',sans-serif; font-size:13px; font-weight:500; color:#55594D; background:transparent; border:1px solid #E4DECC; border-radius:999px; padding:7px 14px; cursor:pointer; white-space:nowrap;" style-hover="border-color:#84977A; color:#262922;">{{ t.name }}</button>
+          </sc-for>
+        </div>
+
+        <!-- JUST DROPPED -->
+        <sc-if value="{{ featured }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-bottom:38px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:13px;">
+              <span style="width:7px; height:7px; border-radius:50%; background:#C98A5D; display:inline-block; box-shadow:0 0 0 4px rgba(201,138,93,0.22);"></span>
+              <span style="font-size:12px; font-weight:700; letter-spacing:1.6px; color:#7E3A33; text-transform:uppercase;">Just Dropped</span>
+              <span style="font-size:12px; color:#8A8C7E; margin-left:auto;">Newest notebook</span>
+            </div>
+            <div onClick="{{ featured.onClick }}" style="position:relative; overflow:hidden; background:#262922; border-radius:26px; padding:26px; cursor:pointer; box-shadow:0 2px 4px rgba(38,41,34,0.08), 0 20px 44px -20px rgba(38,41,34,0.5);" style-hover="transform:translateY(-2px);">
+              <div style="position:absolute; top:-70px; right:-50px; width:220px; height:220px; border-radius:50%; background:radial-gradient(circle, rgba(201,138,93,0.28), transparent 68%); pointer-events:none;"></div>
+              <div style="display:flex; gap:17px; align-items:center; margin-bottom:18px; position:relative;">
+                <div style="width:68px; height:68px; border-radius:50%; background:{{ featured.coverBg }}; color:{{ featured.coverFg }}; display:flex; align-items:center; justify-content:center; font-family:'Source Serif 4',serif; font-weight:600; font-size:28px; flex-shrink:0; box-shadow:0 0 0 3px rgba(250,248,240,0.12);">{{ featured.initial }}</div>
+                <div style="min-width:0;">
+                  <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:23px; color:#FAF8F0; line-height:1.12; letter-spacing:-0.3px;">{{ featured.title }}</div>
+                  <div style="font-size:13px; color:#C98A5D; font-weight:600; margin-top:3px;">{{ featured.creator }} · {{ featured.sourceCount }} videos indexed</div>
+                </div>
+              </div>
+              <p style="font-size:14.5px; color:#CBD3C2; line-height:1.55; margin:0 0 18px; position:relative;">{{ featured.description }}</p>
+              <div style="display:flex; flex-direction:column; gap:8px; position:relative;">
+                <sc-for list="{{ featured.questions }}" as="q" hint-placeholder-count="2">
+                  <div onClick="{{ q.onClick }}" style="background:rgba(250,248,240,0.06); border:1px solid rgba(250,248,240,0.14); border-radius:13px; padding:13px 15px; font-size:14px; color:#FAF8F0; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:10px;" style-hover="background:rgba(250,248,240,0.12); border-color:rgba(201,138,93,0.6);">
+                    <span>{{ q.text }}</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C98A5D" stroke-width="2.4" style="flex-shrink:0;"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- TRENDING -->
+        <div style="margin-bottom:34px;">
+          <div style="display:flex; align-items:baseline; gap:9px; margin-bottom:14px;">
+            <div style="font-size:12px; font-weight:700; letter-spacing:1.6px; color:#3C4A3A; text-transform:uppercase;">Trending</div>
+            <div style="font-size:12.5px; color:#8A8C7E;">What people are talking to most</div>
+          </div>
+          <div style="display:flex; gap:13px; overflow-x:auto; margin:0 -18px; padding:2px 18px 6px;">
+            <sc-for list="{{ trendingNotebooks }}" as="nb" hint-placeholder-count="4">
+              <div onClick="{{ nb.onClick }}" style="background:#FFFDF9; border:1px solid #EFE9D8; border-radius:20px; padding:19px; min-width:216px; max-width:216px; cursor:pointer; flex-shrink:0; display:flex; flex-direction:column; box-shadow:0 1px 2px rgba(38,41,34,0.04), 0 10px 26px -16px rgba(38,41,34,0.24);" style-hover="transform:translateY(-3px); border-color:#D9D2BE;">
+                <div style="width:50px; height:50px; border-radius:50%; background:{{ nb.coverBg }}; color:{{ nb.coverFg }}; display:flex; align-items:center; justify-content:center; font-family:'Source Serif 4',serif; font-weight:600; font-size:20px; margin-bottom:13px; box-shadow:0 0 0 3px rgba(38,41,34,0.04);">{{ nb.initial }}</div>
+                <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:16.5px; color:#262922; line-height:1.18; margin-bottom:3px;">{{ nb.title }}</div>
+                <div style="font-size:12px; color:#7E3A33; font-weight:600; margin-bottom:10px;">{{ nb.creator }}</div>
+                <div style="font-size:12.5px; color:#55594D; line-height:1.45; margin-bottom:15px; flex:1;">{{ nb.shortDesc }}</div>
+                <div style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:#3C4A3A;">Talk <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#84977A" stroke-width="2.6"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- LATEST -->
+        <div style="margin-bottom:36px;">
+          <div style="display:flex; align-items:baseline; gap:9px; margin-bottom:14px;">
+            <div style="font-size:12px; font-weight:700; letter-spacing:1.6px; color:#3C4A3A; text-transform:uppercase;">Latest</div>
+            <div style="font-size:12.5px; color:#8A8C7E;">Freshly indexed</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:11px;">
+            <sc-for list="{{ latestNotebooks }}" as="nb" hint-placeholder-count="4">
+              <div onClick="{{ nb.onClick }}" style="background:#FFFDF9; border:1px solid #EFE9D8; border-radius:17px; padding:15px 17px; cursor:pointer; display:flex; gap:14px; align-items:center; box-shadow:0 1px 2px rgba(38,41,34,0.04), 0 8px 22px -16px rgba(38,41,34,0.22);" style-hover="transform:translateY(-2px); border-color:#D9D2BE;">
+                <div style="width:48px; height:48px; border-radius:50%; background:{{ nb.coverBg }}; color:{{ nb.coverFg }}; display:flex; align-items:center; justify-content:center; font-family:'Source Serif 4',serif; font-weight:600; font-size:19px; flex-shrink:0; box-shadow:0 0 0 3px rgba(38,41,34,0.04);">{{ nb.initial }}</div>
+                <div style="min-width:0; flex:1;">
+                  <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:16.5px; color:#262922; line-height:1.2;">{{ nb.title }}</div>
+                  <div style="font-size:13px; color:#55594D; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ nb.shortDesc }}</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:5px; font-size:13px; font-weight:600; color:#3C4A3A; flex-shrink:0;">Talk <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#84977A" stroke-width="2.6"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- DOMAINS -->
+        <div style="margin-bottom:36px;">
+          <div style="font-size:12px; font-weight:700; letter-spacing:1.6px; color:#3C4A3A; text-transform:uppercase; margin-bottom:14px;">Browse by domain</div>
+          <div style="display:flex; flex-wrap:wrap; gap:9px;">
+            <sc-for list="{{ domainCards }}" as="d" hint-placeholder-count="5">
+              <button onClick="{{ d.onClick }}" style="font-family:'Albert Sans',sans-serif; font-size:14px; font-weight:600; color:{{ d.fg }}; background:{{ d.bg }}; border:none; border-radius:999px; padding:10px 18px; cursor:pointer;" style-hover="opacity:.88;">{{ d.name }} <span style="opacity:.7; font-weight:500;">{{ d.count }}</span></button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid #E4DECC; padding-top:22px;">
+          <div style="font-size:13px; color:#8A8C7E;">A new notebook drops most days.</div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- RESULTS -->
+  <sc-if value="{{ isResults }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Search Results" style="flex:1;">
+      <div style="max-width:640px; margin:0 auto; padding:24px 18px 90px;">
+        <button onClick="{{ goHome }}" style="display:flex; align-items:center; gap:6px; background:none; border:none; color:#55594D; font-family:'Albert Sans',sans-serif; font-size:13px; cursor:pointer; padding:0 0 16px; font-weight:500;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#55594D" stroke-width="2.2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Home
+        </button>
+        <h2 style="font-family:'Source Serif 4',serif; font-weight:600; font-size:clamp(21px,4vw,27px); color:#262922; margin:0 0 4px;">{{ resultsHeading }}</h2>
+        <p style="font-size:13.5px; color:#55594D; margin:0 0 22px;">{{ resultsCount }} people to learn from</p>
+
+        <sc-if value="{{ hasResults }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <sc-for list="{{ filteredNotebooks }}" as="nb" hint-placeholder-count="5">
+              <div onClick="{{ nb.onClick }}" style="background:#FAF8F0; border:1px solid #E4DECC; border-radius:16px; padding:16px; cursor:pointer; display:flex; gap:13px;" style-hover="border-color:#84977A;">
+                <div style="width:50px; height:50px; border-radius:50%; background:{{ nb.coverBg }}; color:{{ nb.coverFg }}; display:flex; align-items:center; justify-content:center; font-family:'Source Serif 4',serif; font-weight:600; font-size:20px; flex-shrink:0;">{{ nb.initial }}</div>
+                <div style="min-width:0; flex:1;">
+                  <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:16.5px; color:#262922;">{{ nb.title }}</div>
+                  <div style="font-size:12.5px; color:#7E3A33; font-weight:600; margin-bottom:6px;">{{ nb.creator }}</div>
+                  <div style="font-size:13.5px; color:#55594D; line-height:1.45; margin-bottom:9px;">{{ nb.description }}</div>
+                  <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+                    <sc-for list="{{ nb.topics }}" as="t" hint-placeholder-count="2">
+                      <span style="font-size:11px; font-weight:600; color:#3C4A3A; background:#EAE7D8; border-radius:999px; padding:3px 9px;">{{ t }}</span>
+                    </sc-for>
+                    <span style="font-size:11.5px; color:#8A8C7E; margin-left:auto;">{{ nb.sourceCount }} videos indexed</span>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+          <div style="text-align:center; padding:50px 20px; color:#55594D;">
+            <div style="font-family:'Source Serif 4',serif; font-size:18px; color:#262922; margin-bottom:8px;">No one indexed yet for “{{ query }}”.</div>
+            <div style="font-size:14px; margin-bottom:18px;">Tell us who to add — we index new channels most days.</div>
+            <button onClick="{{ openWaitlist }}" style="background:#3C4A3A; color:#FAF8F0; border:none; border-radius:12px; padding:12px 22px; font-family:'Albert Sans',sans-serif; font-weight:600; font-size:14px; cursor:pointer;">Request a creator</button>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- NOTEBOOK -->
+  <sc-if value="{{ isNotebook }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Notebook" style="flex:1;">
+      <div style="max-width:720px; margin:0 auto; padding:24px 18px 90px;">
+        <button onClick="{{ backFromNotebook }}" style="display:flex; align-items:center; gap:6px; background:none; border:none; color:#55594D; font-family:'Albert Sans',sans-serif; font-size:13px; cursor:pointer; padding:0 0 18px; font-weight:500;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#55594D" stroke-width="2.2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Back
+        </button>
+
+        <sc-if value="{{ activeNotebook }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; gap:18px; align-items:center; margin-bottom:20px;">
+            <div style="width:78px; height:78px; border-radius:50%; background:{{ activeNotebook.coverBg }}; color:{{ activeNotebook.coverFg }}; display:flex; align-items:center; justify-content:center; font-family:'Source Serif 4',serif; font-weight:600; font-size:30px; flex-shrink:0;">{{ activeNotebook.initial }}</div>
+            <div style="min-width:0; flex:1;">
+              <h1 style="font-family:'Source Serif 4',serif; font-weight:600; font-size:clamp(22px,4vw,30px); color:#262922; margin:0 0 3px; letter-spacing:-0.5px;">{{ activeNotebook.title }}</h1>
+              <div style="font-size:13.5px; color:#7E3A33; font-weight:600;">{{ activeNotebook.creator }} · {{ activeNotebook.sourceCount }} videos indexed</div>
+            </div>
+          </div>
+          <p style="font-size:15px; color:#55594D; line-height:1.55; margin:0 0 14px;">{{ activeNotebook.description }}</p>
+          <div style="display:flex; flex-wrap:wrap; gap:7px; align-items:center; margin-bottom:26px;">
+            <sc-for list="{{ activeNotebook.topics }}" as="t" hint-placeholder-count="3">
+              <span style="font-size:12px; font-weight:600; color:#3C4A3A; background:#EAE7D8; border-radius:999px; padding:4px 11px;">{{ t }}</span>
+            </sc-for>
+          </div>
+
+          <div style="background:#FAF8F0; border:1px solid #E4DECC; border-radius:20px; padding:22px;">
+            <div style="font-size:12px; font-weight:700; letter-spacing:1.2px; color:#84977A; text-transform:uppercase; margin-bottom:14px;">Ask {{ activeNotebook.firstName }} anything</div>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
+              <sc-for list="{{ activeNotebook.questions }}" as="q" hint-placeholder-count="3">
+                <div onClick="{{ q.onClick }}" style="background:#F1EEE2; border:1px solid #E4DECC; border-radius:12px; padding:13px 16px; font-size:14.5px; color:#262922; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:10px;" style-hover="border-color:#84977A;">
+                  <span>{{ q.text }}</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#84977A" stroke-width="2.4" style="flex-shrink:0;"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </div>
+              </sc-for>
+            </div>
+            <button onClick="{{ startChat }}" style="width:100%; background:#3C4A3A; color:#FAF8F0; border:none; border-radius:12px; padding:14px; font-family:'Albert Sans',sans-serif; font-weight:600; font-size:15px; cursor:pointer;" style-hover="background:#2c3730;">Start a conversation</button>
+          </div>
+
+          <div style="margin-top:34px;">
+            <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:18px; color:#262922; margin-bottom:14px;">You may also like</div>
+            <div style="display:flex; gap:12px; overflow-x:auto; margin:0 -18px; padding:0 18px 6px;">
+              <sc-for list="{{ activeNotebook.related }}" as="r" hint-placeholder-count="3">
+                <div onClick="{{ r.onClick }}" style="background:#FAF8F0; border:1px solid #E4DECC; border-radius:14px; padding:14px 16px; min-width:170px; cursor:pointer; flex-shrink:0;" style-hover="border-color:#84977A;">
+                  <div style="width:36px; height:36px; border-radius:50%; background:{{ r.coverBg }}; color:{{ r.coverFg }}; display:flex; align-items:center; justify-content:center; font-family:'Source Serif 4',serif; font-weight:600; font-size:15px; margin-bottom:9px;">{{ r.initial }}</div>
+                  <div style="font-size:14px; font-weight:600; color:#262922; margin-bottom:2px;">{{ r.title }}</div>
+                  <div style="font-size:12px; color:#7E3A33;">{{ r.domain }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- CHAT -->
+  <sc-if value="{{ isChat }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Chat" style="flex:1; display:flex; flex-direction:column;">
+      <sc-if value="{{ activeNotebook }}" hint-placeholder-val="{{ false }}">
+        <div style="border-bottom:1px solid #E4DECC; background:#FAF8F0;">
+          <div style="max-width:720px; margin:0 auto; padding:12px 18px; display:flex; align-items:center; gap:12px;">
+            <button onClick="{{ backFromChat }}" style="background:none; border:none; cursor:pointer; padding:4px; display:flex;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#55594D" stroke-width="2.2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            </button>
+            <div style="width:36px; height:36px; border-radius:50%; background:{{ activeNotebook.coverBg }}; color:{{ activeNotebook.coverFg }}; display:flex; align-items:center; justify-content:center; font-family:'Source Serif 4',serif; font-weight:600; font-size:15px; flex-shrink:0;">{{ activeNotebook.initial }}</div>
+            <div style="min-width:0;">
+              <div style="font-size:14.5px; font-weight:600; color:#262922;">{{ activeNotebook.title }}</div>
+              <div style="font-size:11.5px; color:#7E3A33;">{{ activeNotebook.creator }} · {{ activeNotebook.sourceCount }} videos</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex:1; max-width:720px; margin:0 auto; width:100%; padding:26px 18px; display:flex; flex-direction:column; gap:18px;">
+          <div style="display:flex; gap:11px; align-items:flex-start;">
+            <div style="width:30px; height:30px; border-radius:50%; background:#3C4A3A; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px;">
+              <svg width="14" height="14" viewBox="0 0 100 100" fill="none"><path d="M 58.73 8.92 L 60.61 9.48 L 64.25 10.86 L 67.73 12.56 L 71.01 14.56 L 74.08 16.85 L 76.91 19.41 L 79.47 22.20 L 81.75 25.19 L 83.73 28.37 L 85.39 31.71 L 86.73 35.16 L 87.74 38.70 L 88.41 42.30 L 88.74 45.93 L 88.73 49.55 L 88.38 53.13 L 87.71 56.65 L 86.72 60.07 L 85.42 63.36 L 83.83 66.50 L 81.96 69.46 L 79.84 72.22 L 77.49 74.75 L 74.92 77.04 L 72.17 79.07 L 69.26 80.83 L 66.22 82.30 L 63.07 83.47 L 59.85 84.34 L 56.57 84.90 L 53.28 85.15 L 50.00 85.10 L 46.76 84.74 L 43.58 84.09 L 40.49 83.15 L 37.53 81.93 L 34.70 80.46 L 32.04 78.74 L 29.57 76.78 L 27.30 74.63 L 25.26 72.28 L 23.45 69.77 L 21.89 67.11 L 20.59 64.34 L 19.56 61.48 L 18.81 58.55 L 18.33 55.58 L 18.13 52.60 L 18.21 49.63 L 18.56 46.70 L 19.17 43.82 L 20.05 41.03 L 21.17 38.35 L 22.52 35.80 L 24.10 33.39 L 25.88 31.15 L 27.74 29.00 L 29.79 27.02 L 32.01 25.24 L 34.39 23.68 L 36.20 24.04 L 33.84 25.44 L 31.63 27.04 L 29.58 28.85 L 27.70 30.84 L 26.09 33.05 L 24.75 35.42 L 23.66 37.90 L 22.81 40.46 L 22.21 43.07 L 21.85 45.71 L 21.75 48.35 L 21.90 50.98 L 22.30 53.57 L 22.93 56.08 L 23.79 58.52 L 24.86 60.84 L 26.15 63.04 L 27.62 65.10 L 29.27 66.99 L 31.08 68.70 L 33.02 70.23 L 35.09 71.56 L 37.25 72.68 L 39.50 73.58 L 41.80 74.27 L 44.14 74.73 L 46.49 74.96 L 48.84 74.98 L 51.15 74.77 L 53.42 74.35 L 55.62 73.73 L 57.74 72.90 L 59.75 71.89 L 61.64 70.71 L 63.39 69.36 L 65.00 67.87 L 66.44 66.25 L 67.72 64.52 L 68.81 62.69 L 69.72 60.78 L 70.44 58.81 L 70.96 56.81 L 71.29 54.78 L 71.42 52.76 L 71.37 50.75 L 71.12 48.77 L 70.70 46.84 L 70.10 44.99 L 69.34 43.22 L 68.42 41.54 L 67.36 39.98 L 66.17 38.54 L 64.86 37.23 L 63.46 36.07 L 61.96 35.05 L 60.39 34.20 L 58.77 33.50 L 57.11 32.97 L 55.43 32.60 L 53.74 32.39 A 12.00 12.00 0 0 1 58.73 8.92 Z" fill="#F1EEE2"></path></svg>
+            </div>
+            <div style="background:#FAF8F0; border:1px solid #E4DECC; border-radius:16px; border-top-left-radius:5px; padding:13px 16px; font-size:14.5px; color:#262922; max-width:82%; line-height:1.5;">I'm trained on {{ activeNotebook.creator }}'s entire channel — {{ activeNotebook.sourceCount }} videos. Ask me anything, and I'll answer in their words, with the exact source.</div>
+          </div>
+
+          <sc-for list="{{ chatView }}" as="m" hint-placeholder-count="0">
+            <sc-if value="{{ m.isUser }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; justify-content:flex-end;">
+                <div style="background:#3C4A3A; color:#FAF8F0; border-radius:16px; border-top-right-radius:5px; padding:13px 16px; font-size:14.5px; max-width:82%; line-height:1.5;">{{ m.text }}</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ m.isTyping }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; gap:11px; align-items:flex-start;">
+                <div style="width:30px; height:30px; border-radius:50%; background:#3C4A3A; flex-shrink:0;"></div>
+                <div style="background:#FAF8F0; border:1px solid #E4DECC; border-radius:16px; border-top-left-radius:5px; padding:15px 18px; display:flex; gap:5px;">
+                  <span style="width:7px; height:7px; border-radius:50%; background:#84977A; display:inline-block; animation:poyblink 1.2s infinite;"></span>
+                  <span style="width:7px; height:7px; border-radius:50%; background:#84977A; display:inline-block; animation:poyblink 1.2s infinite .2s;"></span>
+                  <span style="width:7px; height:7px; border-radius:50%; background:#84977A; display:inline-block; animation:poyblink 1.2s infinite .4s;"></span>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ m.isAnswer }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; gap:11px; align-items:flex-start;">
+                <div style="width:30px; height:30px; border-radius:50%; background:#3C4A3A; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; font-family:'Source Serif 4',serif; color:#F1EEE2; font-weight:600; font-size:13px;">{{ m.speakerInitial }}</div>
+                <div style="max-width:82%;">
+                  <div style="background:#FAF8F0; border:1px solid #E4DECC; border-radius:16px; border-top-left-radius:5px; padding:13px 16px; font-size:14.5px; color:#262922; line-height:1.55;">{{ m.text }}</div>
+                  <div style="display:flex; align-items:center; gap:7px; margin-top:8px; padding:7px 12px; background:#EAE7D8; border-radius:10px; font-size:12px; color:#7E3A33; font-weight:600; width:fit-content;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7E3A33" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    {{ m.source }}
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+          </sc-for>
+
+          <!-- INLINE WAITLIST CONVERSION -->
+          <sc-if value="{{ showInlineWaitlist }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#3C4A3A; border-radius:20px; padding:24px; color:#F1EEE2; margin-top:6px;">
+              <sc-if value="{{ inlineNotDone }}" hint-placeholder-val="{{ true }}">
+                <div>
+                  <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:22px; margin-bottom:6px; color:#FAF8F0;">Enjoying this?</div>
+                  <p style="font-size:14px; color:#CBD3C2; line-height:1.5; margin:0 0 18px;">You just talked with {{ activeNotebook.creator }}'s teaching. Reserve your username to keep going — and tell us who you want to talk to next.</p>
+                  <input value="{{ username }}" onChange="{{ onUsernameChange }}" placeholder="Reserve your username" style="width:100%; border:1px solid #55655047; background:#33402f; border-radius:12px; padding:13px 15px; font-family:'Albert Sans',sans-serif; font-size:14.5px; color:#FAF8F0; outline:none; margin-bottom:10px;"></input>
+                  <input value="{{ nextCreator }}" onChange="{{ onNextChange }}" placeholder="Who should we add next?" style="width:100%; border:1px solid #55655047; background:#33402f; border-radius:12px; padding:13px 15px; font-family:'Albert Sans',sans-serif; font-size:14.5px; color:#FAF8F0; outline:none; margin-bottom:14px;"></input>
+                  <button onClick="{{ submitInline }}" style="width:100%; background:#C98A5D; color:#262922; border:none; border-radius:12px; padding:14px; font-family:'Albert Sans',sans-serif; font-weight:700; font-size:15px; cursor:pointer;" style-hover="background:#d99a6c;">Join the beta</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ inlineDone }}" hint-placeholder-val="{{ false }}">
+                <div style="text-align:center; padding:6px 0;">
+                  <div style="width:46px; height:46px; border-radius:50%; background:#84977A; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FAF8F0" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </div>
+                  <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:21px; color:#FAF8F0; margin-bottom:7px;">You're on the list.</div>
+                  <div style="font-size:13.5px; color:#CBD3C2; line-height:1.5;">{{ inlineSuccessNote }}</div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <div style="flex:1;"></div>
+
+          <sc-if value="{{ showSuggestions }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              <sc-for list="{{ activeNotebook.questions }}" as="q" hint-placeholder-count="3">
+                <button onClick="{{ q.sendNow }}" style="font-size:12.5px; font-weight:500; color:#3C4A3A; background:#EAE7D8; border:1px solid #E4DECC; border-radius:999px; padding:7px 14px; cursor:pointer; text-align:left;" style-hover="background:#E4DECC;">{{ q.text }}</button>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="border-top:1px solid #E4DECC; background:#FAF8F0; position:sticky; bottom:0;">
+          <div style="max-width:720px; margin:0 auto; padding:14px 18px; display:flex; gap:10px; align-items:center;">
+            <input value="{{ chatDraft }}" onChange="{{ onChatDraftChange }}" onKeyDown="{{ onChatKeyDown }}" placeholder="Ask {{ activeNotebook.firstName }} a question…" style="flex:1; min-width:0; border:1px solid #E4DECC; background:#F1EEE2; border-radius:12px; padding:13px 16px; font-family:'Albert Sans',sans-serif; font-size:14.5px; color:#262922; outline:none;"></input>
+            <button onClick="{{ sendChat }}" style="background:#3C4A3A; color:#FAF8F0; border:none; border-radius:12px; width:44px; height:44px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;" style-hover="background:#2c3730;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FAF8F0" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <!-- WAITLIST MODAL (top bar / for creators) -->
+  <sc-if value="{{ waitlistOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; z-index:100; background:rgba(38,41,34,0.5); display:flex; align-items:center; justify-content:center; padding:20px;" onClick="{{ closeWaitlistBg }}">
+      <div onClick="{{ stopProp }}" style="background:#FAF8F0; border-radius:22px; max-width:420px; width:100%; padding:32px; position:relative;">
+        <button onClick="{{ closeWaitlist }}" style="position:absolute; top:16px; right:18px; background:none; border:none; cursor:pointer; color:#55594D; font-size:22px; line-height:1; padding:4px;">×</button>
+        <sc-if value="{{ modalDone }}" hint-placeholder-val="{{ false }}">
+          <div style="text-align:center; padding:16px 0;">
+            <div style="width:52px; height:52px; border-radius:50%; background:#84977A; display:flex; align-items:center; justify-content:center; margin:0 auto 18px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FAF8F0" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:22px; color:#262922; margin-bottom:8px;">You're on the list.</div>
+            <div style="font-size:14px; color:#55594D; line-height:1.5;">{{ inlineSuccessNote }}</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ modalNotDone }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="font-size:12px; font-weight:700; letter-spacing:1.2px; color:#7E3A33; text-transform:uppercase; margin-bottom:10px;">Join the Beta</div>
+            <div style="font-family:'Source Serif 4',serif; font-weight:600; font-size:24px; color:#262922; margin-bottom:8px; letter-spacing:-0.4px;">Reserve your place.</div>
+            <p style="font-size:14px; color:#55594D; line-height:1.5; margin:0 0 20px;">Get early access, follow new notebook drops, and tell us whose channel you want us to index next.</p>
+            <input value="{{ username }}" onChange="{{ onUsernameChange }}" placeholder="Choose a username" style="width:100%; border:1px solid #E4DECC; background:#F1EEE2; border-radius:12px; padding:13px 16px; font-family:'Albert Sans',sans-serif; font-size:14.5px; color:#262922; outline:none; margin-bottom:10px;"></input>
+            <input value="{{ nextCreator }}" onChange="{{ onNextChange }}" placeholder="Who should we add next?" style="width:100%; border:1px solid #E4DECC; background:#F1EEE2; border-radius:12px; padding:13px 16px; font-family:'Albert Sans',sans-serif; font-size:14.5px; color:#262922; outline:none; margin-bottom:14px;"></input>
+            <button onClick="{{ submitModal }}" style="width:100%; background:#3C4A3A; color:#FAF8F0; border:none; border-radius:12px; padding:14px; font-family:'Albert Sans',sans-serif; font-weight:600; font-size:14.5px; cursor:pointer;" style-hover="background:#2c3730;">Join Beta</button>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const PALETTE = {
+  olive: { bg: '#3C4A3A', fg: '#F1EEE2' },
+  oxblood: { bg: '#7E3A33', fg: '#F1EEE2' },
+  sage: { bg: '#84977A', fg: '#262922' },
+  clay: { bg: '#C98A5D', fg: '#262922' },
+  stone: { bg: '#55594D', fg: '#F1EEE2' },
+  ink: { bg: '#262922', fg: '#F1EEE2' },
+};
+
+const NOTEBOOKS = [
+  { id: 'elena-cross', domain: 'Faith', title: 'Elena Cross', creator: '@ElenaCrossMinistries', cover: 'olive', featured: true, trending: true,
+    description: 'Twenty years of sermons on prayer, purpose, and everyday faith — her entire channel, indexed and ready to talk to.',
+    topics: ['Prayer', 'Purpose', 'Faith'], sourceCount: 142,
+    questions: [
+      { text: 'How do I build a daily prayer life?', answer: 'Start with five honest minutes at the same time each day — Elena calls consistency "the soil prayer grows in." Don\u2019t perform, just show up and talk plainly. The depth comes from the habit, not the effort.', source: 'Building a Prayer Life That Lasts · 6:12' },
+      { text: 'What does she teach about purpose?', answer: 'She teaches that purpose is found in faithfulness to small things, not a lightning-bolt calling. "Do the next right thing well," she says, "and the bigger thing finds you."', source: 'Finding Your Purpose · 14:38' },
+      { text: 'Summarize her teaching on suffering.', answer: 'Suffering isn\u2019t punishment or proof of absence — it\u2019s where trust is forged. She frames it as walking through, not around, with God nearer in the valley than on the mountain.', source: 'When God Feels Silent · 21:05' },
+    ] },
+  { id: 'common-table', domain: 'Faith', title: 'The Common Table', creator: '@TheCommonTable', cover: 'oxblood', trending: true,
+    description: 'A channel walking through scripture book by book, in plain language. Every episode indexed.',
+    topics: ['Scripture', 'Theology', 'Bible Study'], sourceCount: 268,
+    questions: [
+      { text: 'Give me an overview of Romans.', answer: 'Romans is Paul\u2019s fullest case that grace, not performance, makes people right with God — then works out what that means for a divided community. The Common Table splits it into three moves: the problem, the gift, the new life.', source: 'Romans, Start to Finish · 32:40' },
+      { text: 'What is the theme of the book of James?', answer: 'Faith that doesn\u2019t change how you live isn\u2019t faith yet. James is relentlessly practical — the tongue, the poor, patience — "belief with its sleeves rolled up."', source: 'James: Faith That Works · 18:22' },
+      { text: 'How do these books connect?', answer: 'They\u2019re two sides of one coin: Paul guards grace from legalism, James guards it from complacency. Read together, they describe a faith both freely given and visibly lived.', source: 'Paul & James in Conversation · 24:11' },
+    ] },
+  { id: 'brother-reyes', domain: 'Faith', title: 'Brother Thomas Reyes', creator: '@BrotherThomasReyes', cover: 'sage',
+    description: 'Monastic wisdom on silence, contemplation, and prayer, drawn from his full video archive.',
+    topics: ['Prayer', 'Contemplation', 'Silence'], sourceCount: 96,
+    questions: [
+      { text: 'What is centering prayer?', answer: 'It\u2019s prayer stripped of words — you choose one sacred word, and whenever thoughts pull you off, you gently return to it. He calls it "consenting to God\u2019s presence rather than talking at it."', source: 'An Introduction to Centering Prayer · 9:47' },
+      { text: 'How do I sit with silence?', answer: 'Begin with two minutes, not twenty. Silence feels loud at first; he says that\u2019s not failure, it\u2019s your mind finally being heard. Let the noise settle without chasing it.', source: 'Learning to Be Still · 12:30' },
+      { text: 'Summarize his teaching on stillness.', answer: 'Stillness isn\u2019t the absence of activity but the presence of attention. "God is not hard to find," he says, "only easy to miss when we never stop moving."', source: 'The Gift of Stillness · 16:03' },
+    ] },
+  { id: 'mira-chen', domain: 'AI', title: 'Dr. Mira Chen', creator: '@MiraChenAI', cover: 'ink', trending: true,
+    description: 'AI research translated for curious minds — her whole channel, from first principles to the frontier.',
+    topics: ['AI', 'Machine Learning', 'Research'], sourceCount: 184,
+    questions: [
+      { text: 'What is a transformer, simply?', answer: 'It\u2019s a model that reads all the words at once and learns which ones to pay attention to for each prediction. Mira\u2019s line: "attention is just the model deciding what matters, over and over."', source: 'Transformers Without the Math · 11:20' },
+      { text: 'How does reinforcement learning work?', answer: 'An agent tries things, gets rewarded or penalized, and updates toward whatever earns more reward over time. She stresses it learns from consequences, not instructions.', source: 'RL Explained Simply · 15:44' },
+      { text: 'Summarize her view on AI safety.', answer: 'She argues safety is mostly an alignment-of-incentives problem, not a sci-fi one: build systems whose goals we can inspect and correct, and stay humble about what we can\u2019t yet measure.', source: 'Why AI Safety Is Boring (and Urgent) · 19:58' },
+    ] },
+  { id: 'model-mind', domain: 'AI', title: 'The Model Mind', creator: '@TheModelMind', cover: 'stone',
+    description: 'A channel of interviews with the builders and researchers shaping AI, fully indexed.',
+    topics: ['AI', 'Podcast', 'Interviews'], sourceCount: 210,
+    questions: [
+      { text: 'What do builders disagree about most?', answer: 'Whether scale alone gets us to general intelligence, or whether we need new ideas. Guests split almost evenly — that disagreement is the most interesting part of the show.', source: 'The Scale Debate · 41:12' },
+      { text: 'What did guests say about AGI timelines?', answer: 'Estimates ranged from "a few years" to "we\u2019re asking the wrong question." The recurring caution: timelines say more about the person than the technology.', source: 'When Do We Get AGI? · 38:05' },
+      { text: 'Summarize the recurring themes.', answer: 'Three keep surfacing: evaluation is harder than training, data quality beats quantity, and the hardest problems are human, not technical.', source: 'A Year of Conversations · 52:30' },
+    ] },
+  { id: 'sam-okafor', domain: 'AI', title: 'Sam Okafor', creator: '@SamOkafor', cover: 'clay',
+    description: 'His channel of talks and essays on building, reasoning about, and shipping intelligent systems.',
+    topics: ['AI', 'Engineering', 'Essays'], sourceCount: 77,
+    questions: [
+      { text: 'How should I evaluate a model?', answer: 'Start from the decision the model informs, not its accuracy score. Sam\u2019s rule: "a metric nobody acts on is a vanity metric." Build evals that mirror real use.', source: 'Evals That Actually Matter · 13:09' },
+      { text: 'What about technical debt in ML?', answer: 'He warns most ML debt is invisible — it lives in data pipelines and silent assumptions, not code. "The model is the easy part."', source: 'The Hidden Cost of ML Systems · 17:41' },
+      { text: 'Summarize his essay on agents.', answer: 'Agents work when the task has clear feedback and bounded scope; they fail when you ask them to be autonomous and reliable at once. Design for the loop, not the magic.', source: 'Agents, Honestly · 22:18' },
+    ] },
+  { id: 'founders-almanac', domain: 'Business', title: "Founder's Almanac", creator: '@FoundersAlmanac', cover: 'oxblood',
+    description: 'A channel of field notes on fundraising, hiring, and the messy first years of a company — fully indexed.',
+    topics: ['Fundraising', 'Hiring', 'Growth'], sourceCount: 156,
+    questions: [
+      { text: 'How do I run a fundraising process?', answer: 'Compress it: line up every first meeting in the same two-week window so momentum and competition work for you. A drawn-out raise reads as a weak one.', source: 'Running a Tight Raise · 20:15' },
+      { text: 'Common early hiring mistakes?', answer: 'Hiring for a stage you\u2019re not at yet, and hiring to fill a gap you haven\u2019t defined. Early hires should be range over specialization.', source: 'Your First Ten Hires · 24:50' },
+      { text: 'Advice on finding cofounders?', answer: 'Pick someone whose strengths cover your blind spots and whose values survive a bad month. "Skills are rentable; trust isn\u2019t."', source: 'Choosing a Cofounder · 18:33' },
+    ] },
+  { id: 'priya-anand', domain: 'Business', title: 'Priya Anand', creator: '@PriyaAnand', cover: 'clay', trending: true,
+    description: 'Hard-won lessons from building and scaling three companies, drawn from her full channel.',
+    topics: ['Startups', 'Leadership', 'Scaling'], sourceCount: 132,
+    questions: [
+      { text: 'How did she know when to pivot?', answer: 'When the effort to win each new customer kept rising instead of falling. The data whispered for months before she listened — "pivot on the trend, not the panic."', source: 'Knowing When to Pivot · 16:47' },
+      { text: 'What does she teach about leadership?', answer: 'That your job as founder shifts from doing the work to owning the clarity — people can\u2019t execute a vision they can\u2019t repeat back to you.', source: 'Leading Through Scale · 21:30' },
+      { text: 'Advice on scaling teams?', answer: 'Add process only when pain forces it, not in anticipation. Premature structure kills the speed that made you worth scaling.', source: 'Scaling Without Breaking · 19:12' },
+    ] },
+  { id: 'marcus-webb', domain: 'Business', title: 'Marcus Webb', creator: '@MarcusWebbVC', cover: 'olive',
+    description: "A venture investor's channel on how early-stage bets actually get made.",
+    topics: ['Fundraising', 'Venture', 'Strategy'], sourceCount: 88,
+    questions: [
+      { text: 'What makes a pitch memorable?', answer: 'One sharp insight the room hasn\u2019t heard, said plainly. "I forget decks," Marcus says, "I remember a sentence that reframed how I see a market."', source: 'What Investors Remember · 14:22' },
+      { text: 'How do investors think about risk?', answer: 'They\u2019re not avoiding risk — they\u2019re pricing it. The question isn\u2019t "is this safe" but "if it works, is it big enough to matter?"', source: 'How VCs Actually Think · 17:55' },
+      { text: 'Advice on term sheets?', answer: 'Optimize for the partner and the terms that shape control, not just the valuation headline. "A high price with bad terms is an expensive trap."', source: 'Reading a Term Sheet · 20:40' },
+    ] },
+  { id: 'dana-kessler', domain: 'Leadership', title: 'Dana Kessler', creator: '@DanaKessler', cover: 'sage', trending: true,
+    description: 'Her channel on developing product sense and making roadmap tradeoffs.',
+    topics: ['Product', 'Strategy', 'Roadmapping'], sourceCount: 104,
+    questions: [
+      { text: 'How do I prioritize a roadmap?', answer: 'Rank by impact-per-effort against one clear objective, then cut the bottom third and defend the cut. "A roadmap," she says, "is what you say no to."', source: 'Prioritization That Holds · 15:18' },
+      { text: 'What is "product sense", really?', answer: 'It\u2019s pattern recognition for what users actually need, built from shipping and watching — not taste from thin air. "Reps you can\u2019t skip."', source: 'What Product Sense Really Means · 18:02' },
+      { text: 'Her framework for tradeoffs?', answer: 'Name the objective, list the options against it, and make the cost of each choice explicit before deciding. Most bad calls are undecided tradeoffs in disguise.', source: 'Making Hard Tradeoffs · 16:39' },
+    ] },
+  { id: 'product-loop', domain: 'Leadership', title: 'The Product Loop', creator: '@TheProductLoop', cover: 'stone',
+    description: 'A channel of conversations on craft, taste, and judgment with working product leaders.',
+    topics: ['Product', 'Craft', 'Interviews'], sourceCount: 190,
+    questions: [
+      { text: 'What do great PMs have in common?', answer: 'They\u2019re relentlessly clear and comfortable being wrong quickly. Guests keep naming the same trait: "strong opinions, held loosely."', source: 'What the Best PMs Share · 34:20' },
+      { text: 'How do guests think about taste?', answer: 'Taste is developed by exposure and critique, not born. The recurring advice: study great products the way writers study great sentences.', source: 'On Craft and Taste · 29:48' },
+      { text: 'Advice for new PMs?', answer: 'Earn trust before authority: ship something small and useful, understand the customer better than anyone, and make your team look good.', source: 'Advice for New PMs · 27:15' },
+    ] },
+  { id: 'adaeze-nwosu', domain: 'Psychology', title: 'Dr. Adaeze Nwosu', creator: '@AdaezeNwosu', cover: 'olive', trending: true,
+    description: 'Her channel on motivation, habits, and the stories we tell ourselves.',
+    topics: ['Psychology', 'Habits', 'Motivation'], sourceCount: 121,
+    questions: [
+      { text: 'How do habits actually form?', answer: 'Cue, routine, reward — repeated until the brain automates it. Adaeze stresses the reward has to be felt now; future benefits don\u2019t build habits.', source: 'The Science of Habits · 13:52' },
+      { text: 'What drives long-term motivation?', answer: 'Autonomy, progress, and meaning outlast willpower every time. "Motivation isn\u2019t a mood you summon; it\u2019s a system you design."', source: 'What Really Motivates Us · 16:24' },
+      { text: 'Her research on self-talk?', answer: 'The stories we repeat become the identity we act from. Change the sentence — "I\u2019m not a morning person" — and behavior often follows the new script.', source: 'The Stories We Tell Ourselves · 18:47' },
+    ] },
+];
+
+class Component extends DCLogic {
+  state = {
+    screen: 'home',
+    query: '',
+    activeDomain: null,
+    activeId: null,
+    searchDraft: '',
+    chatDraft: '',
+    chatMessages: [],
+    showInlineWaitlist: false,
+    inlineDone: false,
+    waitlistOpen: false,
+    modalDone: false,
+    username: '',
+    nextCreator: '',
+  };
+
+  firstNameOf(nb) {
+    if (nb.title.startsWith('The ') || nb.title.startsWith("Founder")) return nb.title;
+    const parts = nb.title.replace(/^Dr\.\s*/, '').replace(/^Brother\s*/, '').split(' ');
+    return parts[0];
+  }
+
+  buildNotebook(n) {
+    const pal = PALETTE[n.cover];
+    return {
+      ...n,
+      initial: n.title.trim()[0].toUpperCase(),
+      firstName: this.firstNameOf(n),
+      shortDesc: n.description.split(/[—.]/)[0].trim(),
+      coverBg: pal.bg,
+      coverFg: pal.fg,
+      onClick: () => this.openNotebook(n.id),
+    };
+  }
+
+  goHome() { this.setState({ screen: 'home', searchDraft: '', query: '', activeDomain: null }); }
+  openNotebook(id) { this.setState({ activeId: id, screen: 'notebook' }); }
+  backFromNotebook() { this.setState({ screen: this.state.query || this.state.activeDomain ? 'results' : 'home' }); }
+  backFromChat() { this.setState({ screen: 'notebook' }); }
+
+  submitSearch() {
+    const q = this.state.searchDraft.trim();
+    this.setState({ query: q, activeDomain: null, screen: 'results' });
+  }
+  selectDomain(domain) { this.setState({ activeDomain: domain, query: '', searchDraft: '', screen: 'results' }); }
+  selectTopic(t) { this.setState({ query: t, activeDomain: null, searchDraft: t, screen: 'results' }); }
+
+  topicChips() {
+    const seen = [];
+    NOTEBOOKS.forEach(n => n.topics.forEach(t => { if (!seen.includes(t)) seen.push(t); }));
+    return seen.slice(0, 8).map(t => ({ name: t, onClick: () => this.selectTopic(t) }));
+  }
+
+  enterChat(sendText) {
+    this.setState({ screen: 'chat', chatMessages: [], chatDraft: '', showInlineWaitlist: false, inlineDone: false });
+    if (sendText) setTimeout(() => this.sendChat(sendText), 60);
+  }
+  startChat() { this.enterChat(null); }
+
+  answerFor(nb, text) {
+    const t = text.toLowerCase().trim();
+    let q = nb.questions.find(x => x.text.toLowerCase() === t);
+    if (!q) q = nb.questions.find(x => t && (x.text.toLowerCase().includes(t) || t.includes(x.text.toLowerCase().replace(/[?.]/g, '').slice(0, 14))));
+    if (q) return { answer: q.answer, source: q.source };
+    const fallback = nb.questions[0];
+    return {
+      answer: `That\u2019s a great question — ${nb.title} comes back to this across the channel. The short version: consistency and honest attention matter more than intensity. Want me to pull the fuller teaching from a specific video?`,
+      source: fallback.source,
+    };
+  }
+
+  sendChat(textArg) {
+    const text = (typeof textArg === 'string' ? textArg : this.state.chatDraft).trim();
+    if (!text) return;
+    const nb = NOTEBOOKS.find(n => n.id === this.state.activeId);
+    if (!nb) return;
+    const resp = this.answerFor(nb, text);
+    this.setState(s => ({
+      chatMessages: [...s.chatMessages, { role: 'user', text }, { role: 'assistant', typing: true }],
+      chatDraft: '',
+    }));
+    clearTimeout(this._t);
+    this._t = setTimeout(() => {
+      this.setState(s => {
+        const msgs = s.chatMessages.slice();
+        msgs[msgs.length - 1] = { role: 'assistant', text: resp.answer, source: resp.source };
+        const userCount = msgs.filter(m => m.role === 'user').length;
+        return { chatMessages: msgs, showInlineWaitlist: userCount >= 2 || s.showInlineWaitlist };
+      });
+    }, 950);
+  }
+
+  openWaitlist() { this.setState({ waitlistOpen: true, modalDone: false }); }
+  closeWaitlist() { this.setState({ waitlistOpen: false }); }
+  submitModal() { if (this.state.username.trim()) this.setState({ modalDone: true }); }
+  submitInline() { if (this.state.username.trim()) this.setState({ inlineDone: true }); }
+
+  successNote() {
+    const who = this.state.nextCreator.trim();
+    const u = this.state.username.trim();
+    const hi = u ? `We saved @${u.replace(/^@/, '')}. ` : '';
+    return who ? `${hi}We\u2019ll index ${who} soon and let you know the moment they\u2019re live.` : `${hi}We\u2019ll email you the moment the beta opens up.`;
+  }
+
+  renderVals() {
+    const s = this.state;
+    const built = NOTEBOOKS.map(n => this.buildNotebook(n));
+    const byId = id => built.find(b => b.id === id);
+
+    const domainNames = ['Faith', 'Business', 'AI', 'Leadership', 'Psychology'];
+    const domainColors = ['olive', 'oxblood', 'ink', 'sage', 'clay'];
+    const domainCards = domainNames.map((name, i) => {
+      const pal = PALETTE[domainColors[i]];
+      return { name, count: NOTEBOOKS.filter(n => n.domain === name).length, bg: pal.bg, fg: pal.fg, onClick: () => this.selectDomain(name) };
+    });
+
+    const featuredRaw = NOTEBOOKS.find(n => n.featured);
+    let featured = null;
+    if (featuredRaw) {
+      const f = this.buildNotebook(featuredRaw);
+      featured = { ...f, questions: featuredRaw.questions.slice(0, 2).map(q => ({ text: q.text, onClick: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.openNotebook(featuredRaw.id); this.enterChat(q.text); } })) };
+    }
+
+    const trendingNotebooks = built.filter(b => b.trending && b.id !== (featuredRaw && featuredRaw.id));
+    const latestNotebooks = built.slice().reverse().slice(0, 5);
+
+    let filtered = built;
+    if (s.activeDomain) filtered = filtered.filter(n => n.domain === s.activeDomain);
+    else if (s.query) {
+      const q = s.query.toLowerCase();
+      filtered = filtered.filter(n => n.title.toLowerCase().includes(q) || n.creator.toLowerCase().includes(q) || n.domain.toLowerCase().includes(q) || n.topics.some(t => t.toLowerCase().includes(q)));
+    }
+    const resultsHeading = s.activeDomain ? s.activeDomain : (s.query ? `Results for “${s.query}”` : 'Everyone');
+
+    const activeRaw = NOTEBOOKS.find(n => n.id === s.activeId);
+    let activeNotebook = null;
+    if (activeRaw) {
+      const b = this.buildNotebook(activeRaw);
+      const questions = activeRaw.questions.map(q => ({
+        text: q.text,
+        onClick: () => this.enterChat(q.text),
+        sendNow: () => this.sendChat(q.text),
+      }));
+      const rel = built.filter(n => n.id !== activeRaw.id && n.domain === activeRaw.domain).slice(0, 3);
+      const related = rel.length ? rel : built.filter(n => n.id !== activeRaw.id).slice(0, 3);
+      activeNotebook = { ...b, questions, related };
+    }
+
+    const chatView = s.chatMessages.map(m => ({
+      isUser: m.role === 'user',
+      isTyping: m.role === 'assistant' && m.typing,
+      isAnswer: m.role === 'assistant' && !m.typing,
+      text: m.text,
+      source: m.source,
+      speakerInitial: activeNotebook ? activeNotebook.initial : 'P',
+    }));
+
+    return {
+      isHome: s.screen === 'home',
+      isResults: s.screen === 'results',
+      isNotebook: s.screen === 'notebook',
+      isChat: s.screen === 'chat',
+      showTopSearch: s.screen !== 'home' && s.screen !== 'chat',
+      searchDraft: s.searchDraft,
+      onSearchDraftChange: e => this.setState({ searchDraft: e.target.value }),
+      onSearchKeyDown: e => { if (e.key === 'Enter') this.submitSearch(); },
+      goHome: () => this.goHome(),
+      featured,
+      topicChips: this.topicChips(),
+      trendingNotebooks,
+      latestNotebooks,
+      domainCards,
+      resultsHeading,
+      resultsCount: filtered.length,
+      hasResults: filtered.length > 0,
+      noResults: filtered.length === 0,
+      filteredNotebooks: filtered,
+      query: s.query,
+      activeNotebook,
+      backFromNotebook: () => this.backFromNotebook(),
+      backFromChat: () => this.backFromChat(),
+      startChat: () => this.startChat(),
+      chatView,
+      chatDraft: s.chatDraft,
+      onChatDraftChange: e => this.setState({ chatDraft: e.target.value }),
+      onChatKeyDown: e => { if (e.key === 'Enter') this.sendChat(); },
+      sendChat: () => this.sendChat(),
+      showSuggestions: s.chatMessages.length === 0,
+      showInlineWaitlist: s.showInlineWaitlist,
+      inlineNotDone: !s.inlineDone,
+      inlineDone: s.inlineDone,
+      inlineSuccessNote: this.successNote(),
+      username: s.username,
+      nextCreator: s.nextCreator,
+      onUsernameChange: e => this.setState({ username: e.target.value }),
+      onNextChange: e => this.setState({ nextCreator: e.target.value }),
+      submitInline: () => this.submitInline(),
+      waitlistOpen: s.waitlistOpen,
+      modalDone: s.modalDone,
+      modalNotDone: !s.modalDone,
+      openWaitlist: () => this.openWaitlist(),
+      openCreators: () => window.open('https://studio.poysis.com', '_blank'),
+      closeWaitlist: () => this.closeWaitlist(),
+      closeWaitlistBg: () => this.closeWaitlist(),
+      stopProp: e => e.stopPropagation(),
+      submitModal: () => this.submitModal(),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

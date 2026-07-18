@@ -187,7 +187,7 @@ export async function createNotebook() {
 
   revalidatePath('/workspace');
   revalidatePath('/');
-  return redirect(`/notebook?id=${data.id}`);
+  return redirect(`/workspace/canvas?notebook=${data.id}`);
 }
 
 /**

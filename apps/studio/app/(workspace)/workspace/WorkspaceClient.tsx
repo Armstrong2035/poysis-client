@@ -121,7 +121,7 @@ export function WorkspaceClient({ notebooks, recommendations }: Props) {
         <div className="mb-10" style={{ borderTop: "1px solid rgba(58,61,71,0.4)" }} />
 
         {/* ── Quick actions ── */}
-        <div className="grid grid-cols-2 gap-4 mb-10">
+        <div className="grid grid-cols-1 gap-4 mb-10">
           <form action={createNotebook} className="h-full">
             <button
               type="submit"
@@ -158,41 +158,6 @@ export function WorkspaceClient({ notebooks, recommendations }: Props) {
             </button>
           </form>
 
-          <Link
-            href="/templates"
-            className="min-h-[140px] rounded-xl p-6 flex flex-col items-start transition-all duration-200 hover:border-[rgba(232,165,71,0.3)]"
-            style={{
-              background: "rgba(58,61,71,0.15)",
-              border: "1px solid rgba(58,61,71,0.4)",
-              textDecoration: "none",
-            }}
-          >
-            <div
-              className="w-8 h-8 rounded flex items-center justify-center mb-4"
-              style={{ background: "rgba(58,61,71,0.4)" }}
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#9CA0AC" strokeWidth="1.3">
-                <rect x="1" y="1" width="5" height="5" rx="1" />
-                <rect x="8" y="1" width="5" height="5" rx="1" />
-                <rect x="1" y="8" width="5" height="5" rx="1" />
-                <rect x="8" y="8" width="5" height="5" rx="1" />
-              </svg>
-            </div>
-            <h3
-              style={{
-                fontFamily: "Syne, sans-serif",
-                fontSize: "14px",
-                fontWeight: 700,
-                color: "#E8E9ED",
-                marginBottom: "4px",
-              }}
-            >
-              Use a template
-            </h3>
-            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "12px", fontWeight: 300, color: "#9CA0AC" }}>
-              Start from a pre-built pipeline.
-            </p>
-          </Link>
         </div>
 
         {/* ── Notebooks ── */}
@@ -251,7 +216,7 @@ export function WorkspaceClient({ notebooks, recommendations }: Props) {
                       border: "1px solid rgba(58,61,71,0.35)",
                     }}
                   >
-                    <Link href={`/notebook?id=${nb.id}`} className="flex flex-col p-5" style={{ textDecoration: "none" }}>
+                    <Link href={`/workspace/canvas?notebook=${nb.id}`} className="flex flex-col p-5" style={{ textDecoration: "none" }}>
                       <div className="flex items-center justify-between mb-4">
                         <div
                           className="w-6 h-6 rounded flex items-center justify-center"

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { type ClusteringState } from "../hooks/useClusteringStatus";
+import { type ClusteringState } from "../../app/hooks/useClusteringStatus";
 
 export type DriveConnection = {
   id: string;

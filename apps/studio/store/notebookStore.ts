@@ -463,7 +463,8 @@ export const useNotebookStore = create<NotebookState>()(
 
           // Chat hits the RAG endpoint; Generate hits the same endpoint but could be extended later
           const instructions = resolvedInputs.instructions;
-          const model = block.stateSettings?.model || 'gemini-3-flash';
+          // Speed/capability tier, not a model id — the worker maps it.
+          const model = block.stateSettings?.modelTier || 'quick';
           const max_tokens = block.stateSettings?.maxTokens || 1000;
           const creativity = block.stateSettings?.creativity ?? 0.5; // Default to balanced
 

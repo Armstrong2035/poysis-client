@@ -246,7 +246,7 @@ function PreviewContent() {
                 <p className="font-bold text-zinc-900">No screens configured</p>
                 <p className="text-sm text-zinc-500 mt-1">Go back to the builder and add blocks to your app.</p>
               </div>
-              <Link href={`/notebook?id=${notebookId || ""}`} className="text-sm font-bold text-blue-600 hover:underline mt-2">
+              <Link href={`/workspace/canvas?notebook=${notebookId || ""}`} className="text-sm font-bold text-blue-600 hover:underline mt-2">
                 Return to Builder
               </Link>
             </div>
@@ -303,7 +303,7 @@ function PreviewContent() {
 
       {/* Return to builder — floating, outside the card */}
       <Link
-        href={`/notebook?id=${notebookId || ""}`}
+        href={`/workspace/canvas?notebook=${notebookId || ""}`}
         className="fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-2.5 bg-zinc-900 text-white rounded-full text-xs font-bold shadow-2xl hover:bg-zinc-800 transition-all hover:-translate-y-0.5 active:scale-95 flex items-center gap-2 z-50 group"
       >
         <span className="group-hover:rotate-12 transition-transform">🛠️</span> Return to Builder

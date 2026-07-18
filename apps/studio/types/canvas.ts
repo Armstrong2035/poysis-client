@@ -137,6 +137,11 @@ export interface UIConfig {
 
 // --- 7. CHAT CONFIG (The shared chat module interface) ---
 
+/* Speed/capability tier. This is what goes over the wire to the worker —
+ * the worker owns the tier → model mapping, so no raw model id is ever sent
+ * from the client. Stored per-block as stateSettings.modelTier. */
+export type ModelTier = "quick" | "thinking" | "expert";
+
 export interface ChatBranding {
   primaryColor?: string;
   persona?: string;
@@ -144,15 +149,14 @@ export interface ChatBranding {
 }
 
 export interface ChatConfig {
-  mode: "dashboard" | "playground";
+  mode: "dashboard";
   notebookId: string;
-  playgroundId?: string;       // Required when mode === "playground"
   allowedSources?: string[];   // Scope restriction — undefined means full KB access
   branding?: ChatBranding;
   placeholder?: string;
-  model?: string;              // Dashboard only — LLM model override
+  modelTier?: ModelTier;       // Dashboard only — speed/capability tier sent to the worker
   useOuroboros?: boolean;      // Dashboard only — ground replies in docs/ouroboros.md (Canvas onboarding)
-  hideModelSwitcher?: boolean; // Dashboard only — suppress the in-chat Flash/Pro picker when the host page has its own model control (e.g. Canvas's settings drawer)
+  hideModelSwitcher?: boolean; // Dashboard only — suppress the in-chat tier picker when the host page has its own model control (e.g. Canvas's settings drawer)
 }
 
 export interface ActiveBlock {

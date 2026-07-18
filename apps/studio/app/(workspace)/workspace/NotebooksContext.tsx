@@ -16,6 +16,7 @@
 
 import { createContext, useContext, useState, useCallback } from "react";
 import type { Ceiling } from "@/lib/ceiling";
+import type { ModelTier } from "../../../types/canvas";
 import {
   initializeNotebook,
   listNotebooks,
@@ -39,12 +40,11 @@ export type AppType = "chat" | "search";
 export type MemoryMode = "none" | "session" | "persistent";
 const VALID_MEMORY_MODES = new Set<string>(["none", "session", "persistent"]);
 
-// User-facing speed/capability tier, kept separate from the real backend
-// model id (stateSettings.model). Today "thinking" and "expert" both call
-// the same underlying model — the tier is still tracked distinctly so the
-// UI knows which chip is active, and so nothing needs to change here the
-// day a real third model backs "expert".
-export type ModelTier = "quick" | "thinking" | "expert";
+// Speed/capability tier. Defined in types/canvas so the shared Chat module
+// can use it too; re-exported here since most callers import it from this
+// context. The tier is what the worker receives — it owns the tier → model
+// mapping, so the client never names a model.
+export type { ModelTier };
 const VALID_MODEL_TIERS = new Set<string>(["quick", "thinking", "expert"]);
 
 export type CanvasMeta = {
@@ -135,7 +135,7 @@ function buildSeedConfig(opts: {
         id: blockId,
         type: "chat",
         status: "idle",
-        stateSettings: { model: "gemini-3-flash" },
+        stateSettings: { modelTier: "quick" },
         inputBindings: {
           instructions: { type: "templated", template: opts.persona ?? "" },
         },

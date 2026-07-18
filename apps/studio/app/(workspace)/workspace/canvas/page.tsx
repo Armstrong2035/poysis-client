@@ -9,6 +9,7 @@ import { saveNotebook, renameNotebook as renameNotebookAction } from "@/lib/acti
 import { MARKETPLACE_URL, type MarketplaceMeta } from "@/lib/marketplace";
 import { MarketplaceFields } from "@/components/notebook/MarketplaceFields";
 import { SourcesDrawer, type SourceCategory } from "@/components/notebook/SourcesDrawer";
+import { NotebookPreviewModal } from "@/components/notebook/NotebookPreviewModal";
 import { useConsolidation } from "../ConsolidationContext";
 import { useMockPermissions } from "../MockPermissionsContext";
 import {
@@ -86,17 +87,10 @@ const FOCUS_LABEL: Record<FocusField, string> = {
   sources: "Sources",
 };
 
-/* Speed/capability tiers shown to the user, instead of raw model names.
- * "Thinking" and "Expert" both call gemini-3-pro today — there's only one
- * stronger model available — but the tier is tracked as its own concept
- * (CanvasMeta.modelTier) so the UI can tell them apart, and so the day a
- * distinct "expert" model exists, only this map needs to change. */
-const TIER_MODEL: Record<ModelTier, string> = {
-  quick: "gemini-3-flash",
-  thinking: "gemini-3-pro",
-  expert: "gemini-3-pro",
-};
-
+/* Speed/capability tiers shown to the user, instead of raw model names. The
+ * tier is what the client sends to the worker; the worker owns the tier →
+ * model mapping, so adding or repointing a model is a worker-side change and
+ * needs nothing here. */
 const MODEL_TIER_OPTIONS: { id: ModelTier; label: string }[] = [
   { id: "quick", label: "Quick" },
   { id: "thinking", label: "Thinking" },
@@ -158,6 +152,7 @@ function CanvasInner() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [sourcesCategory, setSourcesCategory] = useState<SourceCategory>("platforms");
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [notebookSettingsOpen, setNotebookSettingsOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("setup");
   const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
@@ -237,7 +232,6 @@ function CanvasInner() {
   const persona = compute?.inputBindings?.instructions?.type === "templated"
     ? (compute.inputBindings.instructions as { template: string }).template
     : "";
-  const model = (compute?.stateSettings?.model as string) ?? "gemini-3-flash";
   const appType: AppType | null = (canvasMeta?.appTypeChosen || isConnectionScoped)
     ? ((activeBlock?.blockTypeId as AppType) ?? null)
     : null;
@@ -248,7 +242,7 @@ function CanvasInner() {
   const nbName = storeName;
 
   const applyModelTier = (tier: ModelTier) => {
-    if (activeBlock) setStateSetting(activeBlock.id, "model", TIER_MODEL[tier]);
+    if (activeBlock) setStateSetting(activeBlock.id, "modelTier", tier);
     setCanvasMeta((m) => (m ? { ...m, modelTier: tier } : m));
   };
 
@@ -341,6 +335,14 @@ function CanvasInner() {
     } finally {
       setCreating(false);
     }
+  };
+
+  /* Preview reads the notebook's SAVED config from the public API, so flush
+   * pending edits first — otherwise you'd be previewing the last autosave
+   * rather than what's on screen. */
+  const handlePreview = async () => {
+    if (saveStatus.state !== "saving") await persistNow();
+    setPreviewOpen(true);
   };
 
   const handleDeploy = async () => {
@@ -1000,6 +1002,21 @@ function CanvasInner() {
                   : "Save"}
           </div>
           <div
+            onClick={() => void handlePreview()}
+            title="See it the way a visitor will"
+            style={{
+              cursor: "pointer",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              border: "1px solid #E4DECC",
+              fontSize: "12.5px",
+              fontWeight: 600,
+              color: "#262922",
+            }}
+          >
+            Preview
+          </div>
+          <div
             onClick={() => void handleDeploy()}
             style={{
               cursor: published || deploying ? "default" : "pointer",
@@ -1077,6 +1094,15 @@ function CanvasInner() {
         <SaveStatusRow status={saveStatus} />
       </div>
 
+      {/* Notebook preview — the visitor-facing view, without leaving Canvas */}
+      {previewOpen && (
+        <NotebookPreviewModal
+          notebookId={row.id}
+          appLabel={theme.appLabel || nbName}
+          onClose={() => setPreviewOpen(false)}
+        />
+      )}
+
       {/* Sources drawer — platforms (whole connections) and clusters */}
       {sourcesOpen && (
         <SourcesDrawer
@@ -1143,7 +1169,7 @@ function CanvasInner() {
               placeholder: chatPlaceholder,
               allowedSources: clusterIds.map((cid) => `topic:${cid}`),
               useOuroboros: useOuroborosNow,
-              model,
+              modelTier,
               hideModelSwitcher: true,
             }}
             onCommand={handleChatCommand}

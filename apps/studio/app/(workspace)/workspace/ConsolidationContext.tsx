@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { useClusteringStatus } from "../../hooks/useClusteringStatus";
 import { normalizeMcpUrl } from "@/utils/normalizeMcpUrl";
-import { SourcesModal } from "../../dashboard/SourcesModal";
+import { SourcesModal } from "../../../components/sources/SourcesModal";
 
 export type DriveConnection = {
   id: string;

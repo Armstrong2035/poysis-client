@@ -3,15 +3,16 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { TextStreamChatTransport } from "ai";
-import type { ChatConfig } from "../../../types/canvas";
+import type { ChatConfig, ModelTier } from "../../../types/canvas";
 import { MarkdownContent } from "./MarkdownContent";
 
 const SENTINEL = "\n\n__SOURCES__";
 
-const MODELS = [
-  { id: "gemini-3-flash", label: "Flash", hint: "Fast · Default" },
-  { id: "gemini-3-pro",   label: "Pro",   hint: "Smarter · Slower" },
-] as const;
+const TIERS: { id: ModelTier; label: string; hint: string }[] = [
+  { id: "quick",    label: "Quick",    hint: "Fast · Default" },
+  { id: "thinking", label: "Thinking", hint: "Smarter · Slower" },
+  { id: "expert",   label: "Expert",   hint: "Deepest reasoning" },
+];
 
 function displayContent(content: string): string {
   const idx = content.indexOf(SENTINEL);
@@ -115,16 +116,20 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
   const theme = isDark ? DARK : LIGHT;
   const primaryColor = config.branding?.primaryColor ?? (isDark ? "#E8A547" : "#000000");
   const placeholder = config.placeholder ?? "Ask a question…";
-  const endpoint =
-    config.mode === "dashboard"
-      ? "/api/worker/chat"
-      : `/api/notebook/${config.playgroundId}/chat`;
+  const endpoint = "/api/worker/chat";
 
-  const defaultModel = config.model ?? "gemini-3-flash";
-  const [selectedModel, setSelectedModel] = useState(defaultModel);
+  const [selectedTier, setSelectedTier] = useState<ModelTier>(config.modelTier ?? "quick");
   const [modelOpen, setModelOpen] = useState(false);
-  const modelRef = useRef(defaultModel);
-  useEffect(() => { modelRef.current = selectedModel; }, [selectedModel]);
+  const tierRef = useRef<ModelTier>(selectedTier);
+  useEffect(() => { tierRef.current = selectedTier; }, [selectedTier]);
+
+  // The host page can own the tier (Canvas drives it from its settings drawer
+  // and hides the in-chat picker). config.modelTier is only the *initial*
+  // useState value, so without this the chat would keep sending the tier it
+  // mounted with after the host changed it.
+  useEffect(() => {
+    if (config.modelTier) setSelectedTier(config.modelTier);
+  }, [config.modelTier]);
 
   const [input, setInput] = useState("");
 
@@ -147,28 +152,16 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
             .filter((s) => s.startsWith("conn:"))
             .map((s) => s.slice(5));
 
-          const body =
-            c.mode === "dashboard"
-              ? {
-                  workspace_id: c.notebookId,
-                  query,
-                  top_k: 5,
-                  min_score: 0.4,
-                  model: modelRef.current,
-                  ...(c.useOuroboros ? { useOuroboros: true } : {}),
-                  ...(topicIds.length > 0 ? { allowed_topic_ids: topicIds } : {}),
-                  ...(connIds.length > 0 ? { allowed_connection_ids: connIds } : {}),
-                }
-              : {
-                  notebook_id: c.notebookId,
-                  query,
-                  stream: true,
-                  ...(c.branding?.systemPrompt
-                    ? { instructions: c.branding.systemPrompt }
-                    : {}),
-                  ...(topicIds.length > 0 ? { allowed_topic_ids: topicIds } : {}),
-                  ...(connIds.length > 0 ? { allowed_connection_ids: connIds } : {}),
-                };
+          const body = {
+            workspace_id: c.notebookId,
+            query,
+            top_k: 5,
+            min_score: 0.4,
+            model: tierRef.current,
+            ...(c.useOuroboros ? { useOuroboros: true } : {}),
+            ...(topicIds.length > 0 ? { allowed_topic_ids: topicIds } : {}),
+            ...(connIds.length > 0 ? { allowed_connection_ids: connIds } : {}),
+          };
 
           return { body };
         },
@@ -352,7 +345,7 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
                 whiteSpace: "nowrap",
               }}
             >
-              {MODELS.find((m) => m.id === selectedModel)?.label ?? selectedModel}
+              {TIERS.find((m) => m.id === selectedTier)?.label ?? selectedTier}
               <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M1.5 2.5L4 5L6.5 2.5" />
               </svg>
@@ -369,14 +362,14 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
                   boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
                 }}
               >
-                {MODELS.map((m) => {
-                  const active = m.id === selectedModel;
+                {TIERS.map((m) => {
+                  const active = m.id === selectedTier;
                   return (
                     <button
                       key={m.id}
                       type="button"
                       onClick={() => {
-                        setSelectedModel(m.id);
+                        setSelectedTier(m.id);
                         setModelOpen(false);
                       }}
                       className="w-full flex flex-col px-3 py-2 text-left transition-colors hover:bg-white/5"

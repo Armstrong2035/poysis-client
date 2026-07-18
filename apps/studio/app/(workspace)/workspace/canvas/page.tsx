@@ -8,6 +8,7 @@ import { useNotebookStore } from "@/store/notebookStore";
 import { saveNotebook, renameNotebook as renameNotebookAction } from "@/lib/actions";
 import { MARKETPLACE_URL, type MarketplaceMeta } from "@/lib/marketplace";
 import { MarketplaceFields } from "@/components/notebook/MarketplaceFields";
+import { SourcesDrawer, type SourceCategory } from "@/components/notebook/SourcesDrawer";
 import { useConsolidation } from "../ConsolidationContext";
 import { useMockPermissions } from "../MockPermissionsContext";
 import {
@@ -155,7 +156,8 @@ function CanvasInner() {
   const row = notebooks.find((n) => n.id === selectedNotebookId) ?? null;
 
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [addClusterOpen, setAddClusterOpen] = useState(false);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [sourcesCategory, setSourcesCategory] = useState<SourceCategory>("platforms");
   const [notebookSettingsOpen, setNotebookSettingsOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("setup");
   const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
@@ -372,16 +374,20 @@ function CanvasInner() {
     return null;
   };
 
-  const handleAddCluster = (topicId: string) => {
+  /* Toggle any prefixed source tag (`topic:…` / `conn:…`) on the notebook.
+   * Generalized from the old cluster-only path so the Sources drawer can
+   * attach platforms the same way, including the legacy no-block fallback. */
+  const handleToggleSource = (tag: string) => {
     if (activeBlock) {
-      toggleSource(activeBlock.id, `topic:${topicId}`);
+      toggleSource(activeBlock.id, tag);
       return;
     }
     // Legacy row with no blocks — seed a chat block on demand, then attach.
     addBlock("chat");
     const newest = useNotebookStore.getState().activeBlocks[0];
-    if (newest) toggleSource(newest.id, `topic:${topicId}`);
+    if (newest) toggleSource(newest.id, tag);
   };
+
 
   if (!row) {
     return (
@@ -592,10 +598,6 @@ function CanvasInner() {
 
     return null;
   };
-
-  const addableClusters = (topics ?? [])
-    .filter((t) => !t.parent_topic_id)
-    .filter((t) => !clusterIds.includes(t.topic_id));
 
   const selectedCluster = selectedClusterId
     ? (byId.get(selectedClusterId) ?? null)
@@ -958,7 +960,7 @@ function CanvasInner() {
             {nbName}
           </div>
           <div
-            onClick={() => setAddClusterOpen((o) => !o)}
+            onClick={() => setSourcesOpen(true)}
             style={{
               cursor: "pointer",
               padding: "8px 12px",
@@ -969,7 +971,7 @@ function CanvasInner() {
               color: "#262922",
             }}
           >
-            + Cluster
+            Sources
           </div>
           <div
             onClick={() => {
@@ -1075,69 +1077,16 @@ function CanvasInner() {
         <SaveStatusRow status={saveStatus} />
       </div>
 
-      {/* Add-cluster dropdown */}
-      {addClusterOpen && (
-        <>
-          <div
-            onClick={() => setAddClusterOpen(false)}
-            style={{ position: "fixed", inset: 0, zIndex: 7 }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              bottom: "70px",
-              left: "20px",
-              zIndex: 8,
-              width: "240px",
-              background: "#FAF8F0",
-              border: "1px solid #E4DECC",
-              borderRadius: "12px",
-              padding: "10px",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                color: "#8A9488",
-                padding: "4px 6px 8px 6px",
-              }}
-            >
-              Add a cluster
-            </div>
-            {addableClusters.map((c) => (
-              <div
-                key={c.topic_id}
-                onClick={() => {
-                  handleAddCluster(c.topic_id);
-                  setAddClusterOpen(false);
-                }}
-                style={{
-                  cursor: "pointer",
-                  padding: "9px 8px",
-                  borderRadius: "8px",
-                  fontSize: "13px",
-                }}
-              >
-                {c.label}
-              </div>
-            ))}
-            {addableClusters.length === 0 && (
-              <div
-                style={{
-                  padding: "9px 8px",
-                  fontSize: "12.5px",
-                  color: "#8A9488",
-                }}
-              >
-                All clusters already added.
-              </div>
-            )}
-          </div>
-        </>
+      {/* Sources drawer — platforms (whole connections) and clusters */}
+      {sourcesOpen && (
+        <SourcesDrawer
+          category={sourcesCategory}
+          onCategoryChange={setSourcesCategory}
+          onClose={() => setSourcesOpen(false)}
+          selectedSources={activeBlock?.sources ?? []}
+          onToggleSource={handleToggleSource}
+          clusters={topics ?? []}
+        />
       )}
 
       {/* Chat panel */}

@@ -1,32 +1,309 @@
-@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Albert+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&family=Albert+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
+
+/*
+  Poysis marketplace — "The Index" design system.
+  The directory shell (home + search + shared chrome) is styled here through
+  design tokens. Light is the default; a viewer on a dark OS gets the deep
+  "reading room" via prefers-color-scheme. Notebook (/[slug]) pages render the
+  creator's own Studio theme and deliberately opt out of this system.
+*/
+
+:root {
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: "Albert Sans", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+
+  /* Light: paper reading room */
+  --ground: #e7e2d1;
+  --card: #f6f3e9;
+  --ink: #1c2620;
+  --muted: #5c6a5b;
+  --faint: #8b9487;
+  --rule: rgba(28, 38, 32, 0.14);
+  --rule-strong: rgba(28, 38, 32, 0.28);
+  --accent: #977420;
+  --accent-soft: rgba(151, 116, 32, 0.14);
+  --invert-bg: #16211b;
+  --invert-ink: #efeadb;
+  --invert-mut: #a9b6a9;
+  --invert-rule: rgba(255, 255, 255, 0.12);
+  --shadow: 0 1px 0 rgba(28, 38, 32, 0.04), 0 18px 40px -28px rgba(28, 38, 32, 0.55);
+  --grain-opacity: 0.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #131e18;
+    --card: #1a271f;
+    --ink: #e9eee4;
+    --muted: #9fb0a2;
+    --faint: #6e7e70;
+    --rule: rgba(233, 238, 228, 0.12);
+    --rule-strong: rgba(233, 238, 228, 0.24);
+    --accent: #d3a64c;
+    --accent-soft: rgba(211, 166, 76, 0.16);
+    --invert-bg: #efe9da;
+    --invert-ink: #1c2620;
+    --invert-mut: #5c6a5b;
+    --invert-rule: rgba(28, 38, 32, 0.12);
+    --shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 22px 46px -26px rgba(0, 0, 0, 0.7);
+    --grain-opacity: 0.35;
+  }
+}
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: #F1EEE2;
-  color: #262922;
-  font-family: 'Albert Sans', sans-serif;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
 }
 
-::selection { background: #C98A5D; color: #FAF8F0; }
-input::placeholder, textarea::placeholder { color: #8A8C7E; opacity: 1; }
+/* faint grain + top vignette so the ground reads as paper/felt, not flat fill */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(255, 255, 255, 0.05), transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  opacity: var(--grain-opacity);
+  mix-blend-mode: soft-light;
+}
+body > * { position: relative; z-index: 1; }
+
+::selection { background: var(--accent); color: var(--ground); }
+input::placeholder, textarea::placeholder { color: var(--faint); opacity: 1; }
 ::-webkit-scrollbar { height: 0; width: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
 
 @keyframes poyblink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
-
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+@keyframes fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes mkt-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.mkt-rise { animation: mkt-rise .5s cubic-bezier(.2,.7,.2,1) both; }
+@media (prefers-reduced-motion: reduce) { .mkt-rise { animation: none; } }
 
 /* Rendered Markdown in chat bubbles: no trailing margin on the last block */
 .poysis-md > *:last-child { margin-bottom: 0 !important; }
 .poysis-md > *:first-child { margin-top: 0 !important; }
 
-/* Home-feed card hover lift (inline styles can't express :hover) */
-.mkt-lift { transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
-.mkt-lift:hover { transform: translateY(-2px); }
-.mkt-chip { transition: border-color 140ms ease, color 140ms ease; }
-.mkt-chip:hover { border-color: #84977A; color: #262922; }
+/* ---------------- shared type utilities ---------------- */
+.mkt-mono {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+.mkt-serif { font-family: var(--serif); }
+
+/* ---------------- section drawer label ---------------- */
+.mkt-drawer { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.mkt-drawer .grow { flex: 1; height: 1px; background: var(--rule); }
+.mkt-drawer .eyebrow { color: var(--ink); }
+.mkt-drawer .eyebrow.gilt { color: var(--accent); }
+.mkt-drawer .note { color: var(--faint); font-size: 10px; }
+
+/* ---------------- avatar plate (monogram stamp) ---------------- */
+.mkt-plate {
+  position: relative;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--serif);
+  font-weight: 600;
+  border-radius: 22%;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    inset 0 -3px 8px rgba(0, 0, 0, 0.28),
+    0 2px 6px rgba(0, 0, 0, 0.22);
+}
+.mkt-plate::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+/* ---------------- chips (topic quick-filters) ---------------- */
+.mkt-chip {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 6px 10px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color .14s ease, color .14s ease, background .14s ease;
+}
+.mkt-chip::before { content: "· "; color: var(--accent); }
+.mkt-chip:hover { color: var(--ink); border-color: var(--accent); background: var(--accent-soft); }
+
+/* ---------------- search field ---------------- */
+.mkt-search {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px 16px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  box-shadow: var(--shadow);
+}
+.mkt-search svg { color: var(--accent); flex-shrink: 0; }
+.mkt-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  font-family: var(--sans);
+  font-size: 15px;
+  color: var(--ink);
+}
+
+/* ---------------- top bar ---------------- */
+.mkt-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--ground) 88%, transparent);
+  backdrop-filter: blur(9px);
+  border-bottom: 1px solid var(--rule);
+}
+.mkt-ghost-btn {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 6px 4px;
+  white-space: nowrap;
+  transition: color .14s ease;
+}
+.mkt-ghost-btn:hover { color: var(--ink); }
+.mkt-beta-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  padding: 8px 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .15s ease, background .15s ease;
+}
+.mkt-beta-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+/* ---------------- featured entry (the inversion) ---------------- */
+.mkt-featured {
+  position: relative;
+  overflow: hidden;
+  background: var(--invert-bg);
+  color: var(--invert-ink);
+  border-radius: 6px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+.mkt-featured .glow {
+  position: absolute;
+  top: -80px;
+  right: -60px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 40%, transparent), transparent 66%);
+  pointer-events: none;
+}
+.mkt-ask {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 2px;
+  border-top: 1px solid var(--invert-rule);
+  font-size: 14px;
+  color: var(--invert-ink);
+  text-decoration: none;
+  transition: padding-left .16s ease;
+}
+.mkt-ask:last-child { border-bottom: 1px solid var(--invert-rule); }
+.mkt-ask svg { color: var(--accent); flex-shrink: 0; opacity: .85; transition: transform .16s ease; }
+.mkt-ask:hover { padding-left: 8px; }
+.mkt-ask:hover svg { transform: translateX(3px); }
+
+/* ---------------- trending: catalog spine cards ---------------- */
+.mkt-rail {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  margin: 0 -18px;
+  padding: 2px 18px 8px;
+}
+.mkt-spine {
+  flex-shrink: 0;
+  width: 208px;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  padding: 17px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--shadow);
+  transition: transform .16s ease, border-color .16s ease;
+}
+.mkt-spine:hover { transform: translateY(-3px); border-color: var(--accent); }
+
+/* ---------------- index list (latest + search results) ---------------- */
+.mkt-entry {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 4px;
+  border-top: 1px solid var(--rule);
+  text-decoration: none;
+  color: inherit;
+  transition: padding-left .16s ease, background .16s ease;
+}
+.mkt-entry:last-child { border-bottom: 1px solid var(--rule); }
+.mkt-entry:hover { padding-left: 10px; background: linear-gradient(90deg, var(--accent-soft), transparent 70%); }
+
+/* ---------------- domains ---------------- */
+.mkt-domain {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 12px 2px;
+  border-top: 1px solid var(--rule);
+  text-decoration: none;
+  color: inherit;
+}
+.mkt-domain .ln { flex: 1; height: 1px; align-self: center; background: var(--rule); }
+.mkt-domain .nm { transition: color .14s ease; }
+.mkt-domain .ct { transition: color .14s ease; }
+.mkt-domain:hover .nm, .mkt-domain:hover .ct { color: var(--accent); }
+
+/* ---------------- generic surface + lift ---------------- */
+.mkt-surface { background: var(--card); border: 1px solid var(--rule); box-shadow: var(--shadow); }
+.mkt-lift { transition: transform .16s ease, border-color .16s ease; }
+.mkt-lift:hover { transform: translateY(-2px); border-color: var(--accent); }

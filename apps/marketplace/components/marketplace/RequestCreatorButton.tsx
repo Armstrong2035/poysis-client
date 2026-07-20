@@ -10,12 +10,12 @@ export function RequestCreatorButton({ label = "Request a creator" }: { label?: 
       <button
         onClick={() => setOpen(true)}
         style={{
-          background: "#3C4A3A",
-          color: "#FAF8F0",
+          background: "var(--accent)",
+          color: "var(--ground)",
           border: "none",
-          borderRadius: 12,
+          borderRadius: 3,
           padding: "12px 22px",
-          fontFamily: "'Albert Sans', sans-serif",
+          fontFamily: "var(--sans)",
           fontWeight: 600,
           fontSize: 14,
           cursor: "pointer",

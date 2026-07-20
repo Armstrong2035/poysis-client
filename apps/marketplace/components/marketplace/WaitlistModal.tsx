@@ -16,7 +16,8 @@ export function WaitlistModal({ open, onClose }: WaitlistModalProps) {
         position: "fixed",
         inset: 0,
         zIndex: 100,
-        background: "rgba(38,41,34,0.5)",
+        background: "rgba(10,16,13,0.6)",
+        backdropFilter: "blur(3px)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -26,9 +27,9 @@ export function WaitlistModal({ open, onClose }: WaitlistModalProps) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        className="mkt-surface"
         style={{
-          background: "#FAF8F0",
-          borderRadius: 22,
+          borderRadius: 8,
           maxWidth: 420,
           width: "100%",
           padding: 32,
@@ -45,7 +46,7 @@ export function WaitlistModal({ open, onClose }: WaitlistModalProps) {
             background: "none",
             border: "none",
             cursor: "pointer",
-            color: "#55594D",
+            color: "var(--muted)",
             fontSize: 22,
             lineHeight: 1,
             padding: 4,

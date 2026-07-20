@@ -33,44 +33,23 @@ export function TopBar() {
 
   return (
     <>
-      <div
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 40,
-          background: "rgba(241,238,226,0.92)",
-          backdropFilter: "blur(8px)",
-          borderBottom: "1px solid #E4DECC",
-        }}
-      >
+      <div className="mkt-topbar">
         <div style={{ maxWidth: 960, margin: "0 auto", padding: "13px 18px", display: "flex", alignItems: "center", gap: 14 }}>
           <div
             style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer", flexShrink: 0 }}
             onClick={() => router.push("/")}
           >
             <svg width="24" height="24" viewBox="0 0 100 100" fill="none">
-              <path d={LOGO_PATH} fill="#3C4A3A" />
+              <path d={LOGO_PATH} fill="var(--accent)" />
             </svg>
-            <span style={{ fontFamily: "'Source Serif 4', serif", fontWeight: 600, fontSize: 19, letterSpacing: "-0.3px", color: "#262922" }}>
+            <span className="mkt-serif" style={{ fontWeight: 700, fontSize: 19, letterSpacing: "-0.01em", color: "var(--ink)" }}>
               poysis
             </span>
           </div>
 
           {showSearch && (
-            <div
-              style={{
-                flex: 1,
-                maxWidth: 380,
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                background: "#FAF8F0",
-                border: "1px solid #E4DECC",
-                borderRadius: 999,
-                padding: "7px 14px",
-              }}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#55594D" strokeWidth="2">
+            <div className="mkt-search" style={{ flex: 1, maxWidth: 380, padding: "8px 14px", boxShadow: "none" }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="7" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
@@ -81,54 +60,18 @@ export function TopBar() {
                   if (e.key === "Enter") submitSearch();
                 }}
                 placeholder="Search people to learn from…"
-                style={{
-                  border: "none",
-                  outline: "none",
-                  background: "transparent",
-                  fontFamily: "'Albert Sans', sans-serif",
-                  fontSize: 14,
-                  color: "#262922",
-                  flex: 1,
-                  minWidth: 0,
-                }}
+                style={{ fontSize: 14 }}
               />
             </div>
           )}
 
           <div style={{ flex: 1 }} />
 
-          <button
-            onClick={() => setWaitlistOpen(true)}
-            style={{
-              fontFamily: "'Albert Sans', sans-serif",
-              fontWeight: 600,
-              fontSize: 13,
-              color: "#262922",
-              background: "transparent",
-              border: "none",
-              padding: "8px 6px",
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-            }}
-          >
-            For Creators
+          <button className="mkt-ghost-btn" onClick={() => setWaitlistOpen(true)}>
+            For creators
           </button>
-          <button
-            onClick={() => setWaitlistOpen(true)}
-            style={{
-              fontFamily: "'Albert Sans', sans-serif",
-              fontWeight: 600,
-              fontSize: 13,
-              color: "#262922",
-              background: "transparent",
-              border: "1px solid #262922",
-              borderRadius: 999,
-              padding: "8px 16px",
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Join Beta
+          <button className="mkt-beta-btn" onClick={() => setWaitlistOpen(true)}>
+            Join beta
           </button>
         </div>
       </div>

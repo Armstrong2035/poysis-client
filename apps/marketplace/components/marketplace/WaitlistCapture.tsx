@@ -14,18 +14,18 @@ interface WaitlistCaptureProps {
 
 const THEME = {
   modal: {
-    label: "#7E3A33",
-    headline: "#262922",
-    body: "#55594D",
-    inputBg: "#F1EEE2",
-    inputBorder: "#E4DECC",
-    inputText: "#262922",
-    button: "#3C4A3A",
-    buttonHover: "#2c3730",
-    buttonText: "#FAF8F0",
-    successRing: "#84977A",
-    successHeadline: "#262922",
-    successBody: "#55594D",
+    label: "var(--accent)",
+    headline: "var(--ink)",
+    body: "var(--muted)",
+    inputBg: "var(--ground)",
+    inputBorder: "var(--rule)",
+    inputText: "var(--ink)",
+    button: "var(--accent)",
+    buttonHover: "var(--accent)",
+    buttonText: "var(--ground)",
+    successRing: "var(--accent)",
+    successHeadline: "var(--ink)",
+    successBody: "var(--muted)",
   },
   inline: {
     label: "#CBD3C2",
@@ -84,7 +84,7 @@ export function WaitlistCapture({ variant, source, eyebrow, headline, descriptio
             margin: "0 auto 14px",
           }}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FAF8F0" strokeWidth="3">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={variant === "modal" ? "var(--ground)" : "#FAF8F0"} strokeWidth="3">
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>

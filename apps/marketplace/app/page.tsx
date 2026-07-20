@@ -3,13 +3,16 @@ import { getAllCreators, getFeatured, getTrending, getLatest, getDomains, getTop
 import { HomeSearch } from "@/components/marketplace/HomeSearch";
 import { FeaturedCard, TrendingCard, LatestRow, DomainLink } from "@/components/marketplace/NotebookCards";
 
-const SECTION_LABEL = {
-  fontSize: 12,
-  fontWeight: 700 as const,
-  letterSpacing: "1.6px",
-  color: "#3C4A3A",
-  textTransform: "uppercase" as const,
-};
+// A catalog-drawer section label: eyebrow · hairline rule · optional note.
+function Drawer({ label, note, gilt }: { label: string; note?: string; gilt?: boolean }) {
+  return (
+    <div className="mkt-drawer">
+      <span className={`mkt-mono eyebrow${gilt ? " gilt" : ""}`}>{label}</span>
+      <span className="grow" />
+      {note && <span className="mkt-mono note">{note}</span>}
+    </div>
+  );
+}
 
 export default async function HomePage() {
   const creators = await getAllCreators();
@@ -21,50 +24,42 @@ export default async function HomePage() {
 
   return (
     <div style={{ flex: 1 }}>
-      <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 18px 90px" }}>
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 18px 96px" }}>
         {/* Hero */}
-        <div style={{ marginBottom: 18 }}>
-          <div
+        <div className="mkt-rise" style={{ padding: "14px 0 6px", marginBottom: 6 }}>
+          <div className="mkt-mono" style={{ display: "flex", alignItems: "center", gap: 9, color: "var(--accent)", marginBottom: 16 }}>
+            <span>The Index</span>
+            <span style={{ flex: 1, height: 1, background: "var(--rule)" }} />
+            <span>{creators.length} {creators.length === 1 ? "mind" : "minds"}</span>
+          </div>
+          <h1
+            className="mkt-serif"
             style={{
-              fontFamily: "'Source Serif 4', serif",
               fontWeight: 600,
-              fontSize: "clamp(22px,5.4vw,30px)",
-              lineHeight: 1.14,
-              letterSpacing: "-0.6px",
-              color: "#262922",
-              marginBottom: 8,
+              fontSize: "clamp(29px,8vw,37px)",
+              lineHeight: 1.08,
+              letterSpacing: "-0.015em",
+              textWrap: "balance",
+              color: "var(--ink)",
+              margin: "0 0 14px",
             }}
           >
             Get trusted answers from the world&rsquo;s best thinkers.
-          </div>
-          <p style={{ fontSize: 14.5, color: "#55594D", lineHeight: 1.5, margin: 0 }}>
+          </h1>
+          <p style={{ fontSize: 15, color: "var(--muted)", lineHeight: 1.55, margin: 0, maxWidth: "42ch" }}>
             Ask specific questions and trace every answer back to the exact talk, interview, article or book it came from.
           </p>
         </div>
 
-        <HomeSearch />
+        <div className="mkt-rise" style={{ animationDelay: ".05s" }}>
+          <HomeSearch />
+        </div>
 
         {/* Topic quick-filters */}
         {topics.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 34 }}>
+          <div className="mkt-rise" style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 44, animationDelay: ".08s" }}>
             {topics.map((t) => (
-              <Link
-                key={t}
-                href={`/search?q=${encodeURIComponent(t)}`}
-                className="mkt-chip"
-                style={{
-                  fontFamily: "'Albert Sans', sans-serif",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: "#55594D",
-                  background: "transparent",
-                  border: "1px solid #E4DECC",
-                  borderRadius: 999,
-                  padding: "7px 14px",
-                  whiteSpace: "nowrap",
-                  textDecoration: "none",
-                }}
-              >
+              <Link key={t} href={`/search?q=${encodeURIComponent(t)}`} className="mkt-chip">
                 {t}
               </Link>
             ))}
@@ -73,80 +68,60 @@ export default async function HomePage() {
 
         {creators.length === 0 && (
           <div
-            style={{
-              border: "2px dashed #E4DECC",
-              borderRadius: 22,
-              padding: "48px 20px",
-              textAlign: "center",
-              color: "#55594D",
-              marginBottom: 34,
-            }}
+            className="mkt-surface"
+            style={{ borderRadius: 6, padding: "48px 20px", textAlign: "center", color: "var(--muted)", marginBottom: 44 }}
           >
-            <div style={{ fontFamily: "'Source Serif 4', serif", fontSize: 18, color: "#262922", marginBottom: 8 }}>
-              No one indexed yet.
-            </div>
-            <div style={{ fontSize: 14 }}>A new notebook drops most days — check back soon.</div>
+            <div className="mkt-serif" style={{ fontSize: 18, color: "var(--ink)", marginBottom: 8 }}>No one indexed yet.</div>
+            <div style={{ fontSize: 14 }}>A new entry is catalogued most days — check back soon.</div>
           </div>
         )}
 
         {/* Just Dropped */}
         {featured && (
-          <div style={{ marginBottom: 38 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 13 }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#C98A5D", display: "inline-block", boxShadow: "0 0 0 4px rgba(201,138,93,0.22)" }} />
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1.6px", color: "#7E3A33", textTransform: "uppercase" }}>
-                Just Dropped
-              </span>
-              <span style={{ fontSize: 12, color: "#8A8C7E", marginLeft: "auto" }}>Newest notebook</span>
-            </div>
+          <section style={{ marginBottom: 46 }}>
+            <Drawer label="Just dropped" note="newest entry" gilt />
             <FeaturedCard creator={featured} />
-          </div>
+          </section>
         )}
 
         {/* Trending */}
         {trending.length > 0 && (
-          <div style={{ marginBottom: 34 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginBottom: 14 }}>
-              <div style={SECTION_LABEL}>Trending</div>
-              <div style={{ fontSize: 12.5, color: "#8A8C7E" }}>What people are talking to most</div>
-            </div>
-            <div style={{ display: "flex", gap: 13, overflowX: "auto", margin: "0 -18px", padding: "2px 18px 6px" }}>
+          <section style={{ marginBottom: 46 }}>
+            <Drawer label="Trending" note="most consulted" />
+            <div className="mkt-rail">
               {trending.map((c) => (
                 <TrendingCard key={c.slug} creator={c} />
               ))}
             </div>
-          </div>
+          </section>
         )}
 
         {/* Latest */}
         {latest.length > 0 && (
-          <div style={{ marginBottom: 36 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginBottom: 14 }}>
-              <div style={SECTION_LABEL}>Latest</div>
-              <div style={{ fontSize: 12.5, color: "#8A8C7E" }}>Freshly indexed</div>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+          <section style={{ marginBottom: 46 }}>
+            <Drawer label="Latest" note="freshly indexed" />
+            <div style={{ display: "flex", flexDirection: "column" }}>
               {latest.map((c) => (
                 <LatestRow key={c.slug} creator={c} />
               ))}
             </div>
-          </div>
+          </section>
         )}
 
         {/* Domains */}
         {domains.length > 0 && (
-          <div style={{ marginBottom: 36 }}>
-            <div style={{ ...SECTION_LABEL, marginBottom: 14 }}>Browse by domain</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
+          <section style={{ marginBottom: 46 }}>
+            <Drawer label="Browse by domain" />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 22px" }}>
               {domains.map((d) => (
                 <DomainLink key={d.name} domain={d} href={`/search?domain=${encodeURIComponent(d.name)}`} />
               ))}
             </div>
-          </div>
+          </section>
         )}
 
-        <div style={{ borderTop: "1px solid #E4DECC", paddingTop: 22 }}>
-          <div style={{ fontSize: 13, color: "#8A8C7E" }}>A new notebook drops most days.</div>
+        <div style={{ borderTop: "1px solid var(--rule-strong)", paddingTop: 20 }}>
+          <span className="mkt-mono" style={{ color: "var(--faint)" }}>A new entry is catalogued most days.</span>
         </div>
       </div>
     </div>

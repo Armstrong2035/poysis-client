@@ -15,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col" style={{ background: "#F1EEE2" }}>
+      <body className="min-h-full flex flex-col" style={{ background: "var(--ground)" }}>
         <Suspense fallback={null}>
           <TopBar />
         </Suspense>

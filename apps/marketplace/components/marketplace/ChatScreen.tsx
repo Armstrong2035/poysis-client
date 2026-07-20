@@ -9,26 +9,20 @@ interface ChatScreenProps {
   notebookId: string;
   allowedSources?: string[];
   appLabel: string;
-  primaryColor: string;
-  backgroundColor: string;
-  borderRadius: string;
   showBanner: boolean;
   shape?: string[];
   initialQuery?: string;
 }
 
-// Renders a published notebook exactly the way it was built in Studio — its
-// own theme (appLabel, primaryColor, backgroundColor, showBanner), driving the
-// same Chat component the old PlaygroundView used. The marketplace's own design
-// system (top bar, feed) is the directory shell that lists notebooks; clicking
-// one lands straight here, on the notebook itself.
+// Renders a published notebook in the marketplace's own design system (the same
+// tokens as the directory shell), so a notebook reads as part of the site and
+// follows its light/dark reading-room — rather than carrying a per-notebook
+// custom color. Only the notebook's name (appLabel) and banner toggle remain
+// notebook-specific. Drives the same Chat component the old PlaygroundView used.
 export function ChatScreen({
   notebookId,
   allowedSources,
   appLabel,
-  primaryColor,
-  backgroundColor,
-  borderRadius,
   showBanner,
   shape,
   initialQuery,
@@ -36,11 +30,11 @@ export function ChatScreen({
   const [waitlistOpen, setWaitlistOpen] = useState(false);
 
   return (
-    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", backgroundColor }}>
-      {/* Header — the notebook's own, plus a back link into the directory */}
+    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--ground)" }}>
+      {/* Header — plus a back link into the directory */}
       <header
         className="shrink-0 px-6 py-4 flex items-center gap-2.5 border-b"
-        style={{ borderColor: "rgba(0,0,0,0.07)", backgroundColor }}
+        style={{ borderColor: "var(--rule)", background: "var(--card)" }}
       >
         <Link
           href="/"
@@ -55,11 +49,11 @@ export function ChatScreen({
         </Link>
         <div
           className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm"
-          style={{ backgroundColor: primaryColor, borderRadius }}
+          style={{ background: "var(--accent)" }}
         >
-          <div className="w-2.5 h-2.5 bg-white rounded-sm" />
+          <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "var(--ground)" }} />
         </div>
-        <span className="text-base font-bold text-zinc-900 truncate" style={{ fontFamily: "DM Sans, sans-serif" }}>
+        <span className="text-base font-bold truncate" style={{ fontFamily: "DM Sans, sans-serif", color: "var(--ink)" }}>
           {appLabel}
         </span>
       </header>
@@ -73,8 +67,8 @@ export function ChatScreen({
           {shape && shape.length > 0 && (
             <div className="shrink-0 mb-3">
               <p
-                className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1.5"
-                style={{ fontFamily: "DM Sans, sans-serif" }}
+                className="text-[11px] font-semibold uppercase tracking-wide mb-1.5"
+                style={{ fontFamily: "DM Sans, sans-serif", color: "var(--faint)" }}
               >
                 This notebook covers
               </p>
@@ -84,8 +78,8 @@ export function ChatScreen({
                     key={label}
                     className="text-xs px-2.5 py-1 rounded-full"
                     style={{
-                      backgroundColor: `${primaryColor}14`,
-                      color: primaryColor,
+                      backgroundColor: "var(--accent-soft)",
+                      color: "var(--accent)",
                       fontFamily: "DM Sans, sans-serif",
                     }}
                   >
@@ -101,7 +95,6 @@ export function ChatScreen({
               notebookId,
               playgroundId: notebookId,
               allowedSources,
-              branding: { primaryColor },
               placeholder: "Ask a question…",
             }}
             initialQuery={initialQuery}
@@ -114,14 +107,14 @@ export function ChatScreen({
           className="shrink-0 py-2.5 px-4 flex items-center justify-center gap-2 flex-wrap"
           style={{ fontFamily: "DM Sans, sans-serif" }}
         >
-          <Link href="/" className="text-[11px] font-medium text-zinc-400 hover:text-zinc-600 transition-colors">
+          <Link href="/" className="text-[11px] font-medium transition-opacity hover:opacity-70" style={{ color: "var(--faint)" }}>
             Powered by Poysis
           </Link>
-          <span className="text-[11px] text-zinc-300">·</span>
+          <span className="text-[11px]" style={{ color: "var(--faint)", opacity: 0.6 }}>·</span>
           <button
             onClick={() => setWaitlistOpen(true)}
-            className="text-[11px] font-medium text-zinc-400 hover:text-zinc-600 transition-colors"
-            style={{ background: "none", border: "none", cursor: "pointer" }}
+            className="text-[11px] font-medium transition-opacity hover:opacity-70"
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--faint)" }}
           >
             Join the beta
           </button>

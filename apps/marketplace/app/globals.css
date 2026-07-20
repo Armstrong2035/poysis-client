@@ -3,10 +3,10 @@
 
 /*
   Poysis marketplace — "The Index" design system.
-  The directory shell (home + search + shared chrome) is styled here through
-  design tokens. Light is the default; a viewer on a dark OS gets the deep
-  "reading room" via prefers-color-scheme. Notebook (/[slug]) pages render the
-  creator's own Studio theme and deliberately opt out of this system.
+  The directory shell (home + search + shared chrome) AND notebook (/[slug])
+  pages are styled here through design tokens, so a notebook reads as part of
+  the site. Light is the default; a viewer on a dark OS gets the deep "reading
+  room" via prefers-color-scheme.
 */
 
 :root {

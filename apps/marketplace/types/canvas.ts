@@ -138,7 +138,6 @@ export interface UIConfig {
 // --- 7. CHAT CONFIG (The shared chat module interface) ---
 
 export interface ChatBranding {
-  primaryColor?: string;
   persona?: string;
   systemPrompt?: string;
 }

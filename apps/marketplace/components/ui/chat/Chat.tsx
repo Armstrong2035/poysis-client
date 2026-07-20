@@ -66,44 +66,29 @@ function getMessageText(parts: any[]): string {
     .join("");
 }
 
-const DARK = {
+// Notebook chat renders in the marketplace design system (globals.css tokens),
+// so it follows the site's own light/dark "reading room" automatically instead
+// of a per-notebook custom palette.
+const THEME = {
   bg: "transparent",
-  inputBg: "rgba(58,61,71,0.25)",
-  inputBorder: "rgba(58,61,71,0.5)",
-  inputText: "#E8E9ED",
-  inputPlaceholder: "#9CA0AC",
+  inputBg: "var(--card)",
+  inputBorder: "var(--rule)",
+  inputText: "var(--ink)",
+  inputPlaceholder: "var(--faint)",
   userBubbleBg: "",
-  assistantBubbleBg: "rgba(58,61,71,0.2)",
-  assistantBubbleBorder: "rgba(58,61,71,0.4)",
-  assistantText: "#E8E9ED",
-  mutedText: "#9CA0AC",
-  dotColor: "#E8A547",
-  errorBg: "rgba(201,80,75,0.08)",
-  errorBorder: "rgba(201,80,75,0.25)",
-  errorText: "#C9534B",
-  sourceItemBg: "rgba(58,61,71,0.3)",
-  sourceItemBorder: "rgba(58,61,71,0.5)",
-  emptyText: "#9CA0AC",
-};
-
-const LIGHT = {
-  bg: "transparent",
-  inputBg: "#ffffff",
-  inputBorder: "rgba(0,0,0,0.1)",
-  inputText: "#18181b",
-  inputPlaceholder: "#a1a1aa",
-  userBubbleBg: "",
-  assistantBubbleBg: "rgba(0,0,0,0.03)",
-  assistantBubbleBorder: "rgba(0,0,0,0.06)",
-  assistantText: "#27272a",
-  mutedText: "#71717a",
-  dotColor: "#71717a",
+  assistantBubbleBg: "var(--card)",
+  assistantBubbleBorder: "var(--rule)",
+  assistantText: "var(--ink)",
+  mutedText: "var(--muted)",
+  dotColor: "var(--accent)",
+  // Error stays a legible light-red card on either ground — there is no error
+  // token in the design system.
   errorBg: "#fef2f2",
   errorBorder: "#fecaca",
   errorText: "#dc2626",
-  sourceItemBg: "#ffffff",
-  sourceItemBorder: "#e4e4e7",
-  emptyText: "#a1a1aa",
+  sourceItemBg: "var(--card)",
+  sourceItemBorder: "var(--rule)",
+  emptyText: "var(--faint)",
 };
 
 interface ChatProps {
@@ -136,9 +121,9 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
   const configRef = useRef(config);
   configRef.current = config;
 
-  const isDark = config.mode === "dashboard";
-  const theme = isDark ? DARK : LIGHT;
-  const primaryColor = config.branding?.primaryColor ?? (isDark ? "#E8A547" : "#000000");
+  const theme = THEME;
+  // The chat accent is the site accent — notebooks no longer carry a custom color.
+  const primaryColor = "var(--accent)";
   const placeholder = config.placeholder ?? "Ask a question…";
   const endpoint =
     config.mode === "dashboard"
@@ -367,7 +352,7 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
         onSubmit={handleSubmit}
         className="flex gap-2 pt-3 shrink-0"
         style={{
-          borderTop: `1px solid ${isDark ? "rgba(58,61,71,0.4)" : "rgba(0,0,0,0.08)"}`,
+          borderTop: `1px solid var(--rule)`,
         }}
       >
         {/* Model switcher — dashboard only, unless the host page has its own */}
@@ -463,9 +448,10 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
         <button
           type="submit"
           disabled={!input.trim() || isStreaming}
-          className="flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center justify-center px-4 py-2.5 text-sm font-medium transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
             background: primaryColor,
+            color: "var(--ground)",
             borderRadius: "10px",
             minWidth: "44px",
           }}
@@ -510,9 +496,10 @@ function UserBubble({
   return (
     <div className="flex justify-end">
       <div
-        className="max-w-[85%] text-white text-sm px-4 py-2.5 leading-relaxed"
+        className="max-w-[85%] text-sm px-4 py-2.5 leading-relaxed"
         style={{
           background: primaryColor,
+          color: "var(--ground)",
           borderRadius: "12px",
           borderBottomRightRadius: "3px",
           fontFamily: "DM Sans, sans-serif",
@@ -536,7 +523,7 @@ function AssistantBubble({
   sources: CitedSource[];
   meta: ChatMeta | null;
   streaming: boolean;
-  theme: typeof DARK;
+  theme: typeof THEME;
 }) {
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const hasSources = sources.length > 0;

@@ -66,9 +66,6 @@ export default async function NotebookPage({ params, searchParams }: Props) {
       notebookId={notebook.id}
       allowedSources={chatBlock?.sources?.length > 0 ? chatBlock.sources : undefined}
       appLabel={theme.appLabel ?? notebook.name ?? "Notebook"}
-      primaryColor={theme.primaryColor ?? "#3C4A3A"}
-      backgroundColor={theme.backgroundColor ?? "#ffffff"}
-      borderRadius={theme.borderRadius ?? "12px"}
       showBanner={theme.showBanner ?? true}
       shape={shape}
       initialQuery={q}

@@ -26,7 +26,7 @@ export async function POST(
     // has the link.
     const { data: notebook, error: notebookError } = await supabase
       .from("notebooks")
-      .select("id, user_id, config, workspace_id")
+      .select("id, user_id, config, workspace_id, name")
       .eq("id", playgroundId)
       .single();
 
@@ -153,6 +153,12 @@ export async function POST(
         min_score,
         ...(model ? { model } : {}),
         ...(instructions ? { instructions } : {}),
+        // Voice: let the worker frame answers as the interpreter of this creator's
+        // work rather than a generic assistant. appLabel is the bot's display name;
+        // fall back to the notebook name.
+        ...((notebook.config?.theme?.appLabel ?? notebook.name)
+          ? { creator_name: notebook.config?.theme?.appLabel ?? notebook.name }
+          : {}),
         ...(effectiveTopicIds?.length ? { allowed_topic_ids: effectiveTopicIds } : {}),
         ...(effectiveConnectionIds?.length ? { allowed_connection_ids: effectiveConnectionIds } : {}),
       }),

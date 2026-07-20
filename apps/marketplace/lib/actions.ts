@@ -14,7 +14,7 @@ export async function getNotebookBySlug(slug: string) {
 
   const { data, error } = await supabase
     .from("notebooks")
-    .select("id, name, slug, config, user_id")
+    .select("id, name, slug, config, user_id, workspace_id")
     .eq("slug", slug)
     .single();
 

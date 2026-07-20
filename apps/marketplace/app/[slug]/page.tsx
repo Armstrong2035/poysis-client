@@ -14,6 +14,30 @@ function isPublic(notebook: { config: any }): boolean {
   return (notebook.config?.canvas?.ceiling ?? "private") === "public";
 }
 
+// The notebook's "shape" — the top-level topics the creator's body of work covers.
+// Reads the worker's public topics endpoint and keeps only parent topics (already
+// ordered by doc_count). Powers the "This notebook covers" panel; failures are
+// non-fatal (panel just doesn't render).
+async function getNotebookShape(workspaceId?: string): Promise<string[]> {
+  const base = process.env.WORKER_URL ?? process.env.LOCAL_WORKER_URL;
+  if (!workspaceId || !base) return [];
+  try {
+    const res = await fetch(
+      `${base.replace(/\/$/, "")}/consolidation/topics/${encodeURIComponent(workspaceId)}`,
+      { cache: "no-store" },
+    );
+    if (!res.ok) return [];
+    const { topics } = await res.json();
+    return (topics ?? [])
+      .filter((t: any) => t.parent_topic_id == null)
+      .map((t: any) => t.label)
+      .filter(Boolean)
+      .slice(0, 12);
+  } catch {
+    return [];
+  }
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const notebook = await getNotebookBySlug(slug);
@@ -35,6 +59,8 @@ export default async function NotebookPage({ params, searchParams }: Props) {
     (b: any) => b.blockTypeId === "chat" || b.blockTypeId === "generate" || b.blockTypeId === "search",
   );
 
+  const shape = await getNotebookShape(notebook.workspace_id);
+
   return (
     <ChatScreen
       notebookId={notebook.id}
@@ -44,6 +70,7 @@ export default async function NotebookPage({ params, searchParams }: Props) {
       backgroundColor={theme.backgroundColor ?? "#ffffff"}
       borderRadius={theme.borderRadius ?? "12px"}
       showBanner={theme.showBanner ?? true}
+      shape={shape}
       initialQuery={q}
     />
   );

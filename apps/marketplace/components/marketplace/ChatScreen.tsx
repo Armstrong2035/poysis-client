@@ -13,6 +13,7 @@ interface ChatScreenProps {
   backgroundColor: string;
   borderRadius: string;
   showBanner: boolean;
+  shape?: string[];
   initialQuery?: string;
 }
 
@@ -29,6 +30,7 @@ export function ChatScreen({
   backgroundColor,
   borderRadius,
   showBanner,
+  shape,
   initialQuery,
 }: ChatScreenProps) {
   const [waitlistOpen, setWaitlistOpen] = useState(false);
@@ -65,6 +67,34 @@ export function ChatScreen({
       {/* Chat — full height, centered column for readability on wide screens */}
       <div className="flex-1 min-h-0 flex justify-center overflow-hidden">
         <div className="w-full max-w-2xl flex flex-col min-h-0 px-4 md:px-6 py-4">
+          {/* Notebook shape — the body of work at a glance, so the reader builds a
+              mental model of what this creator talks about rather than treating it
+              as isolated answers. */}
+          {shape && shape.length > 0 && (
+            <div className="shrink-0 mb-3">
+              <p
+                className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1.5"
+                style={{ fontFamily: "DM Sans, sans-serif" }}
+              >
+                This notebook covers
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {shape.map((label) => (
+                  <span
+                    key={label}
+                    className="text-xs px-2.5 py-1 rounded-full"
+                    style={{
+                      backgroundColor: `${primaryColor}14`,
+                      color: primaryColor,
+                      fontFamily: "DM Sans, sans-serif",
+                    }}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
           <Chat
             config={{
               mode: "playground",

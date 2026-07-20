@@ -6,7 +6,8 @@ import { TextStreamChatTransport } from "ai";
 import type { ChatConfig } from "../../../types/canvas";
 import { MarkdownContent } from "./MarkdownContent";
 
-const SENTINEL = "\n\n__SOURCES__";
+const SOURCES_SENTINEL = "\n\n__SOURCES__";
+const META_SENTINEL = "\n\n__META__";
 
 const MODELS = [
   { id: "gemini-3-flash", label: "Flash", hint: "Fast · Default" },
@@ -14,7 +15,9 @@ const MODELS = [
 ] as const;
 
 function displayContent(content: string): string {
-  const idx = content.indexOf(SENTINEL);
+  // The worker appends machine blocks (__SOURCES__ then __META__) after the answer.
+  // Visible text ends at the first one that appears.
+  const idx = content.indexOf(SOURCES_SENTINEL);
   return idx !== -1 ? content.slice(0, idx) : content;
 }
 
@@ -26,13 +29,33 @@ type CitedSource = {
   title?: string;
 };
 
+type ChatMeta = {
+  scale?: { sources: number; excerpts: number };
+  themes?: string[];
+  key_quote?: { text: string; title?: string; url?: string; start_time?: string } | null;
+};
+
 function extractSources(content: string): CitedSource[] {
-  const idx = content.indexOf(SENTINEL);
-  if (idx === -1) return [];
+  const start = content.indexOf(SOURCES_SENTINEL);
+  if (start === -1) return [];
+  const from = start + SOURCES_SENTINEL.length;
+  // Sources JSON runs up to the __META__ block (if present) — parsing past it fails.
+  const metaAt = content.indexOf(META_SENTINEL, from);
+  const raw = metaAt === -1 ? content.slice(from) : content.slice(from, metaAt);
   try {
-    return JSON.parse(content.slice(idx + SENTINEL.length));
+    return JSON.parse(raw);
   } catch {
     return [];
+  }
+}
+
+function extractMeta(content: string): ChatMeta | null {
+  const idx = content.indexOf(META_SENTINEL);
+  if (idx === -1) return null;
+  try {
+    return JSON.parse(content.slice(idx + META_SENTINEL.length));
+  } catch {
+    return null;
   }
 }
 
@@ -289,7 +312,7 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
           const assistantText = displayContent(text);
           return (
             <div key={msg.id}>
-              <AssistantBubble content={assistantText} sources={extractSources(text)} streaming={false} theme={theme} />
+              <AssistantBubble content={assistantText} sources={extractSources(text)} meta={extractMeta(text)} streaming={false} theme={theme} />
               {renderMessageFooter?.({
                 id: msg.id,
                 userText: prevUser ? getMessageText(prevUser.parts as any[]) : "",
@@ -505,11 +528,13 @@ function UserBubble({
 function AssistantBubble({
   content,
   sources,
+  meta,
   streaming,
   theme,
 }: {
   content: string;
   sources: CitedSource[];
+  meta: ChatMeta | null;
   streaming: boolean;
   theme: typeof DARK;
 }) {
@@ -540,6 +565,122 @@ function AssistantBubble({
             />
           )}
         </div>
+
+        {/* Key quote — one memorable, grounded line, visually emphasized. */}
+        {meta?.key_quote?.text && (
+          <div
+            className="mt-2 px-3.5 py-2.5"
+            style={{
+              borderLeft: `3px solid ${theme.dotColor}`,
+              background: theme.sourceItemBg,
+              borderRadius: "8px",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: "9px",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: theme.mutedText,
+                marginBottom: "4px",
+              }}
+            >
+              Key quote
+            </div>
+            <div
+              style={{
+                fontFamily: "DM Sans, sans-serif",
+                fontSize: "13px",
+                fontStyle: "italic",
+                color: theme.assistantText,
+                lineHeight: 1.5,
+              }}
+            >
+              “{meta.key_quote.text}”
+            </div>
+            {(meta.key_quote.title || meta.key_quote.start_time) && (
+              <div
+                style={{
+                  fontFamily: "DM Sans, sans-serif",
+                  fontSize: "10px",
+                  color: theme.mutedText,
+                  marginTop: "5px",
+                }}
+              >
+                {meta.key_quote.url ? (
+                  <a
+                    href={meta.key_quote.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:underline"
+                    style={{ color: theme.mutedText }}
+                  >
+                    {meta.key_quote.title}
+                    {meta.key_quote.start_time ? ` · ${meta.key_quote.start_time}` : ""}
+                  </a>
+                ) : (
+                  <>
+                    {meta.key_quote.title}
+                    {meta.key_quote.start_time ? ` · ${meta.key_quote.start_time}` : ""}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Recurring themes — the clusters this answer touches, so search becomes exploration. */}
+        {meta?.themes && meta.themes.length > 0 && (
+          <div className="mt-2 ml-1">
+            <div
+              style={{
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: "9px",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: theme.mutedText,
+                marginBottom: "5px",
+              }}
+            >
+              Recurring themes
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {meta.themes.map((t) => (
+                <span
+                  key={t}
+                  style={{
+                    fontFamily: "DM Sans, sans-serif",
+                    fontSize: "11px",
+                    padding: "3px 9px",
+                    borderRadius: "999px",
+                    background: theme.sourceItemBg,
+                    border: `1px solid ${theme.sourceItemBorder}`,
+                    color: theme.mutedText,
+                  }}
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Scale — communicates this is a synthesis of real material, not a one-off answer. */}
+        {meta?.scale && (meta.scale.sources > 0 || meta.scale.excerpts > 0) && (
+          <div
+            className="mt-2 ml-1"
+            style={{
+              fontFamily: "JetBrains Mono, monospace",
+              fontSize: "10px",
+              color: theme.mutedText,
+            }}
+          >
+            Synthesized from {meta.scale.sources} source{meta.scale.sources !== 1 ? "s" : ""}
+            {" · "}
+            {meta.scale.excerpts} excerpt{meta.scale.excerpts !== 1 ? "s" : ""}
+          </div>
+        )}
 
         {hasSources && (
           <div className="mt-1.5 ml-1">

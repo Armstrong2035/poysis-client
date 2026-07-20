@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { getWorkspaceId } from "@/lib/workspace";
 import { resolveConnectionSourceTypes } from "@/lib/connectionScope";
 import { cookies } from "next/headers";
 
@@ -28,7 +27,7 @@ export async function POST(
     // has the link.
     const { data: notebook, error: notebookError } = await supabase
       .from("notebooks")
-      .select("id, user_id, config")
+      .select("id, user_id, config, workspace_id")
       .eq("id", playgroundId)
       .single();
 
@@ -107,10 +106,12 @@ export async function POST(
       }
     }
 
-    // The worker's /chat contract is scoped by workspace_id, not notebook_id —
-    // always resolve it from the URL-verified notebook owner, never from a
-    // client-supplied value, for the same reason notebook_id used to be pinned.
-    const workspaceId = await getWorkspaceId(supabase, notebook.user_id);
+    // The worker's /chat contract is scoped by workspace_id. It lives on the
+    // notebook row itself, which is public-readable — so this resolves for
+    // anonymous viewers too. (Previously we looked it up from the workspaces
+    // table via user_id, which anon RLS blocks → null → a 404 on every public
+    // notebook.) New notebooks must be created with workspace_id set.
+    const workspaceId = notebook.workspace_id;
     if (!workspaceId) {
       return NextResponse.json(
         { error: "Workspace not found" },

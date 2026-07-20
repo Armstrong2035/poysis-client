@@ -66,6 +66,10 @@ export async function POST(req: NextRequest) {
         query,
         top_k,
         min_score,
+        // Without this the worker returns one buffered response and the client
+        // renders the whole answer at once. The response body is piped straight
+        // through below, so the flag is all that's needed to stream.
+        stream: true,
         ...(model ? { model } : {}),
         ...(instructions ? { instructions } : {}),
         ...(allowed_topic_ids?.length > 0 ? { allowed_topic_ids } : {}),

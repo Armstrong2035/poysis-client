@@ -16,7 +16,15 @@ const TIERS: { id: ModelTier; label: string; hint: string }[] = [
 
 function displayContent(content: string): string {
   const idx = content.indexOf(SENTINEL);
-  return idx !== -1 ? content.slice(0, idx) : content;
+  if (idx !== -1) return content.slice(0, idx);
+  // Mid-stream the sentinel can straddle a chunk boundary, leaving a partial
+  // marker like "\n\n__SOU" that indexOf won't match. Hide any trailing
+  // fragment of it so it doesn't flash at the end of the answer before the
+  // rest arrives. (Trimming a trailing "\n\n" is invisible once rendered.)
+  for (let n = Math.min(SENTINEL.length - 1, content.length); n > 0; n--) {
+    if (content.endsWith(SENTINEL.slice(0, n))) return content.slice(0, -n);
+  }
+  return content;
 }
 
 type CitedSource = {
@@ -267,9 +275,16 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
           }
           const prevUser = messages.slice(0, i).reverse().find((m) => m.role === "user");
           const assistantText = displayContent(text);
+          // Only the last assistant message can still be receiving chunks.
+          const isLast = i === messages.length - 1;
           return (
             <div key={msg.id}>
-              <AssistantBubble content={assistantText} sources={extractSources(text)} streaming={false} theme={theme} />
+              <AssistantBubble
+                content={assistantText}
+                sources={extractSources(text)}
+                streaming={isLast && status === "streaming"}
+                theme={theme}
+              />
               {renderMessageFooter?.({
                 id: msg.id,
                 userText: prevUser ? getMessageText(prevUser.parts as any[]) : "",

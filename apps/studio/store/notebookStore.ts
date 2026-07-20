@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ActiveBlock, ComputeBlock, UIComponentBinding, ChatMessage, AppTheme } from '../types/canvas';
+import { ActiveBlock, ComputeBlock, UIComponentBinding, AppTheme } from '../types/canvas';
 import { initializeNotebook } from '../lib/actions';
 
 const SYSTEM_FIELDS = new Set(["source", "row_index", "notebook_id", "source_file"]);
@@ -60,7 +60,6 @@ interface NotebookState {
   setTheme: (theme: Partial<AppTheme>) => void;
   setBlockUIConfig: (blockId: string, uiConfig: any) => void;
   executeBlock: (blockId: string) => Promise<void>;
-  executeInitialSample: (blockId: string) => Promise<void>;
 
   // Builder Methods
   addBlock: (blockTypeId: string) => void;
@@ -431,203 +430,13 @@ export const useNotebookStore = create<NotebookState>()(
           return;
         }
 
-        // ── CHAT / GENERATE — conversational streaming ────────────────────
-        const userMessage: ChatMessage = {
-          id: `msg_${Date.now()}_user`,
-          role: 'user',
-          content: query,
-          timestamp: Date.now(),
-        };
-
-        const prevHistory = (block.outputs as any).history || [];
-
-        set((s: NotebookState) => ({
-          blocks: {
-            ...s.blocks,
-            [blockId]: {
-              ...s.blocks[blockId],
-              status: 'streaming',
-              currentInputs: resolvedInputs,
-              outputs: {
-                ...s.blocks[blockId].outputs,
-                stream: '',
-                ...(blockType === 'chat' ? { sources: [] } : {}),
-                history: [...prevHistory, userMessage],
-              },
-            },
-          },
-        }));
-
-        try {
-          const SENTINEL = '\n\n__SOURCES__';
-
-          // Chat hits the RAG endpoint; Generate hits the same endpoint but could be extended later
-          const instructions = resolvedInputs.instructions;
-          // Speed/capability tier, not a model id — the worker maps it.
-          const model = block.stateSettings?.modelTier || 'quick';
-          const max_tokens = block.stateSettings?.maxTokens || 1000;
-          const creativity = block.stateSettings?.creativity ?? 0.5; // Default to balanced
-
-          const res = await fetch('/api/worker/ask', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              notebook_id: notebookId, 
-              query, 
-              stream: true,
-              instructions,
-              model,
-              max_tokens,
-              temperature: creativity, // Map creativity slider to temperature
-            }),
-          });
-
-          if (!res.ok) {
-            const text = await res.text();
-            throw new Error(`Worker error ${res.status}: ${text.slice(0, 200)}`);
-          }
-
-          if (!res.body) throw new Error('No response body from worker');
-
-          const reader = res.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-
-            const sentinelIdx = buffer.indexOf(SENTINEL);
-            const displayText = sentinelIdx !== -1 ? buffer.slice(0, sentinelIdx) : buffer;
-
-            set((s: NotebookState) => ({
-              blocks: {
-                ...s.blocks,
-                [blockId]: {
-                  ...s.blocks[blockId],
-                  outputs: { ...s.blocks[blockId].outputs, stream: displayText },
-                },
-              },
-            }));
-          }
-
-          // Parse final answer + sources
-          const sentinelIdx = buffer.indexOf(SENTINEL);
-          const answer = sentinelIdx !== -1 ? buffer.slice(0, sentinelIdx) : buffer;
-          let sources: any[] = [];
-          if (sentinelIdx !== -1) {
-            try {
-              sources = JSON.parse(buffer.slice(sentinelIdx + SENTINEL.length));
-            } catch {
-              sources = [];
-            }
-          }
-
-          const assistantMessage: ChatMessage = {
-            id: `msg_${Date.now()}_assistant`,
-            role: 'assistant',
-            content: answer,
-            ...(blockType === 'chat' ? { sources } : {}),
-            timestamp: Date.now(),
-          };
-
-          set((s: NotebookState) => {
-            const currentHistory = (s.blocks[blockId].outputs as any).history || [];
-            const activeBlock = s.activeBlocks.find(b => b.id === blockId);
-            const chainingTarget = activeBlock?.chainingTarget;
-            return {
-              blocks: {
-                ...s.blocks,
-                [blockId]: {
-                  ...s.blocks[blockId],
-                  status: 'complete',
-                  outputs: {
-                    ...s.blocks[blockId].outputs,
-                    stream: '',
-                    ...(blockType === 'chat' ? { sources } : {}),
-                    history: [...currentHistory, assistantMessage],
-                  },
-                },
-              },
-              // Automatic screen handoff: advance Composer to chained block
-              ...(chainingTarget ? { activePreviewBlockId: chainingTarget.blockId } : {}),
-            };
-          });
-        } catch (err) {
-          console.error(`[executeBlock] Failed for block ${blockId}:`, err);
-          set((s: NotebookState) => ({
-            blocks: {
-              ...s.blocks,
-              [blockId]: { ...s.blocks[blockId], status: 'error' },
-            },
-          }));
-        }
-      },
-
-      executeInitialSample: async (blockId: string) => {
-        const state = get();
-        const block = state.blocks[blockId];
-        if (!block) return;
-
-        const notebookId = state.notebookId;
-        const sampleQuery = "Provide a representative overview/sample of this data.";
-
-        // Give Pinecone a moment to make freshly ingested vectors queryable
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // For simplicity, we trigger a search if it's a search block, or a chat for others
-        if (block.type === 'search') {
-           try {
-             const res = await fetch('/api/worker/search', {
-               method: 'POST',
-               headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify({ notebook_id: notebookId, query: sampleQuery, limit: 1, min_score: 0 }),
-             });
-             if (res.ok) {
-               const data = await res.json();
-               console.log(`[executeInitialSample] Sample results for ${blockId}:`, data.results);
-               const sources = (data.results ?? []).map(mapSearchResult);
-               set((s: NotebookState) => ({
-                 blocks: { ...s.blocks, [blockId]: { ...s.blocks[blockId], outputs: { ...s.blocks[blockId].outputs, sources } } }
-               }));
-               // Persist the first result as sampleData so the Formatter has schema on reload
-               if (sources.length > 0) {
-                 set((s: NotebookState) => ({
-                   activeBlocks: s.activeBlocks.map(b =>
-                     b.id === blockId
-                       ? { ...b, uiConfig: { mode: 'direct', layout: [], ...(b.uiConfig || {}), sampleData: JSON.stringify(sources[0]) } }
-                       : b
-                   ),
-                 }));
-               }
-             }
-           } catch (e) {
-             console.error("[executeInitialSample] Search failed:", e);
-           }
-        } else {
-           // Chat/Generate fallback
-           try {
-              const res = await fetch('/api/worker/ask', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                  notebook_id: notebookId, 
-                  query: sampleQuery, 
-                  stream: false,
-                }),
-              });
-              if (res.ok) {
-                 const data = await res.json();
-                 set((s: NotebookState) => ({
-                   blocks: { ...s.blocks, [blockId]: { ...s.blocks[blockId], outputs: { ...s.blocks[blockId].outputs, stream: data.answer || "" } } }
-                 }));
-              }
-           } catch (e) {
-              console.error("[executeInitialSample] Ingestion-auto-run failed:", e);
-           }
-        }
+        // Chat/generate no longer run through the store. Both preview modes
+        // render the shared <Chat> component, which talks to /api/worker/chat
+        // directly and keeps its own message state — so executeBlock only
+        // serves search blocks now.
+        console.warn(
+          `[executeBlock] Ignoring block ${blockId} of type "${blockType}" — only search blocks execute through the store.`,
+        );
       },
 
       // --- APP SCREEN MANAGEMENT ---

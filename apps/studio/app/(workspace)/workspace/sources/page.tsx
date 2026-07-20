@@ -3,6 +3,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useNotebooks } from "../NotebooksContext";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import {
+  DEFAULT_MAX_VIDEO_MINUTES,
+  MAX_VIDEO_MINUTES_ERROR,
+  MAX_VIDEO_MINUTES_HELP,
+  MAX_VIDEO_MINUTES_LIMIT,
+  MIN_VIDEO_MINUTES_LIMIT,
+  parseMaxVideoMinutes,
+} from "@/lib/youtube";
 
 type DriveConnection = {
   id: string;
@@ -341,19 +350,25 @@ function YoutubeCard({ connection, onConnectionChange }: { connection: YoutubeCo
 
 function ConnectYoutubeForm({ onConnected }: { onConnected: () => void }) {
   const [url, setUrl] = useState("");
+  const [maxMinutes, setMaxMinutes] = useState(String(DEFAULT_MAX_VIDEO_MINUTES));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim() || submitting) return;
+    const minutes = parseMaxVideoMinutes(maxMinutes);
+    if (minutes === null) {
+      setError(MAX_VIDEO_MINUTES_ERROR);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
       const res = await fetch("/api/youtube/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ channelUrl: url.trim() }),
+        body: JSON.stringify({ channelUrl: url.trim(), maxVideoMinutes: minutes }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -378,6 +393,25 @@ function ConnectYoutubeForm({ onConnected }: { onConnected: () => void }) {
           className="flex-1 px-3 py-2.5 rounded outline-none"
           style={{ background: "#FAF8F0", border: "1px solid #E4DECC", fontFamily: "DM Sans, sans-serif", fontSize: "13px", color: "#262922" }}
         />
+        <label
+          className="flex items-center gap-1.5 shrink-0"
+          style={{ fontFamily: "DM Sans, sans-serif", fontSize: "11px", color: "#8A9488" }}
+        >
+          <span className="whitespace-nowrap">Max length</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={MIN_VIDEO_MINUTES_LIMIT}
+            max={MAX_VIDEO_MINUTES_LIMIT}
+            value={maxMinutes}
+            onChange={(e) => setMaxMinutes(e.target.value)}
+            aria-label="Maximum video length in minutes"
+            className="px-2 py-2.5 rounded outline-none"
+            style={{ width: "64px", background: "#FAF8F0", border: "1px solid #E4DECC", fontFamily: "DM Sans, sans-serif", fontSize: "13px", color: "#262922" }}
+          />
+          <span>min</span>
+          <InfoTooltip text={MAX_VIDEO_MINUTES_HELP} tone="light" />
+        </label>
         <button
           type="submit"
           disabled={submitting || !url.trim()}

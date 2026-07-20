@@ -3,12 +3,12 @@
 import { useNotebookStore } from "../../../store/notebookStore";
 import { SearchBar } from "../../../components/ui/input/SearchBar";
 import { SourceAccordion } from "../../../components/ui/display/SourceAccordion";
-import { ChatThread } from "../../../components/ui/display/ChatThread";
 import { Chat } from "../../../components/ui/chat/Chat";
 import Link from "next/link";
 import { useState, useEffect, Suspense } from "react";
 import { useHydrated } from "../../../hooks/useHydrated";
 import { useSearchParams } from "next/navigation";
+import { MARKETPLACE_URL } from "../../../lib/marketplace";
 // getPublicNotebook removed — now fetched via /api/notebook/public
 
 function PreviewContent() {
@@ -47,8 +47,12 @@ function PreviewContent() {
     loadNotebook();
   }, [notebookId]);
 
+  // A published notebook lives on the marketplace app (poysis.com/<slug>), not
+  // on Studio's own origin — Studio has no [slug] route, so building this from
+  // window.location.origin produced a 404 link. Unpublished notebooks have no
+  // marketplace page yet, so they still share as a Studio preview link.
   const shareUrl = notebookSlug
-    ? `${window.location.origin}/${notebookSlug}`
+    ? `${MARKETPLACE_URL}/${notebookSlug}`
     : `${window.location.origin}/preview?id=${notebookId}`;
 
   const handleCopy = () => {
@@ -261,14 +265,17 @@ function PreviewContent() {
                 </button>
               )}
 
-              {currentBlock.blockTypeId === "chat" && (
+              {isChatLike && (
                 <div className="flex-1 flex flex-col min-h-0 px-4 pb-4">
-                  <ChatThread blockId={currentBlock.id} />
-                </div>
-              )}
-              {currentBlock.blockTypeId === "generate" && (
-                <div className="flex-1 flex flex-col min-h-0 px-4 pb-4">
-                  <ChatThread blockId={currentBlock.id} />
+                  <Chat
+                    config={{
+                      mode: "dashboard",
+                      notebookId: notebookId ?? "",
+                      allowedSources: currentBlock.sources.length > 0 ? currentBlock.sources : undefined,
+                      branding: { primaryColor: theme.primaryColor },
+                      placeholder: "Ask a question…",
+                    }}
+                  />
                 </div>
               )}
               {currentBlock.blockTypeId === "search" && (

@@ -2,6 +2,7 @@
 
 import { createClient } from "../utils/supabase/server";
 import { createClient as createPublicClient } from "@supabase/supabase-js";
+import { ensureWorkspace } from "./workspace";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -113,10 +114,16 @@ export async function initializeNotebook(config: any) {
 
   console.log(`>>> [SERVER ACTION] Initializing notebook with name: "${name}"`);
 
+  // Stamp the workspace on the notebook at creation. The public chat route
+  // reads it straight off the notebook row (anon can't look it up via the
+  // workspaces table), so a notebook without it 404s once published.
+  const workspaceId = await ensureWorkspace(supabase, user.id);
+
   const { data, error } = await supabase
     .from('notebooks')
-    .insert({ 
+    .insert({
       user_id: user.id,
+      workspace_id: workspaceId,
       name: name || 'Untitled Notebook',
       config: rest
     })
@@ -170,10 +177,13 @@ export async function createNotebook() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
 
+  const workspaceId = await ensureWorkspace(supabase, user.id);
+
   const { data, error } = await supabase
     .from('notebooks')
-    .insert({ 
+    .insert({
       user_id: user.id,
+      workspace_id: workspaceId,
       name: 'Untitled Notebook',
       config: { activeBlocks: [], blocks: {}, uiComponents: {} }
     })

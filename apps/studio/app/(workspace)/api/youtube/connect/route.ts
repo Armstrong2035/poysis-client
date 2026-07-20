@@ -3,6 +3,7 @@ import { createClient } from "../../../../../utils/supabase/server";
 import { cookies } from "next/headers";
 import { getWorkspaceId } from "@/lib/workspace";
 import { getAuthUser } from "@/lib/getAuthUser";
+import { MAX_VIDEO_MINUTES_ERROR, parseMaxVideoMinutes } from "@/lib/youtube";
 
 const WORKER_URL = process.env.WORKER_URL ?? process.env.LOCAL_WORKER_URL ?? "";
 if (!WORKER_URL) throw new Error("WORKER_URL environment variable is not set");
@@ -17,9 +18,20 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { channelUrl, channelName } = body as { channelUrl?: string; channelName?: string };
+  const { channelUrl, channelName, maxVideoMinutes } = body as {
+    channelUrl?: string;
+    channelName?: string;
+    maxVideoMinutes?: number | string;
+  };
   if (!channelUrl?.trim()) {
     return NextResponse.json({ error: "channelUrl is required" }, { status: 400 });
+  }
+
+  // Re-validate rather than trusting the form — this route is reachable
+  // directly, and an out-of-range cap silently changes what gets indexed.
+  const maxMinutes = parseMaxVideoMinutes(maxVideoMinutes);
+  if (maxMinutes === null) {
+    return NextResponse.json({ error: MAX_VIDEO_MINUTES_ERROR }, { status: 400 });
   }
 
   const workspaceId = await getWorkspaceId(supabase, user.id);
@@ -37,6 +49,8 @@ export async function POST(req: NextRequest) {
   const params = new URLSearchParams({
     workspace_id: workspaceId,
     channel_url: channelUrl.trim(),
+    // Per-channel cap; videos longer than this are skipped at index time.
+    max_video_duration_minutes: String(maxMinutes),
   });
   if (channelName?.trim()) params.set("channel_name", channelName.trim());
 

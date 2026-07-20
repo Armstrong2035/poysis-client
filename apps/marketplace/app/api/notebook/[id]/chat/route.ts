@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { resolveConnectionSourceTypes } from "@/lib/connectionScope";
 import { cookies } from "next/headers";
 
 const WORKER_URL = process.env.WORKER_URL ?? process.env.LOCAL_WORKER_URL ?? "";
@@ -119,23 +118,16 @@ export async function POST(
       );
     }
 
-    // The client scopes by connection row id (conn:<id>), but the worker's
-    // allowed_connection_ids is a source_type allowlist — translate before
-    // sending, or the filter matches nothing. See lib/connectionScope.ts.
-    const connectionSourceTypes = effectiveConnectionIds?.length
-      ? await resolveConnectionSourceTypes(
-          supabase,
-          workspaceId,
-          notebook.user_id,
-          effectiveConnectionIds,
-        )
-      : [];
+    // The worker's allowed_connection_ids takes the raw conn:<id> ids directly
+    // — it owns the mapping to source types. (We used to translate them here
+    // via resolveConnectionSourceTypes, but that came back empty and dropped
+    // the filter, so every query returned nothing.)
 
     // Fail closed: a non-owner must never reach an unfiltered workspace query.
-    // If neither a public-topic filter nor a resolved connection source_type
-    // survived (e.g. a Drive connection a non-owner can't read through RLS),
-    // return the empty-scope message rather than leaking the whole workspace.
-    if (!isOwner && !effectiveTopicIds?.length && !connectionSourceTypes.length) {
+    // If neither a public-topic filter nor a connection scope survived (e.g. a
+    // Drive connection a non-owner can't read through RLS), return the
+    // empty-scope message rather than leaking the whole workspace.
+    if (!isOwner && !effectiveTopicIds?.length && !effectiveConnectionIds?.length) {
       return new Response(
         "No public information is available for this notebook yet.",
         { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } }
@@ -162,7 +154,7 @@ export async function POST(
         ...(model ? { model } : {}),
         ...(instructions ? { instructions } : {}),
         ...(effectiveTopicIds?.length ? { allowed_topic_ids: effectiveTopicIds } : {}),
-        ...(connectionSourceTypes.length ? { allowed_connection_ids: connectionSourceTypes } : {}),
+        ...(effectiveConnectionIds?.length ? { allowed_connection_ids: effectiveConnectionIds } : {}),
       }),
     });
 

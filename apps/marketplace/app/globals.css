@@ -223,16 +223,6 @@ input::placeholder, textarea::placeholder { color: var(--faint); opacity: 1; }
   padding: 24px;
   box-shadow: var(--shadow);
 }
-.mkt-featured .glow {
-  position: absolute;
-  top: -80px;
-  right: -60px;
-  width: 240px;
-  height: 240px;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 40%, transparent), transparent 66%);
-  pointer-events: none;
-}
 .mkt-ask {
   display: flex;
   align-items: center;

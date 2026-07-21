@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getAllCreators, searchCreators, filterByDomain } from "@/lib/creators";
+import { getAllCreators, getComingSoon, searchCreators, filterByDomain } from "@/lib/creators";
 import { ResultRow } from "@/components/marketplace/NotebookCards";
 import { RequestCreatorButton } from "@/components/marketplace/RequestCreatorButton";
 
@@ -9,7 +9,10 @@ interface Props {
 
 export default async function SearchPage({ searchParams }: Props) {
   const { q, domain } = await searchParams;
-  const creators = await getAllCreators();
+  // Include the seeded "coming soon" placeholders so browsing a seeded domain
+  // (AI, Christianity, …) or searching a seeded name resolves instead of
+  // dead-ending. They render locked (non-clickable) in the results.
+  const creators = [...(await getAllCreators()), ...getComingSoon()];
 
   const filtered = domain ? filterByDomain(creators, domain) : q ? searchCreators(creators, q) : creators;
   const heading = domain ?? (q ? `Results for “${q}”` : "Everyone");
@@ -47,7 +50,7 @@ export default async function SearchPage({ searchParams }: Props) {
         {filtered.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column" }}>
             {filtered.map((c) => (
-              <ResultRow key={c.slug} creator={c} />
+              <ResultRow key={c.id} creator={c} />
             ))}
           </div>
         ) : (

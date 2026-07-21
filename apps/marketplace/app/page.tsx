@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { getAllCreators, getFeatured, getTrending, getLatest, getDomains, getTopics } from "@/lib/creators";
-import { HomeSearch } from "@/components/marketplace/HomeSearch";
+import { getAllCreators, getComingSoon, getFeatured, getTrending, getLatest, getDomains, getTopics } from "@/lib/creators";
 import { FeaturedCard, TrendingCard, LatestRow, DomainLink } from "@/components/marketplace/NotebookCards";
 
 // A catalog-drawer section label: eyebrow · hairline rule · optional note.
@@ -16,10 +15,31 @@ function Drawer({ label, note, gilt }: { label: string; note?: string; gilt?: bo
 
 export default async function HomePage() {
   const creators = await getAllCreators();
-  const featured = getFeatured(creators);
-  const trending = getTrending(creators, featured?.slug);
-  const latest = getLatest(creators);
-  const domains = getDomains(creators);
+  const comingSoon = getComingSoon();
+
+  // The one live notebook we point "Start here" at: an explicitly featured one,
+  // else the newest. Everything below it is the rest of the (real + seeded) feed.
+  const topLive = getFeatured(creators) ?? creators[0] ?? null;
+
+  // Seed the "coming soon" placeholders into the live feed so the marketplace
+  // looks populated. topLive is excluded from the rails below so the start-here
+  // card isn't immediately repeated. Trending seeds fill the rail; the rest
+  // fill Latest (capped so it doesn't become a wall of locked rows).
+  const seedTrending = comingSoon.filter((c) => c.trending);
+  const seedRest = comingSoon.filter((c) => !c.trending);
+
+  const trending = [
+    ...getTrending(creators, topLive?.slug),
+    ...seedTrending,
+  ];
+  const latest = [
+    ...getLatest(creators).filter((c) => c.slug !== topLive?.slug),
+    ...seedRest.slice(0, 6),
+  ];
+  // Browse-by-domain spans the whole (real + seeded) catalog so new domains
+  // like AI or Christianity show up and aren't dead ends — search includes the
+  // seeds too.
+  const domains = getDomains([...creators, ...comingSoon]);
   const topics = getTopics(creators);
 
   return (
@@ -27,11 +47,6 @@ export default async function HomePage() {
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 18px 96px" }}>
         {/* Hero */}
         <div className="mkt-rise" style={{ padding: "14px 0 6px", marginBottom: 6 }}>
-          <div className="mkt-mono" style={{ display: "flex", alignItems: "center", gap: 9, color: "var(--accent)", marginBottom: 16 }}>
-            <span>The Index</span>
-            <span style={{ flex: 1, height: 1, background: "var(--rule)" }} />
-            <span>{creators.length} {creators.length === 1 ? "mind" : "minds"}</span>
-          </div>
           <h1
             className="mkt-serif"
             style={{
@@ -51,13 +66,9 @@ export default async function HomePage() {
           </p>
         </div>
 
-        <div className="mkt-rise" style={{ animationDelay: ".05s" }}>
-          <HomeSearch />
-        </div>
-
         {/* Topic quick-filters */}
         {topics.length > 0 && (
-          <div className="mkt-rise" style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 44, animationDelay: ".08s" }}>
+          <div className="mkt-rise" style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 20, marginBottom: 44, animationDelay: ".08s" }}>
             {topics.map((t) => (
               <Link key={t} href={`/search?q=${encodeURIComponent(t)}`} className="mkt-chip">
                 {t}
@@ -66,7 +77,7 @@ export default async function HomePage() {
           </div>
         )}
 
-        {creators.length === 0 && (
+        {creators.length === 0 && comingSoon.length === 0 && (
           <div
             className="mkt-surface"
             style={{ borderRadius: 6, padding: "48px 20px", textAlign: "center", color: "var(--muted)", marginBottom: 44 }}
@@ -76,11 +87,11 @@ export default async function HomePage() {
           </div>
         )}
 
-        {/* Just Dropped */}
-        {featured && (
+        {/* Start here — the one live notebook we steer newcomers into first.
+            The "Start here" cue now lives only as the badge on the card itself. */}
+        {topLive && (
           <section style={{ marginBottom: 46 }}>
-            <Drawer label="Just dropped" note="newest entry" gilt />
-            <FeaturedCard creator={featured} />
+            <FeaturedCard creator={topLive} startHere />
           </section>
         )}
 
@@ -90,7 +101,7 @@ export default async function HomePage() {
             <Drawer label="Trending" note="most consulted" />
             <div className="mkt-rail">
               {trending.map((c) => (
-                <TrendingCard key={c.slug} creator={c} />
+                <TrendingCard key={c.id} creator={c} />
               ))}
             </div>
           </section>
@@ -102,7 +113,7 @@ export default async function HomePage() {
             <Drawer label="Latest" note="freshly indexed" />
             <div style={{ display: "flex", flexDirection: "column" }}>
               {latest.map((c) => (
-                <LatestRow key={c.slug} creator={c} />
+                <LatestRow key={c.id} creator={c} />
               ))}
             </div>
           </section>

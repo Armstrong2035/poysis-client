@@ -22,15 +22,58 @@ function TalkCTA() {
   );
 }
 
+function Lock({ size = 13 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ flexShrink: 0 }}>
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+// "Coming soon" affordance shown where a live card would put its CTA.
+function ComingSoonTag() {
+  return (
+    <span className="mkt-mono" style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--faint)", flexShrink: 0, fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase" }}>
+      <Lock size={11} />
+      Coming soon
+    </span>
+  );
+}
+
 // Elevated "Just Dropped" entry — the one inversion on the page. On the light
 // ground it's an ink card; on a dark ground it flips to warm paper (see the
 // --invert-* tokens). The header and each suggested question are their own
 // links (a question deep-links straight into the chat via ?q=), so the card is
 // a plain container rather than one big anchor (no nested <a>).
-export function FeaturedCard({ creator }: { creator: ResolvedCreator }) {
+export function FeaturedCard({ creator, startHere = false }: { creator: ResolvedCreator; startHere?: boolean }) {
   return (
     <div className="mkt-featured">
-      <div className="glow" />
+      {startHere && (
+        <span
+          className="mkt-mono"
+          style={{
+            position: "absolute",
+            top: 14,
+            right: 14,
+            zIndex: 2,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "5px 10px",
+            borderRadius: 999,
+            background: "var(--accent)",
+            color: "var(--ground)",
+            fontSize: 9.5,
+            letterSpacing: ".12em",
+            textTransform: "uppercase",
+            fontWeight: 500,
+          }}
+        >
+          Start here
+          <Arrow size={11} stroke={2.8} />
+        </span>
+      )}
       <div style={{ position: "relative", display: "flex", gap: 16, alignItems: "center", marginBottom: 16 }}>
         <Link href={`/${creator.slug}`} style={{ display: "flex", gap: 16, alignItems: "center", textDecoration: "none", color: "inherit", minWidth: 0 }}>
           <Avatar initial={creator.initial} color={creator.color} size={64} fontSize={27} />
@@ -69,6 +112,26 @@ export function FeaturedCard({ creator }: { creator: ResolvedCreator }) {
 }
 
 export function TrendingCard({ creator }: { creator: ResolvedCreator }) {
+  if (creator.comingSoon) {
+    // Locked placeholder — same shape as a live spine but not a link, so it
+    // reads as "populated" without hover-lift or a dead-end click.
+    return (
+      <div className="mkt-spine" style={{ cursor: "default", opacity: 0.7, pointerEvents: "none" }} aria-disabled="true">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <Avatar initial={creator.initial} color={creator.color} size={44} fontSize={18} />
+          <span style={{ color: "var(--faint)" }}><Lock size={14} /></span>
+        </div>
+        <div className="mkt-serif" style={{ fontWeight: 600, fontSize: 17, lineHeight: 1.15, color: "var(--ink)" }}>
+          {creator.title}
+        </div>
+        {creator.creator && (
+          <div className="mkt-mono" style={{ fontSize: 9.5, color: "var(--faint)", margin: "5px 0 9px" }}>{creator.creator}</div>
+        )}
+        <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--muted)", flex: 1, marginBottom: 14 }}>{creator.tagline}</div>
+        <ComingSoonTag />
+      </div>
+    );
+  }
   return (
     <Link href={`/${creator.slug}`} className="mkt-spine">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -90,6 +153,27 @@ export function TrendingCard({ creator }: { creator: ResolvedCreator }) {
 }
 
 export function LatestRow({ creator }: { creator: ResolvedCreator }) {
+  if (creator.comingSoon) {
+    return (
+      <div className="mkt-entry" style={{ cursor: "default", pointerEvents: "none" }} aria-disabled="true">
+        <div style={{ opacity: 0.65 }}>
+          <Avatar initial={creator.initial} color={creator.color} size={46} fontSize={18} />
+        </div>
+        <div style={{ minWidth: 0, flex: 1, opacity: 0.7 }}>
+          <div className="mkt-serif" style={{ fontWeight: 600, fontSize: 17, lineHeight: 1.2, color: "var(--ink)" }}>
+            {creator.title}
+          </div>
+          <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {creator.tagline}
+          </div>
+        </div>
+        <span className="mkt-mono" style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--faint)", flexShrink: 0, fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase" }}>
+          <Lock size={12} />
+          Soon
+        </span>
+      </div>
+    );
+  }
   return (
     <Link href={`/${creator.slug}`} className="mkt-entry">
       <Avatar initial={creator.initial} color={creator.color} size={46} fontSize={18} />
@@ -112,6 +196,31 @@ export function LatestRow({ creator }: { creator: ResolvedCreator }) {
 }
 
 export function ResultRow({ creator }: { creator: ResolvedCreator }) {
+  if (creator.comingSoon) {
+    return (
+      <div className="mkt-entry" style={{ alignItems: "flex-start", cursor: "default", pointerEvents: "none" }} aria-disabled="true">
+        <div style={{ opacity: 0.65 }}>
+          <Avatar initial={creator.initial} color={creator.color} size={48} fontSize={19} />
+        </div>
+        <div style={{ minWidth: 0, flex: 1, opacity: 0.72 }}>
+          <div className="mkt-serif" style={{ fontWeight: 600, fontSize: 17, color: "var(--ink)", lineHeight: 1.2 }}>{creator.title}</div>
+          {creator.creator && <div className="mkt-mono" style={{ fontSize: 9.5, color: "var(--faint)", margin: "5px 0 7px" }}>{creator.creator}</div>}
+          <div style={{ fontSize: 13.5, color: "var(--muted)", lineHeight: 1.45, marginBottom: 10 }}>{creator.tagline}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+            {creator.topics.slice(0, 2).map((t) => (
+              <span key={t} className="mkt-mono" style={{ fontSize: 9.5, color: "var(--muted)", border: "1px solid var(--rule)", borderRadius: 2, padding: "3px 8px" }}>
+                {t}
+              </span>
+            ))}
+            <span className="mkt-mono" style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--faint)", marginLeft: "auto", fontSize: 9.5, letterSpacing: ".1em", textTransform: "uppercase" }}>
+              <Lock size={11} />
+              Coming soon
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <Link href={`/${creator.slug}`} className="mkt-entry" style={{ alignItems: "flex-start" }}>
       <Avatar initial={creator.initial} color={creator.color} size={48} fontSize={19} />

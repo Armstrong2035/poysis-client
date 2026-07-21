@@ -55,6 +55,9 @@ export interface ResolvedCreator {
   color: CreatorColor;
   featured: boolean;
   trending: boolean;
+  /** A seeded placeholder (not a real notebook) — renders locked with a
+   *  "coming soon" padlock and isn't clickable. */
+  comingSoon: boolean;
 }
 
 // Mirrors the design's rule for turning a title into a first-name-ish form
@@ -91,12 +94,73 @@ function resolve(notebook: { id: string; name: string; slug: string | null; conf
     color,
     featured: meta.featured ?? false,
     trending: meta.trending ?? false,
+    comingSoon: false,
   };
 }
 
 export async function getAllCreators(): Promise<ResolvedCreator[]> {
   const notebooks = await getPublicNotebooks();
   return notebooks.filter(isPublic).map(resolve);
+}
+
+// Seeded "coming soon" placeholders so the marketplace looks alive while the
+// real catalog fills in. These are NOT notebooks — they render locked (padlock,
+// non-clickable) and only advertise creators we intend to index. Neutral
+// topic-level descriptions only; no fabricated quotes or claims to be them.
+function comingSoon(input: {
+  title: string;
+  creator: string;
+  domain: string;
+  topics: string[];
+  tagline: string;
+  sourceCount: number;
+  color: CreatorColor;
+  trending?: boolean;
+}): ResolvedCreator {
+  return {
+    slug: "",
+    id: `coming-${input.title.toLowerCase().replace(/\s+/g, "-")}`,
+    title: input.title,
+    initial: input.title.trim()[0]?.toUpperCase() ?? "?",
+    firstName: firstNameOf(input.title),
+    creator: input.creator,
+    domain: input.domain,
+    topics: input.topics,
+    tagline: input.tagline,
+    description: input.tagline,
+    questions: [],
+    sourceCount: input.sourceCount,
+    color: input.color,
+    featured: false,
+    trending: input.trending ?? false,
+    comingSoon: true,
+  };
+}
+
+const COMING_SOON: ResolvedCreator[] = [
+  comingSoon({ title: "Sam Adeyemi", creator: "@sam_adeyemi", domain: "Leadership", topics: ["leadership", "purpose", "growth"], tagline: "Leadership, purpose, and personal transformation, from years of talks and teaching.", sourceCount: 140, color: "olive", trending: true }),
+  comingSoon({ title: "Alex Hormozi", creator: "@hormozi", domain: "Business", topics: ["sales", "offers", "scaling"], tagline: "Offers, sales, and scaling businesses from zero to millions.", sourceCount: 210, color: "clay", trending: true }),
+  comingSoon({ title: "Naval Ravikant", creator: "@naval", domain: "Startups", topics: ["wealth", "leverage", "philosophy"], tagline: "Wealth creation, leverage, and clear thinking, across a decade of talks and threads.", sourceCount: 180, color: "stone", trending: true }),
+  comingSoon({ title: "Paul Graham", creator: "@paulg", domain: "Essays", topics: ["startups", "founders", "writing"], tagline: "Essays and talks on startups, founders, and writing clearly.", sourceCount: 160, color: "oxblood" }),
+  comingSoon({ title: "Andrew Huberman", creator: "@hubermanlab", domain: "Neuroscience", topics: ["focus", "sleep", "dopamine"], tagline: "Science-backed protocols for focus, sleep, stress, and performance.", sourceCount: 240, color: "sage", trending: true }),
+  comingSoon({ title: "Morgan Housel", creator: "@morganhousel", domain: "Investing", topics: ["money", "psychology", "markets"], tagline: "How money really works — behavior, risk, and long-term thinking.", sourceCount: 120, color: "ink", trending: true }),
+  comingSoon({ title: "Chimamanda Ngozi Adichie", creator: "@chimamanda", domain: "Writing", topics: ["storytelling", "identity", "culture"], tagline: "Storytelling, identity, and culture, across novels, essays, and talks.", sourceCount: 90, color: "oxblood" }),
+  comingSoon({ title: "Simon Sinek", creator: "@simonsinek", domain: "Leadership", topics: ["purpose", "teams", "trust"], tagline: "Why great teams start with purpose, trust, and the long game.", sourceCount: 150, color: "clay", trending: true }),
+  comingSoon({ title: "Brené Brown", creator: "@brenebrown", domain: "Psychology", topics: ["vulnerability", "courage", "shame"], tagline: "Vulnerability, courage, and connection, from a career of research.", sourceCount: 170, color: "stone" }),
+  comingSoon({ title: "Yuval Noah Harari", creator: "@harari_yuval", domain: "History", topics: ["history", "ai", "society"], tagline: "The long arc of humanity — history, technology, and where we're headed.", sourceCount: 200, color: "sage" }),
+  comingSoon({ title: "Esther Perel", creator: "@estherperel", domain: "Relationships", topics: ["intimacy", "work", "connection"], tagline: "Relationships, intimacy, and the modern tension between the two.", sourceCount: 110, color: "olive" }),
+  comingSoon({ title: "Ali Abdaal", creator: "@aliabdaal", domain: "Productivity", topics: ["productivity", "learning", "creators"], tagline: "Evidence-based productivity, learning, and building an audience.", sourceCount: 130, color: "ink" }),
+  comingSoon({ title: "Andrej Karpathy", creator: "@karpathy", domain: "AI", topics: ["deep learning", "llms", "neural nets"], tagline: "Neural networks, LLMs, and how modern AI actually works.", sourceCount: 175, color: "ink", trending: true }),
+  comingSoon({ title: "Priscilla Shirer", creator: "@priscillashirer", domain: "Christianity", topics: ["faith", "prayer", "scripture"], tagline: "Scripture, prayer, and living out faith day to day.", sourceCount: 100, color: "olive" }),
+  comingSoon({ title: "Peter Attia", creator: "@peterattiamd", domain: "Health", topics: ["longevity", "fitness", "medicine"], tagline: "Longevity, training, and the science of living better, longer.", sourceCount: 190, color: "sage" }),
+  comingSoon({ title: "Jay Shetty", creator: "@jayshetty", domain: "Mindfulness", topics: ["mindfulness", "purpose", "relationships"], tagline: "Mindfulness, purpose, and everyday wisdom.", sourceCount: 160, color: "clay" }),
+  comingSoon({ title: "Ramit Sethi", creator: "@ramit", domain: "Personal Finance", topics: ["money", "spending", "psychology"], tagline: "Spending, saving, and a rich life on your own terms.", sourceCount: 140, color: "oxblood" }),
+];
+
+/** The seeded "coming soon" placeholders, mixed into the feed alongside real
+ *  (clickable) notebooks. Returns fresh copies so callers can't mutate them. */
+export function getComingSoon(): ResolvedCreator[] {
+  return COMING_SOON.map((c) => ({ ...c }));
 }
 
 export async function getCreatorBySlug(slug: string): Promise<ResolvedCreator | null> {

@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { Chat } from "@/components/ui/chat/Chat";
 import { WaitlistModal } from "./WaitlistModal";
+
+// Once a visitor has been shown the beta prompt in this browser tab, don't pop
+// it again — even if they open another notebook. Cleared when the tab closes.
+const WAITLIST_PROMPTED_KEY = "poysis_waitlist_prompted";
 
 interface ChatScreenProps {
   notebookId: string;
@@ -28,6 +32,23 @@ export function ChatScreen({
   initialQuery,
 }: ChatScreenProps) {
   const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const promptedRef = useRef(false);
+
+  // After the visitor's first answer lands, invite them to the beta — once per
+  // browser tab session, and never if they've already been prompted. A short
+  // delay lets them read the reply before the modal takes over.
+  const handleAnswer = () => {
+    if (promptedRef.current) return;
+    promptedRef.current = true;
+    try {
+      if (sessionStorage.getItem(WAITLIST_PROMPTED_KEY)) return;
+      sessionStorage.setItem(WAITLIST_PROMPTED_KEY, "1");
+    } catch {
+      // sessionStorage can throw (private mode / blocked) — fall back to the
+      // in-memory promptedRef guard, which still prevents re-popping this mount.
+    }
+    setTimeout(() => setWaitlistOpen(true), 900);
+  };
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--ground)" }}>
@@ -98,6 +119,7 @@ export function ChatScreen({
               placeholder: "Ask a question…",
             }}
             initialQuery={initialQuery}
+            onAnswer={handleAnswer}
           />
         </div>
       </div>

@@ -109,11 +109,13 @@ interface ChatProps {
   renderMessageFooter?: (info: { id: string; userText: string; assistantText: string }) => React.ReactNode;
   /** Fires whenever the user submits a message, before onCommand runs — a lightweight "chat was used" signal. */
   onSend?: (text: string) => void;
+  /** Fires once each time an assistant reply finishes streaming — a "an answer just landed" signal (used to prompt the waitlist). */
+  onAnswer?: () => void;
   /** If set, sent automatically once on mount — used to jump straight into a conversation from a suggested question. */
   initialQuery?: string;
 }
 
-export function Chat({ config, className, onCommand, quickPrompts, renderMessageFooter, onSend, initialQuery }: ChatProps) {
+export function Chat({ config, className, onCommand, quickPrompts, renderMessageFooter, onSend, onAnswer, initialQuery }: ChatProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const modelDropRef = useRef<HTMLDivElement>(null);
 
@@ -248,6 +250,17 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages.length, messages[messages.length - 1]]);
+
+  // Fire onAnswer on the streaming→settled transition when the last message is
+  // an assistant reply — i.e. an answer just finished landing.
+  const wasStreamingRef = useRef(false);
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (wasStreamingRef.current && !isStreaming && last?.role === "assistant") {
+      onAnswer?.();
+    }
+    wasStreamingRef.current = isStreaming;
+  }, [isStreaming, messages, onAnswer]);
 
   return (
     <div
@@ -525,7 +538,9 @@ function AssistantBubble({
   streaming: boolean;
   theme: typeof THEME;
 }) {
-  const [sourcesOpen, setSourcesOpen] = useState(false);
+  // Citations are the whole point of a grounded answer — show them by default
+  // rather than hiding them behind a collapsed toggle.
+  const [sourcesOpen, setSourcesOpen] = useState(true);
   const hasSources = sources.length > 0;
 
   return (
@@ -670,15 +685,16 @@ function AssistantBubble({
         )}
 
         {hasSources && (
-          <div className="mt-1.5 ml-1">
+          <div className="mt-2.5 ml-1">
             <button
               onClick={() => setSourcesOpen((o) => !o)}
-              className="flex items-center gap-1 transition-colors"
+              className="flex items-center gap-1.5 transition-opacity hover:opacity-80"
               style={{
                 fontFamily: "JetBrains Mono, monospace",
                 fontSize: "10px",
-                letterSpacing: "0.06em",
-                color: theme.mutedText,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--accent)",
               }}
             >
               <span
@@ -686,61 +702,98 @@ function AssistantBubble({
                   display: "inline-block",
                   transition: "transform 180ms",
                   transform: sourcesOpen ? "rotate(90deg)" : "rotate(0deg)",
-                  color: theme.mutedText,
                 }}
               >
                 ▶
               </span>
-              {sources.length} source{sources.length !== 1 ? "s" : ""} cited
+              Sources
+              <span
+                className="flex items-center justify-center"
+                style={{
+                  minWidth: 16,
+                  height: 16,
+                  padding: "0 5px",
+                  borderRadius: 999,
+                  background: "var(--accent-soft)",
+                  color: "var(--accent)",
+                  fontSize: 9,
+                }}
+              >
+                {sources.length}
+              </span>
             </button>
 
             {sourcesOpen && (
-              <div className="mt-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 duration-200">
+              <div className="mt-2 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
                 {sources.map((src, i) => {
                   const label = src.title || src.file;
-                  return (
-                    <div
-                      key={i}
-                      className="flex items-center gap-2 px-3 py-1.5"
-                      style={{
-                        background: theme.sourceItemBg,
-                        border: `1px solid ${theme.sourceItemBorder}`,
-                        borderRadius: "8px",
-                        fontFamily: "DM Sans, sans-serif",
-                        fontSize: "11px",
-                        color: theme.mutedText,
-                      }}
-                    >
-                      <span style={{ opacity: 0.5 }}>{src.url ? "🔗" : "📄"}</span>
-                      {src.url ? (
-                        <a
-                          href={src.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="font-medium truncate hover:underline"
-                          style={{ color: "#3b82f6" }}
-                          title={src.url}
-                        >
-                          {label}
-                        </a>
-                      ) : (
-                        <span
-                          className="font-medium truncate"
-                          style={{ color: "#3b82f6" }}
-                        >
-                          {label}
-                        </span>
-                      )}
+                  const pct = Math.round(src.score * 100);
+                  // Whole row is the target (not just the label) so citations are
+                  // easy to tap; the ↗ arrow signals it opens the source.
+                  const inner = (
+                    <>
                       <span
-                        className="ml-auto flex-shrink-0"
+                        className="flex items-center justify-center shrink-0"
                         style={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: 6,
+                          background: "var(--accent-soft)",
+                          color: "var(--accent)",
                           fontFamily: "JetBrains Mono, monospace",
-                          fontSize: "9px",
-                          color: theme.mutedText,
+                          fontSize: 10,
+                          fontWeight: 600,
                         }}
                       >
-                        {Math.round(src.score * 100)}%
+                        {i + 1}
                       </span>
+                      <span
+                        className="flex-1 min-w-0 truncate font-medium"
+                        style={{ fontFamily: "DM Sans, sans-serif", fontSize: 12.5, color: "var(--ink)" }}
+                      >
+                        {label}
+                      </span>
+                      <span
+                        className="shrink-0"
+                        style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 9.5, color: "var(--faint)" }}
+                      >
+                        {pct}%
+                      </span>
+                      {src.url && (
+                        <svg
+                          width="13"
+                          height="13"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          className="shrink-0"
+                          style={{ color: "var(--accent)" }}
+                        >
+                          <line x1="7" y1="17" x2="17" y2="7" />
+                          <polyline points="8 7 17 7 17 16" />
+                        </svg>
+                      )}
+                    </>
+                  );
+                  return src.url ? (
+                    <a
+                      key={i}
+                      href={src.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={src.url}
+                      className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg no-underline transition-colors bg-[var(--card)] border border-[var(--rule)] hover:border-[var(--accent)] hover:bg-[var(--accent-soft)]"
+                    >
+                      {inner}
+                    </a>
+                  ) : (
+                    <div
+                      key={i}
+                      title={label}
+                      className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-[var(--card)] border border-[var(--rule)]"
+                    >
+                      {inner}
                     </div>
                   );
                 })}

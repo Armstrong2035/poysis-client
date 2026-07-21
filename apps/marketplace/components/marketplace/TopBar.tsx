@@ -67,9 +67,13 @@ export function TopBar() {
 
           <div style={{ flex: 1 }} />
 
-          <button className="mkt-ghost-btn" onClick={() => setWaitlistOpen(true)}>
-            For creators
-          </button>
+          <a
+            className="mkt-ghost-btn"
+            href="https://studio.poysis.com"
+            style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+          >
+            Build
+          </a>
           <button className="mkt-beta-btn" onClick={() => setWaitlistOpen(true)}>
             Join beta
           </button>

@@ -49,27 +49,21 @@ export async function getPublicNotebooks() {
 
 export interface WaitlistEntry {
   email: string;
-  /** The "reserve your username" hook — free text, not a real account yet. */
-  username: string;
-  /** Optional "who should we add next" request. */
+  /** Optional "who should we add next" request — free text. */
   nextCreator?: string;
   /** Where the signup came from (e.g. a notebook slug or "marketplace"). */
   source?: string;
 }
 
 /**
- * Adds someone to the waitlist (public — no auth required). Requires a real
- * email so the beta invite is actually reachable; username/nextCreator are
- * the marketplace's conversion-copy fields, kept free text.
+ * Adds someone to the waitlist (public — no auth required). Only a real email
+ * is required so the beta invite is reachable; nextCreator ("whose knowledge
+ * would you love to talk to?") is optional conversion copy, kept free text.
  */
-export async function joinWaitlist({ email, username, nextCreator, source }: WaitlistEntry): Promise<{ error: string } | { ok: true }> {
+export async function joinWaitlist({ email, nextCreator, source }: WaitlistEntry): Promise<{ error: string } | { ok: true }> {
   const cleanEmail = email.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
     return { error: "Enter a valid email address." };
-  }
-  const cleanUsername = username.trim();
-  if (!cleanUsername) {
-    return { error: "Choose a username." };
   }
 
   const supabase = createPublicClient(
@@ -79,7 +73,6 @@ export async function joinWaitlist({ email, username, nextCreator, source }: Wai
 
   const { error } = await supabase.from("waitlist").insert({
     email: cleanEmail,
-    username: cleanUsername,
     requested_creator: nextCreator?.trim() || null,
     source: source ?? null,
   });

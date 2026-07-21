@@ -58,8 +58,6 @@ export function WaitlistModal({ open, onClose }: WaitlistModalProps) {
           variant="modal"
           source="marketplace"
           eyebrow="Join the Beta"
-          headline="Reserve your place."
-          description="Get early access, follow new notebook drops, and tell us whose channel you want us to index next."
         />
       </div>
     </div>

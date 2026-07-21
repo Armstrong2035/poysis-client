@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { joinWaitlist } from "@/lib/actions";
 
 interface WaitlistCaptureProps {
   variant: "modal" | "inline";
   source?: string;
   eyebrow?: string;
-  headline: string;
-  description: string;
+  headline?: string;
+  description?: string;
   onDone?: () => void;
 }
 
@@ -45,8 +45,28 @@ const THEME = {
 
 export function WaitlistCapture({ variant, source, eyebrow, headline, description, onDone }: WaitlistCaptureProps) {
   const t = THEME[variant];
+
+  const labelStyle: CSSProperties = {
+    display: "block",
+    fontFamily: "'Albert Sans', sans-serif",
+    fontSize: 12.5,
+    fontWeight: 600,
+    color: t.body,
+    marginBottom: 6,
+  };
+  const inputStyle: CSSProperties = {
+    width: "100%",
+    border: `1px solid ${t.inputBorder}`,
+    background: t.inputBg,
+    borderRadius: 12,
+    padding: "13px 15px",
+    fontFamily: "'Albert Sans', sans-serif",
+    fontSize: 14.5,
+    color: t.inputText,
+    outline: "none",
+  };
+
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
   const [nextCreator, setNextCreator] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [error, setError] = useState("");
@@ -59,7 +79,7 @@ export function WaitlistCapture({ variant, source, eyebrow, headline, descriptio
     e.preventDefault();
     if (status === "loading") return;
     setStatus("loading");
-    const result = await joinWaitlist({ email, username, nextCreator, source });
+    const result = await joinWaitlist({ email, nextCreator, source });
     if ("error" in result) {
       setStatus("error");
       setError(result.error);
@@ -103,66 +123,29 @@ export function WaitlistCapture({ variant, source, eyebrow, headline, descriptio
           {eyebrow}
         </div>
       )}
-      <div style={{ fontFamily: "'Source Serif 4', serif", fontWeight: 600, fontSize: 24, color: t.headline, marginBottom: 8, letterSpacing: "-0.4px" }}>
-        {headline}
-      </div>
-      <p style={{ fontSize: 14, color: t.body, lineHeight: 1.5, margin: "0 0 18px" }}>{description}</p>
+      {headline && (
+        <div style={{ fontFamily: "'Source Serif 4', serif", fontWeight: 600, fontSize: 24, color: t.headline, marginBottom: 8, letterSpacing: "-0.4px" }}>
+          {headline}
+        </div>
+      )}
+      {description && <p style={{ fontSize: 14, color: t.body, lineHeight: 1.5, margin: "0 0 18px" }}>{description}</p>}
 
-      <input
-        type="text"
-        required
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder="Choose a username"
-        style={{
-          width: "100%",
-          border: `1px solid ${t.inputBorder}`,
-          background: t.inputBg,
-          borderRadius: 12,
-          padding: "13px 15px",
-          fontFamily: "'Albert Sans', sans-serif",
-          fontSize: 14.5,
-          color: t.inputText,
-          outline: "none",
-          marginBottom: 10,
-        }}
-      />
+      <label style={labelStyle}>Email</label>
       <input
         type="email"
         required
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        placeholder="you@email.com"
-        style={{
-          width: "100%",
-          border: `1px solid ${t.inputBorder}`,
-          background: t.inputBg,
-          borderRadius: 12,
-          padding: "13px 15px",
-          fontFamily: "'Albert Sans', sans-serif",
-          fontSize: 14.5,
-          color: t.inputText,
-          outline: "none",
-          marginBottom: 10,
-        }}
+        placeholder="you@example.com"
+        style={{ ...inputStyle, marginBottom: 14 }}
       />
+      <label style={labelStyle}>Whose knowledge would you love to talk to?</label>
       <input
         type="text"
         value={nextCreator}
         onChange={(e) => setNextCreator(e.target.value)}
-        placeholder="Who should we add next?"
-        style={{
-          width: "100%",
-          border: `1px solid ${t.inputBorder}`,
-          background: t.inputBg,
-          borderRadius: 12,
-          padding: "13px 15px",
-          fontFamily: "'Albert Sans', sans-serif",
-          fontSize: 14.5,
-          color: t.inputText,
-          outline: "none",
-          marginBottom: 14,
-        }}
+        placeholder="Paul Graham as an example"
+        style={{ ...inputStyle, marginBottom: 14 }}
       />
       {status === "error" && (
         <div style={{ fontSize: 12.5, color: variant === "inline" ? "#f3b4ac" : "#C0392B", marginBottom: 10 }}>{error}</div>

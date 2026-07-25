@@ -39,6 +39,15 @@ export async function login(formData: FormData) {
     return redirect("/login?error=" + encodeURIComponent(error.message));
   }
 
+  // Backfill a workspace for accounts that never got one — e.g. created before
+  // signup provisioned it, or via a path that skipped ensureWorkspace. Without
+  // this every workspace-scoped API route 404s ("Workspace not found"), and
+  // password sign-in (unlike signup/callback) had no other place to create it.
+  // Idempotent: a no-op when the user already has a workspace.
+  if (data.user) {
+    await ensureWorkspace(supabase, data.user.id);
+  }
+
   revalidatePath("/", "layout");
   // Land the user in their chosen app; non-entitled users always get Creator.
   return redirect(landingPathForUser(data.user));

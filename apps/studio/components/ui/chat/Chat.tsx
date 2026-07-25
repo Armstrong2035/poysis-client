@@ -7,6 +7,11 @@ import type { ChatConfig, ModelTier } from "../../../types/canvas";
 import { MarkdownContent } from "./MarkdownContent";
 
 const SENTINEL = "\n\n__SOURCES__";
+// Retrieval replies self-identify with a leading __MODE__ marker — the very first
+// bytes of the stream, with NO "\n\n" prefix — and carry ranked sources but no
+// written answer. Synthesis replies (the original behavior) stream prose first,
+// then the __SOURCES__ block.
+const MODE_SENTINEL = "__MODE__";
 
 const TIERS: { id: ModelTier; label: string; hint: string }[] = [
   { id: "quick",    label: "Quick",    hint: "Fast · Default" },
@@ -43,6 +48,32 @@ function extractSources(content: string): CitedSource[] {
   } catch {
     return [];
   }
+}
+
+type ChatMode = "retrieval" | "synthesis";
+
+type ParsedChat = {
+  mode: ChatMode;
+  answer: string; // "" in retrieval mode
+  sources: CitedSource[];
+};
+
+// One place that decides how to render a reply. A retrieval reply leads with
+// __MODE__ and has no prose — we must never print that marker as answer text and
+// must tolerate it arriving split across chunks. Everything after the leading
+// marker (the __SOURCES__ block) is shared with synthesis, so extractSources
+// handles both shapes unchanged.
+function parseChat(content: string): ParsedChat {
+  const trimmed = content.trimStart();
+  const retrieval = trimmed.startsWith(MODE_SENTINEL);
+  // While the leading __MODE__ is still streaming in (e.g. "__MO"), suppress it
+  // too so a partial marker never flashes as answer text before we know the mode.
+  const partialMode = !retrieval && trimmed.length > 0 && MODE_SENTINEL.startsWith(trimmed);
+  return {
+    mode: retrieval ? "retrieval" : "synthesis",
+    answer: retrieval || partialMode ? "" : displayContent(content),
+    sources: extractSources(content),
+  };
 }
 
 function getMessageText(parts: any[]): string {
@@ -120,7 +151,9 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
   const configRef = useRef(config);
   configRef.current = config;
 
-  const isDark = config.mode === "dashboard";
+  // `appearance` wins when set; otherwise fall back to the legacy mode-derived
+  // palette so existing dashboard/marketplace callers are untouched.
+  const isDark = config.appearance ? config.appearance === "dark" : config.mode === "dashboard";
   const theme = isDark ? DARK : LIGHT;
   const primaryColor = config.branding?.primaryColor ?? (isDark ? "#E8A547" : "#000000");
   const placeholder = config.placeholder ?? "Ask a question…";
@@ -274,21 +307,22 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
             return <UserBubble key={msg.id} content={text} primaryColor={primaryColor} />;
           }
           const prevUser = messages.slice(0, i).reverse().find((m) => m.role === "user");
-          const assistantText = displayContent(text);
+          const parsed = parseChat(text);
           // Only the last assistant message can still be receiving chunks.
           const isLast = i === messages.length - 1;
           return (
             <div key={msg.id}>
               <AssistantBubble
-                content={assistantText}
-                sources={extractSources(text)}
+                content={parsed.answer}
+                sources={parsed.sources}
+                mode={parsed.mode}
                 streaming={isLast && status === "streaming"}
                 theme={theme}
               />
               {renderMessageFooter?.({
                 id: msg.id,
                 userText: prevUser ? getMessageText(prevUser.parts as any[]) : "",
-                assistantText,
+                assistantText: parsed.answer,
               })}
             </div>
           );
@@ -500,41 +534,66 @@ function UserBubble({
 function AssistantBubble({
   content,
   sources,
+  mode,
   streaming,
   theme,
 }: {
   content: string;
   sources: CitedSource[];
+  mode: ChatMode;
   streaming: boolean;
   theme: typeof DARK;
 }) {
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const hasSources = sources.length > 0;
+  // Retrieval replies have no prose — go straight to the source list. Empty
+  // retrieval results get an explicit "no results" state instead of a blank card.
+  const isRetrieval = mode === "retrieval";
 
   return (
     <div className="flex justify-start">
       <div className="max-w-[90%]">
-        <div
-          className="text-sm px-4 py-3 leading-relaxed"
-          style={{
-            background: theme.assistantBubbleBg,
-            border: `1px solid ${theme.assistantBubbleBorder}`,
-            borderRadius: "12px",
-            borderBottomLeftRadius: "3px",
-            color: theme.assistantText,
-            fontFamily: "DM Sans, sans-serif",
-            fontSize: "13px",
-            fontWeight: 300,
-          }}
-        >
-          <MarkdownContent content={content} linkColor="#3b82f6" />
-          {streaming && (
-            <span
-              className="inline-block w-1.5 h-4 ml-0.5 animate-pulse align-middle rounded-sm"
-              style={{ background: theme.dotColor }}
-            />
-          )}
-        </div>
+        {content.trim() && (
+          <div
+            className="text-sm px-4 py-3 leading-relaxed"
+            style={{
+              background: theme.assistantBubbleBg,
+              border: `1px solid ${theme.assistantBubbleBorder}`,
+              borderRadius: "12px",
+              borderBottomLeftRadius: "3px",
+              color: theme.assistantText,
+              fontFamily: "DM Sans, sans-serif",
+              fontSize: "13px",
+              fontWeight: 300,
+            }}
+          >
+            <MarkdownContent content={content} linkColor="#3b82f6" />
+            {streaming && (
+              <span
+                className="inline-block w-1.5 h-4 ml-0.5 animate-pulse align-middle rounded-sm"
+                style={{ background: theme.dotColor }}
+              />
+            )}
+          </div>
+        )}
+
+        {isRetrieval && !hasSources && (
+          <div
+            className="text-sm px-4 py-3 leading-relaxed"
+            style={{
+              background: theme.assistantBubbleBg,
+              border: `1px solid ${theme.assistantBubbleBorder}`,
+              borderRadius: "12px",
+              borderBottomLeftRadius: "3px",
+              color: theme.mutedText,
+              fontFamily: "DM Sans, sans-serif",
+              fontSize: "13px",
+              fontWeight: 300,
+            }}
+          >
+            No results found.
+          </div>
+        )}
 
         {hasSources && (
           <div className="mt-1.5 ml-1">

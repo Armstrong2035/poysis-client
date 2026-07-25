@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { font-family: 'Hanken Grotesk', system-ui, sans-serif; background: #ECE7DB; color: #23261F; -webkit-font-smoothing: antialiased; }
+  a { color: #3C4A3A; text-decoration: none; }
+  a:hover { color: #2F3A2E; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: rgba(35,38,31,.16); border-radius: 8px; }
+</style>
+</helmet>
+
+<div style="padding: 64px 72px 120px; min-width: 4180px;">
+
+  <section style="display:flex; flex-direction:column; gap:44px;">
+    <div style="max-width:900px; display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <img src="assets/poysis-icon.svg" alt="" style="width:26px; height:26px;">
+        <span style="font-size:13px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:#3C4A3A;">Poysis Studio · one goal</span>
+      </div>
+      <h1 style="font-family:'Source Serif 4', Georgia, serif; font-weight:600; font-size:52px; line-height:1.05; letter-spacing:-.02em; margin:0; color:#23261F;">How fast can a person build <em style="font-style:italic; color:#3C4A3A;">and</em> publish a notebook?</h1>
+      <p style="margin:0; font-size:18px; line-height:1.5; color:#5B5D52; max-width:720px; text-wrap:pretty;">Three takes on the same arc — <strong style="color:#23261F; font-weight:600;">empty → sources → generate → publish</strong> — each optimizing a different feeling of speed. Borrowing NotebookLM's clean panels and source-grounded answers, rebuilt around getting to a shareable notebook in under a minute.</p>
+      <div style="display:flex; gap:20px; margin-top:6px; font-size:14px; color:#6B6D62;">
+        <span>Pan &amp; zoom the canvas.</span>
+        <span>Reference options as <a href="#1a">1a</a> · <a href="#1b">1b</a> · <a href="#1c">1c</a>.</span>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:48px; align-items:flex-start; flex-wrap:nowrap;">
+
+      <!-- ============ 1a — SINGLE CANVAS ============ -->
+      <div id="1a" style="display:flex; flex-direction:column; gap:18px; width:1280px; flex:0 0 auto;">
+        <div style="display:flex; align-items:baseline; gap:14px;">
+          <span style="font-family:'Source Serif 4',serif; font-size:15px; font-weight:700; color:#fff; background:#3C4A3A; border-radius:999px; padding:4px 12px;">1a</span>
+          <h2 style="font-family:'Source Serif 4',serif; font-size:26px; font-weight:600; margin:0; color:#23261F;">The single canvas</h2>
+          <span style="font-size:15px; color:#6B6D62;">One box. Paste anything, start typing, drop a file — you're already in a notebook.</span>
+        </div>
+
+        <div style="width:1280px; height:812px; background:#FBF9F3; border-radius:16px; border:1px solid rgba(35,38,31,.12); box-shadow:0 30px 60px -30px rgba(35,38,31,.35); overflow:hidden; display:flex; flex-direction:column;">
+          <!-- chrome -->
+          <div style="height:60px; flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:0 24px; border-bottom:1px solid rgba(35,38,31,.08);">
+            <img src="assets/poysis-logo-full.svg" alt="poysis" style="height:26px;">
+            <div style="display:flex; align-items:center; gap:18px;">
+              <span style="font-size:14px; color:#6B6D62;">Feedback</span>
+              <div style="width:32px; height:32px; border-radius:999px; background:#3C4A3A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600;">JR</div>
+            </div>
+          </div>
+          <!-- body -->
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 40px; position:relative;">
+            <div style="width:100%; max-width:760px; display:flex; flex-direction:column; gap:28px;">
+              <div style="text-align:center; display:flex; flex-direction:column; gap:10px;">
+                <h3 style="font-family:'Source Serif 4',serif; font-size:44px; font-weight:600; letter-spacing:-.02em; margin:0; color:#23261F;">Start a notebook.</h3>
+                <p style="margin:0; font-size:17px; color:#6B6D62;">Give it something to work with. Publish when it's ready — usually under a minute.</p>
+              </div>
+
+              <div style="background:#fff; border:1.5px solid rgba(35,38,31,.14); border-radius:18px; box-shadow:0 12px 30px -18px rgba(35,38,31,.4); padding:22px 22px 16px; display:flex; flex-direction:column; gap:18px;">
+                <div style="font-size:19px; color:#9A9C90; font-family:'Source Serif 4',serif;">Paste a link, drop files, or just start typing…</div>
+                <div style="height:1px; background:rgba(35,38,31,.08);"></div>
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                  <div style="display:flex; gap:10px;">
+                    <div style="display:flex; align-items:center; gap:7px; font-size:14px; font-weight:500; color:#3C4A3A; background:#EBF0E5; border:1px solid #DCE4D2; border-radius:999px; padding:8px 14px;">↑ Upload files</div>
+                    <div style="display:flex; align-items:center; gap:7px; font-size:14px; font-weight:500; color:#3C4A3A; background:#EBF0E5; border:1px solid #DCE4D2; border-radius:999px; padding:8px 14px;">◧ Paste URL</div>
+                    <div style="display:flex; align-items:center; gap:7px; font-size:14px; font-weight:500; color:#3C4A3A; background:#EBF0E5; border:1px solid #DCE4D2; border-radius:999px; padding:8px 14px;">△ From Drive</div>
+                  </div>
+                  <div style="width:44px; height:44px; border-radius:12px; background:#3C4A3A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:20px;">→</div>
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:14px; justify-content:center; color:#8A8C80; font-size:14px;">
+                <div style="height:1px; width:64px; background:rgba(35,38,31,.12);"></div>
+                or pick up where you left off
+                <div style="height:1px; width:64px; background:rgba(35,38,31,.12);"></div>
+              </div>
+
+              <div style="display:flex; gap:14px;">
+                <div style="flex:1; background:#F4F1E8; border:1px solid rgba(35,38,31,.08); border-radius:12px; padding:14px 16px; display:flex; flex-direction:column; gap:6px;">
+                  <div style="font-family:'Source Serif 4',serif; font-size:16px; font-weight:600; color:#23261F;">The Four-Day Week</div>
+                  <div style="font-size:13px; color:#8A8C80;">5 sources · edited 2h ago · <span style="color:#3C4A3A;">Published</span></div>
+                </div>
+                <div style="flex:1; background:#F4F1E8; border:1px solid rgba(35,38,31,.08); border-radius:12px; padding:14px 16px; display:flex; flex-direction:column; gap:6px;">
+                  <div style="font-family:'Source Serif 4',serif; font-size:16px; font-weight:600; color:#23261F;">Regenerative Coffee Brief</div>
+                  <div style="font-size:13px; color:#8A8C80;">9 sources · edited yesterday · Draft</div>
+                </div>
+                <div style="flex:1; background:#F4F1E8; border:1px solid rgba(35,38,31,.08); border-radius:12px; padding:14px 16px; display:flex; flex-direction:column; gap:6px;">
+                  <div style="font-family:'Source Serif 4',serif; font-size:16px; font-weight:600; color:#23261F;">Q3 Retro Notes</div>
+                  <div style="font-size:13px; color:#8A8C80;">3 sources · last week · Draft</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 1b — THE STUDIO (3-panel) ============ -->
+      <div id="1b" style="display:flex; flex-direction:column; gap:18px; width:1280px; flex:0 0 auto;">
+        <div style="display:flex; align-items:baseline; gap:14px;">
+          <span style="font-family:'Source Serif 4',serif; font-size:15px; font-weight:700; color:#fff; background:#3C4A3A; border-radius:999px; padding:4px 12px;">1b</span>
+          <h2 style="font-family:'Source Serif 4',serif; font-size:26px; font-weight:600; margin:0; color:#23261F;">The studio</h2>
+          <span style="font-size:15px; color:#6B6D62;">Sources · notebook &amp; chat · outputs. The working state, with Publish always in reach.</span>
+        </div>
+
+        <div style="width:1280px; height:812px; background:#FBF9F3; border-radius:16px; border:1px solid rgba(35,38,31,.12); box-shadow:0 30px 60px -30px rgba(35,38,31,.35); overflow:hidden; display:flex; flex-direction:column;">
+          <!-- chrome -->
+          <div style="height:60px; flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:0 20px; border-bottom:1px solid rgba(35,38,31,.08);">
+            <div style="display:flex; align-items:center; gap:16px;">
+              <img src="assets/poysis-icon.svg" alt="" style="width:24px; height:24px;">
+              <div style="width:1px; height:24px; background:rgba(35,38,31,.12);"></div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-family:'Source Serif 4',serif; font-size:18px; font-weight:600; color:#23261F;">The Four-Day Week</span>
+                <span style="font-size:12px; color:#8A8C80;">✎</span>
+              </div>
+              <span style="font-size:12px; color:#8A8C80; background:#F0EDE3; border-radius:6px; padding:3px 8px;">Auto-saved</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="display:flex;">
+                <div style="width:30px; height:30px; border-radius:999px; background:#B9762F; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; border:2px solid #FBF9F3;">AK</div>
+                <div style="width:30px; height:30px; border-radius:999px; background:#3C4A3A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; border:2px solid #FBF9F3; margin-left:-8px;">JR</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:7px; font-size:14px; font-weight:600; color:#fff; background:#3C4A3A; border-radius:10px; padding:9px 18px;">Publish ↗</div>
+            </div>
+          </div>
+          <!-- 3 panels -->
+          <div style="flex:1; display:flex; min-height:0;">
+            <!-- sources -->
+            <div style="width:298px; flex:0 0 auto; border-right:1px solid rgba(35,38,31,.08); display:flex; flex-direction:column; background:#F7F4EC;">
+              <div style="padding:16px 18px 12px; display:flex; align-items:center; justify-content:space-between;">
+                <span style="font-size:13px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#6B6D62;">Sources</span>
+                <span style="font-size:13px; color:#3C4A3A; font-weight:600;">+ Add</span>
+              </div>
+              <div style="padding:0 14px; display:flex; flex-direction:column; gap:8px; overflow:hidden;">
+                <div style="display:flex; gap:11px; align-items:flex-start; background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:10px; padding:11px 12px;">
+                  <div style="width:26px; height:26px; flex:0 0 auto; border-radius:6px; background:#E7413622; color:#B9422F; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;">PDF</div>
+                  <div style="min-width:0;"><div style="font-size:13.5px; font-weight:500; color:#23261F; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">4dayweek_global_trial.pdf</div><div style="font-size:11.5px; color:#9A9C90;">Autonomy Institute · 38 pp</div></div>
+                </div>
+                <div style="display:flex; gap:11px; align-items:flex-start; background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:10px; padding:11px 12px;">
+                  <div style="width:26px; height:26px; flex:0 0 auto; border-radius:6px; background:#3C4A3A18; color:#3C4A3A; display:flex; align-items:center; justify-content:center; font-size:13px;">◧</div>
+                  <div style="min-width:0;"><div style="font-size:13.5px; font-weight:500; color:#23261F; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Iceland's 2015–19 study</div><div style="font-size:11.5px; color:#9A9C90;">bbc.com · article</div></div>
+                </div>
+                <div style="display:flex; gap:11px; align-items:flex-start; background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:10px; padding:11px 12px;">
+                  <div style="width:26px; height:26px; flex:0 0 auto; border-radius:6px; background:#B9762F22; color:#B9762F; display:flex; align-items:center; justify-content:center; font-size:13px;">▤</div>
+                  <div style="min-width:0;"><div style="font-size:13.5px; font-weight:500; color:#23261F; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Productivity_metrics.xlsx</div><div style="font-size:11.5px; color:#9A9C90;">spreadsheet · 6 sheets</div></div>
+                </div>
+                <div style="display:flex; gap:11px; align-items:flex-start; background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:10px; padding:11px 12px;">
+                  <div style="width:26px; height:26px; flex:0 0 auto; border-radius:6px; background:#3C4A3A18; color:#3C4A3A; display:flex; align-items:center; justify-content:center; font-size:13px;">✎</div>
+                  <div style="min-width:0;"><div style="font-size:13.5px; font-weight:500; color:#23261F; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">My interview notes</div><div style="font-size:11.5px; color:#9A9C90;">note · pasted text</div></div>
+                </div>
+                <div style="display:flex; gap:11px; align-items:center; border:1.5px dashed rgba(35,38,31,.18); border-radius:10px; padding:13px 12px; color:#8A8C80; font-size:13px; justify-content:center;">Drop a file or paste a link</div>
+              </div>
+              <div style="margin-top:auto; padding:14px 18px; border-top:1px solid rgba(35,38,31,.08); font-size:12px; color:#9A9C90;">4 sources · grounding every answer</div>
+            </div>
+
+            <!-- center notebook + chat -->
+            <div style="flex:1; min-width:0; display:flex; flex-direction:column; background:#FBF9F3;">
+              <div style="flex:1; overflow:hidden; padding:30px 40px 12px; display:flex; flex-direction:column; gap:20px;">
+                <div>
+                  <div style="font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#B9762F; margin-bottom:8px;">Notebook overview · auto-generated</div>
+                  <h3 style="font-family:'Source Serif 4',serif; font-size:28px; font-weight:600; margin:0 0 10px; letter-spacing:-.01em; color:#23261F;">The Four-Day Week</h3>
+                  <p style="margin:0; font-size:15.5px; line-height:1.6; color:#3A3C33; text-wrap:pretty;">Across the trials in your sources, a reduced-hours week held output roughly flat while sharply improving wellbeing and retention. The strongest results came from teams that <span style="background:#EBF0E5; border-bottom:1.5px solid #3C4A3A;">redesigned meetings</span> rather than simply compressing five days into four.</p>
+                </div>
+                <div style="display:flex; gap:12px;">
+                  <div style="flex:1; background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:12px; padding:14px 16px;"><div style="font-family:'Source Serif 4',serif; font-size:22px; font-weight:600; color:#3C4A3A;">~0%</div><div style="font-size:12.5px; color:#6B6D62; margin-top:2px;">avg. output change</div></div>
+                  <div style="flex:1; background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:12px; padding:14px 16px;"><div style="font-family:'Source Serif 4',serif; font-size:22px; font-weight:600; color:#3C4A3A;">+62%</div><div style="font-size:12.5px; color:#6B6D62; margin-top:2px;">reported wellbeing</div></div>
+                  <div style="flex:1; background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:12px; padding:14px 16px;"><div style="font-family:'Source Serif 4',serif; font-size:22px; font-weight:600; color:#3C4A3A;">57 → 71</div><div style="font-size:12.5px; color:#6B6D62; margin-top:2px;">eNPS after 6 mo</div></div>
+                </div>
+                <!-- chat exchange -->
+                <div style="display:flex; flex-direction:column; gap:14px; margin-top:2px;">
+                  <div style="align-self:flex-end; max-width:74%; background:#3C4A3A; color:#F3F1E8; border-radius:14px 14px 4px 14px; padding:11px 15px; font-size:14.5px; line-height:1.5;">Which industries saw output actually drop?</div>
+                  <div style="align-self:flex-start; max-width:84%; background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:14px 14px 14px 4px; padding:13px 16px; font-size:14.5px; line-height:1.6; color:#3A3C33;">Only client-services firms with hard billable-hour targets reported a measurable dip (around 4–7%). Manufacturing and software teams held steady.
+                    <div style="display:flex; gap:6px; margin-top:9px;">
+                      <span style="font-size:11px; font-weight:600; color:#3C4A3A; background:#EBF0E5; border-radius:6px; padding:2px 7px;">◧ Iceland study</span>
+                      <span style="font-size:11px; font-weight:600; color:#3C4A3A; background:#EBF0E5; border-radius:6px; padding:2px 7px;">PDF p.24</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- ask bar -->
+              <div style="flex:0 0 auto; padding:14px 40px 22px;">
+                <div style="background:#fff; border:1.5px solid rgba(35,38,31,.14); border-radius:14px; box-shadow:0 8px 20px -14px rgba(35,38,31,.4); padding:12px 14px 12px 18px; display:flex; align-items:center; gap:12px;">
+                  <span style="font-size:15px; color:#9A9C90; flex:1;">Ask anything about your sources…</span>
+                  <span style="font-size:12px; color:#8A8C80; background:#F0EDE3; border-radius:6px; padding:4px 8px;">4 sources</span>
+                  <div style="width:36px; height:36px; border-radius:10px; background:#3C4A3A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px;">↑</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- right studio -->
+            <div style="width:312px; flex:0 0 auto; border-left:1px solid rgba(35,38,31,.08); display:flex; flex-direction:column; background:#F7F4EC;">
+              <div style="padding:16px 18px 12px;"><span style="font-size:13px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#6B6D62;">Studio</span></div>
+              <div style="padding:0 14px; display:flex; flex-direction:column; gap:10px;">
+                <div style="background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:12px; padding:13px 14px; display:flex; gap:12px; align-items:center;">
+                  <div style="width:34px; height:34px; border-radius:9px; background:#3C4A3A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px;">♪</div>
+                  <div style="flex:1;"><div style="font-size:14px; font-weight:600; color:#23261F;">Audio overview</div><div style="font-size:12px; color:#9A9C90;">8-min hosted discussion</div></div>
+                  <span style="font-size:12px; color:#3C4A3A; font-weight:600;">Generate</span>
+                </div>
+                <div style="background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:12px; padding:13px 14px; display:flex; gap:12px; align-items:center;">
+                  <div style="width:34px; height:34px; border-radius:9px; background:#B9762F; color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px;">▤</div>
+                  <div style="flex:1;"><div style="font-size:14px; font-weight:600; color:#23261F;">Executive brief</div><div style="font-size:12px; color:#9A9C90;">1-page, cited</div></div>
+                  <span style="font-size:12px; color:#3C4A3A; font-weight:600;">Generate</span>
+                </div>
+                <div style="background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:12px; padding:13px 14px; display:flex; gap:12px; align-items:center;">
+                  <div style="width:34px; height:34px; border-radius:9px; background:#5A6B4E; color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px;">◷</div>
+                  <div style="flex:1;"><div style="font-size:14px; font-weight:600; color:#23261F;">Timeline</div><div style="font-size:12px; color:#9A9C90;">trials, 2015 → 2024</div></div>
+                  <span style="font-size:12px; color:#3C4A3A; font-weight:600;">Generate</span>
+                </div>
+              </div>
+              <!-- publish card -->
+              <div style="margin:16px 14px 0; background:#3C4A3A; border-radius:14px; padding:16px; color:#EDEFE7;">
+                <div style="font-family:'Source Serif 4',serif; font-size:17px; font-weight:600; color:#fff; margin-bottom:4px;">Ready to publish</div>
+                <div style="font-size:12.5px; color:#C3CBBB; line-height:1.5; margin-bottom:12px;">Turn this notebook into a public page, an embed, or export it.</div>
+                <div style="display:flex; align-items:center; justify-content:space-between; background:#33402F; border-radius:9px; padding:9px 12px; margin-bottom:8px;">
+                  <span style="font-size:13px; color:#E4E8DD;">Anyone with the link</span>
+                  <div style="width:34px; height:20px; background:#8FA57E; border-radius:999px; position:relative;"><div style="position:absolute; top:2px; right:2px; width:16px; height:16px; background:#fff; border-radius:999px;"></div></div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                  <div style="flex:1; text-align:center; font-size:13px; font-weight:600; color:#3C4A3A; background:#EAEFE2; border-radius:9px; padding:9px;">Copy link</div>
+                  <div style="text-align:center; font-size:13px; font-weight:600; color:#EAEFE2; border:1px solid #6E7D62; border-radius:9px; padding:9px 12px;">Embed</div>
+                  <div style="text-align:center; font-size:13px; font-weight:600; color:#EAEFE2; border:1px solid #6E7D62; border-radius:9px; padding:9px 12px;">↓ PDF</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 1c — SOURCE → GENERATE → PUBLISH RIBBON ============ -->
+      <div id="1c" style="display:flex; flex-direction:column; gap:18px; width:1280px; flex:0 0 auto;">
+        <div style="display:flex; align-items:baseline; gap:14px;">
+          <span style="font-family:'Source Serif 4',serif; font-size:15px; font-weight:700; color:#fff; background:#3C4A3A; border-radius:999px; padding:4px 12px;">1c</span>
+          <h2 style="font-family:'Source Serif 4',serif; font-size:26px; font-weight:600; margin:0; color:#23261F;">The publish ribbon</h2>
+          <span style="font-size:15px; color:#6B6D62;">Guided sources → generate → publish. Fewest decisions; ship is always one click away.</span>
+        </div>
+
+        <div style="width:1280px; height:812px; background:#FBF9F3; border-radius:16px; border:1px solid rgba(35,38,31,.12); box-shadow:0 30px 60px -30px rgba(35,38,31,.35); overflow:hidden; display:flex; flex-direction:column;">
+          <!-- chrome + ribbon -->
+          <div style="flex:0 0 auto; border-bottom:1px solid rgba(35,38,31,.08);">
+            <div style="height:58px; display:flex; align-items:center; justify-content:space-between; padding:0 24px;">
+              <img src="assets/poysis-logo-full.svg" alt="poysis" style="height:24px;">
+              <div style="display:flex; align-items:center; gap:14px;">
+                <span style="font-size:13px; color:#8A8C80;">Draft · saves as you go</span>
+                <div style="display:flex; align-items:center; gap:7px; font-size:14px; font-weight:600; color:#fff; background:#3C4A3A; border-radius:10px; padding:9px 18px;">Publish now ↗</div>
+              </div>
+            </div>
+            <!-- stepper -->
+            <div style="display:flex; align-items:center; gap:0; padding:0 24px 16px;">
+              <div style="display:flex; align-items:center; gap:10px; padding-right:22px;">
+                <div style="width:26px; height:26px; border-radius:999px; background:#3C4A3A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px;">✓</div>
+                <span style="font-size:14.5px; font-weight:600; color:#23261F;">Sources</span>
+                <span style="font-size:12.5px; color:#9A9C90;">4 added</span>
+              </div>
+              <div style="flex:1; height:2px; background:linear-gradient(90deg,#3C4A3A,#C9CEBF);"></div>
+              <div style="display:flex; align-items:center; gap:10px; padding:0 22px;">
+                <div style="width:26px; height:26px; border-radius:999px; background:#3C4A3A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; box-shadow:0 0 0 4px #3C4A3A22;">2</div>
+                <span style="font-size:14.5px; font-weight:700; color:#23261F;">Generate</span>
+                <span style="font-size:12.5px; color:#B9762F; font-weight:600;">reviewing</span>
+              </div>
+              <div style="flex:1; height:2px; background:rgba(35,38,31,.12);"></div>
+              <div style="display:flex; align-items:center; gap:10px; padding-left:22px;">
+                <div style="width:26px; height:26px; border-radius:999px; background:#fff; border:1.5px solid rgba(35,38,31,.2); color:#9A9C90; display:flex; align-items:center; justify-content:center; font-size:13px;">3</div>
+                <span style="font-size:14.5px; font-weight:600; color:#9A9C90;">Publish</span>
+              </div>
+            </div>
+          </div>
+          <!-- body: mini sources + generate cards -->
+          <div style="flex:1; display:flex; min-height:0;">
+            <div style="width:250px; flex:0 0 auto; border-right:1px solid rgba(35,38,31,.08); background:#F7F4EC; padding:20px 18px; display:flex; flex-direction:column; gap:12px;">
+              <span style="font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#6B6D62;">Building from</span>
+              <div style="display:flex; flex-direction:column; gap:7px;">
+                <div style="display:flex; gap:9px; align-items:center; font-size:13px; color:#3A3C33;"><span style="width:20px;height:20px;border-radius:5px;background:#B9422F22;color:#B9422F;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">PDF</span> Global trial report</div>
+                <div style="display:flex; gap:9px; align-items:center; font-size:13px; color:#3A3C33;"><span style="width:20px;height:20px;border-radius:5px;background:#3C4A3A18;color:#3C4A3A;display:flex;align-items:center;justify-content:center;font-size:11px;">◧</span> Iceland study</div>
+                <div style="display:flex; gap:9px; align-items:center; font-size:13px; color:#3A3C33;"><span style="width:20px;height:20px;border-radius:5px;background:#B9762F22;color:#B9762F;display:flex;align-items:center;justify-content:center;font-size:11px;">▤</span> Productivity data</div>
+                <div style="display:flex; gap:9px; align-items:center; font-size:13px; color:#3A3C33;"><span style="width:20px;height:20px;border-radius:5px;background:#3C4A3A18;color:#3C4A3A;display:flex;align-items:center;justify-content:center;font-size:11px;">✎</span> Interview notes</div>
+              </div>
+              <div style="font-size:13px; color:#3C4A3A; font-weight:600; margin-top:2px;">+ Add another</div>
+              <div style="margin-top:auto; background:#EBF0E5; border:1px solid #DCE4D2; border-radius:10px; padding:12px; font-size:12.5px; color:#3A4A38; line-height:1.5;">Poysis drafted a notebook from these. Keep what fits, drop the rest.</div>
+            </div>
+
+            <div style="flex:1; min-width:0; overflow:hidden; padding:24px 32px; display:flex; flex-direction:column; gap:16px;">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                  <h3 style="font-family:'Source Serif 4',serif; font-size:23px; font-weight:600; margin:0; color:#23261F;">Your notebook, drafted</h3>
+                  <p style="margin:3px 0 0; font-size:14px; color:#6B6D62;">4 sections · toggle any off, or regenerate. This is what readers will see.</p>
+                </div>
+                <span style="font-size:13px; font-weight:600; color:#3C4A3A; border:1px solid #DCE4D2; background:#EBF0E5; border-radius:9px; padding:8px 14px;">↻ Regenerate all</span>
+              </div>
+
+              <div style="display:flex; flex-direction:column; gap:11px; overflow:hidden;">
+                <div style="background:#fff; border:1px solid rgba(35,38,31,.1); border-radius:12px; padding:16px 18px; display:flex; gap:14px; align-items:flex-start;">
+                  <div style="width:22px; height:22px; flex:0 0 auto; border-radius:6px; background:#3C4A3A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; margin-top:2px;">✓</div>
+                  <div style="flex:1;">
+                    <div style="font-family:'Source Serif 4',serif; font-size:18px; font-weight:600; color:#23261F;">Overview</div>
+                    <div style="font-size:14px; line-height:1.55; color:#5B5D52; margin-top:3px; text-wrap:pretty;">A reduced-hours week held output flat while wellbeing and retention rose — strongest where teams redesigned meetings.</div>
+                  </div>
+                  <span style="font-size:12.5px; color:#9A9C90;">↻ Redo</span>
+                </div>
+                <div style="background:#fff; border:1px solid rgba(35,38,31,.1); border-radius:12px; padding:16px 18px; display:flex; gap:14px; align-items:flex-start;">
+                  <div style="width:22px; height:22px; flex:0 0 auto; border-radius:6px; background:#3C4A3A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; margin-top:2px;">✓</div>
+                  <div style="flex:1;">
+                    <div style="font-family:'Source Serif 4',serif; font-size:18px; font-weight:600; color:#23261F;">Key evidence</div>
+                    <div style="font-size:14px; line-height:1.55; color:#5B5D52; margin-top:3px; text-wrap:pretty;">Iceland (2015–19), the 2022 global trial, and your productivity data — with the numbers pulled and cited.</div>
+                  </div>
+                  <span style="font-size:12.5px; color:#9A9C90;">↻ Redo</span>
+                </div>
+                <div style="background:#fff; border:1px solid rgba(35,38,31,.1); border-radius:12px; padding:16px 18px; display:flex; gap:14px; align-items:flex-start;">
+                  <div style="width:22px; height:22px; flex:0 0 auto; border-radius:6px; background:#3C4A3A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; margin-top:2px;">✓</div>
+                  <div style="flex:1;">
+                    <div style="font-family:'Source Serif 4',serif; font-size:18px; font-weight:600; color:#23261F;">Objections &amp; limits</div>
+                    <div style="font-size:14px; line-height:1.55; color:#5B5D52; margin-top:3px; text-wrap:pretty;">Where it strained — client-services billing, coverage roles — drawn straight from your interview notes.</div>
+                  </div>
+                  <span style="font-size:12.5px; color:#9A9C90;">↻ Redo</span>
+                </div>
+                <div style="background:#FBF9F3; border:1.5px dashed rgba(35,38,31,.18); border-radius:12px; padding:15px 18px; display:flex; gap:14px; align-items:center; opacity:.85;">
+                  <div style="width:22px; height:22px; flex:0 0 auto; border-radius:6px; background:#fff; border:1.5px solid rgba(35,38,31,.25); display:flex; align-items:center; justify-content:center; font-size:12px; color:#9A9C90;"></div>
+                  <div style="flex:1;">
+                    <div style="font-family:'Source Serif 4',serif; font-size:18px; font-weight:600; color:#6B6D62;">Recommendation</div>
+                    <div style="font-size:14px; line-height:1.55; color:#9A9C90; margin-top:3px;">Off — turn on to add a closing take.</div>
+                  </div>
+                  <span style="font-size:12.5px; color:#3C4A3A; font-weight:600;">Include</span>
+                </div>
+              </div>
+
+              <div style="margin-top:auto; display:flex; align-items:center; justify-content:space-between; padding-top:6px;">
+                <span style="font-size:13.5px; color:#8A8C80;">Looks good? You can keep editing after publishing.</span>
+                <div style="display:flex; align-items:center; gap:9px; font-size:15px; font-weight:700; color:#fff; background:#3C4A3A; border-radius:11px; padding:12px 24px; box-shadow:0 10px 24px -12px rgba(60,74,58,.7);">Publish notebook →</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+</x-dc>
+</body>
+</html>

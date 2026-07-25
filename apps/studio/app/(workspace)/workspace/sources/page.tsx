@@ -298,7 +298,7 @@ function YoutubeCard({ connection, onConnectionChange }: { connection: YoutubeCo
         name: `${name} Notebook`,
         connectionIds: [connection.id],
       });
-      router.push(`/workspace/canvas?notebook=${nb.id}`);
+      router.push(`/studio?notebook=${nb.id}`);
     } catch (err) {
       console.error("Failed to build notebook from YouTube channel:", err);
       setBuilding(false);

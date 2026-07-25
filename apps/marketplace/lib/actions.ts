@@ -23,10 +23,14 @@ export async function getNotebookBySlug(slug: string) {
 }
 
 /**
- * Fetches every published notebook (public — no auth required). "Published"
- * here just means it has a slug; callers still need to check each row's own
- * `config.canvas.ceiling === "public"` before treating it as marketplace-safe
- * — a notebook can be deployed (slugged) without being public.
+ * Fetches the notebooks that make up the marketplace directory (public — no
+ * auth required). A notebook only appears here once it is `verified` — the
+ * admin-controlled gate between "what a creator publishes on their own" and
+ * "what we surface in the marketplace". Publishing (getting a slug) and making
+ * the notebook public are necessary but NOT sufficient; verification is set
+ * separately. Callers still check each row's own `config.canvas.ceiling ===
+ * "public"` on top of this. Direct slug access (getNotebookBySlug) does not go
+ * through here and is not gated on `verified`.
  */
 export async function getPublicNotebooks() {
   const supabase = createPublicClient(
@@ -38,6 +42,7 @@ export async function getPublicNotebooks() {
     .from("notebooks")
     .select("id, name, slug, config, user_id, created_at")
     .not("slug", "is", null)
+    .eq("verified", true)
     .order("created_at", { ascending: false });
 
   if (error) {

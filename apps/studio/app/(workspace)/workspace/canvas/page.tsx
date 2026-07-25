@@ -7,6 +7,12 @@ import { BlueprintDesigner } from "@/components/notebook/BlueprintDesigner";
 import { useNotebookStore } from "@/store/notebookStore";
 import { saveNotebook, renameNotebook as renameNotebookAction } from "@/lib/actions";
 import { MARKETPLACE_URL, type MarketplaceMeta } from "@/lib/marketplace";
+import {
+  publishReadiness,
+  canPublish,
+  unmet,
+  type ReadinessCheck,
+} from "@/lib/publishReadiness";
 import { MarketplaceFields } from "@/components/notebook/MarketplaceFields";
 import { SourcesDrawer, type SourceCategory } from "@/components/notebook/SourcesDrawer";
 import { NotebookPreviewModal } from "@/components/notebook/NotebookPreviewModal";
@@ -241,6 +247,16 @@ function CanvasInner() {
   const published = !!row?.slug;
   const nbName = storeName;
 
+  // Publish-readiness gates, derived from the notebook's own config. Publishing
+  // (a shareable link) needs only knowledge attached; going public additionally
+  // needs the listing essentials (domain + tagline). See lib/publishReadiness.
+  const readiness: ReadinessCheck[] = publishReadiness({
+    clusterCount: clusterIds.length,
+    hasConnectionSource: isConnectionScoped,
+    marketplace: marketplaceMeta,
+  });
+  const publishAllowed = canPublish(readiness);
+
   const applyModelTier = (tier: ModelTier) => {
     if (activeBlock) setStateSetting(activeBlock.id, "modelTier", tier);
     setCanvasMeta((m) => (m ? { ...m, modelTier: tier } : m));
@@ -347,6 +363,12 @@ function CanvasInner() {
 
   const handleDeploy = async () => {
     if (!row || row.slug || deploying) return;
+    if (!publishAllowed) {
+      setRefusedMessage(
+        "Attach at least one knowledge cluster or source before publishing.",
+      );
+      return;
+    }
     setDeploying(true);
     try {
       const res = await deployNotebook(row.id);
@@ -370,6 +392,12 @@ function CanvasInner() {
 
   const handleSlugSave = async (newSlug: string): Promise<string | null> => {
     if (!row) return "Notebook not found.";
+    // Setting a slug for the first time is an implicit publish, so it clears the
+    // same knowledge bar as the Publish button. Renaming an already-live link
+    // (row.slug already set) isn't re-gated.
+    if (!row.slug && !publishAllowed) {
+      return "Attach a knowledge cluster or source before publishing.";
+    }
     const res = await renameSlug(row.id, newSlug);
     if ("error" in res) return res.error;
     if (!row.slug) markDone("deployedNotebook");
@@ -446,6 +474,21 @@ function CanvasInner() {
       entity === "cluster" ? CEILING_RANK[getCeiling(id)] : CEILING_RANK[ceiling];
 
     if (target === rankToCeiling(currentRank)) return;
+
+    // Going public is marketplace-eligible, so every readiness check — knowledge
+    // attached AND the listing essentials — must be green first. (Narrowing to
+    // team/private never hits this.)
+    if (entity === "notebook" && target === "public") {
+      const missing = unmet(readiness, "public");
+      if (missing.length > 0) {
+        setRefusedMessage(
+          `Not ready to go public yet — ${missing
+            .map((c) => c.label.toLowerCase())
+            .join(", ")}.`,
+        );
+        return;
+      }
+    }
 
     if (entity === "notebook" && CEILING_RANK[target] > floorRank) {
       const capperId = clusterIds.find(
@@ -1018,8 +1061,20 @@ function CanvasInner() {
           </div>
           <div
             onClick={() => void handleDeploy()}
+            title={
+              published
+                ? undefined
+                : !publishAllowed
+                  ? "Attach a knowledge cluster or source before publishing"
+                  : "Publish a shareable link"
+            }
             style={{
-              cursor: published || deploying ? "default" : "pointer",
+              cursor:
+                published || deploying
+                  ? "default"
+                  : !publishAllowed
+                    ? "not-allowed"
+                    : "pointer",
               padding: "8px 14px",
               borderRadius: "8px",
               border: "none",
@@ -1027,12 +1082,67 @@ function CanvasInner() {
               color: "#FAF8F0",
               fontSize: "12.5px",
               fontWeight: 600,
-              opacity: published || deploying ? 0.7 : 1,
+              opacity:
+                published || deploying ? 0.7 : !publishAllowed ? 0.5 : 1,
             }}
           >
             {published ? "Published" : deploying ? "Publishing…" : "Publish"}
           </div>
         </div>
+
+        {/* Publish-readiness checklist — what's still needed before this
+            notebook can be shared (and, marked "public", made marketplace-
+            eligible). Hidden once published. */}
+        {!published && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+              padding: "2px 2px 0",
+            }}
+          >
+            {readiness.map((c) => (
+              <div
+                key={c.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  fontSize: "11.5px",
+                  color: c.ok ? "#4B6B49" : "#8A8C7E",
+                }}
+              >
+                <span
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "50%",
+                    background: c.ok ? "#4B6B49" : "#C99A5C",
+                    flexShrink: 0,
+                  }}
+                />
+                <span>{c.label}</span>
+                {c.gate === "public" && (
+                  <span
+                    style={{
+                      fontSize: "9.5px",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                      color: "#8A8C7E",
+                      border: "1px solid #E4DECC",
+                      borderRadius: "999px",
+                      padding: "0 6px",
+                    }}
+                  >
+                    for public
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Config sections — jump straight to one part of the config instead
             of hunting through a single long drawer. */}

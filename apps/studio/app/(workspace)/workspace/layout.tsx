@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Source_Serif_4, Albert_Sans } from "next/font/google";
 import { createClient } from "../../../utils/supabase/server";
 import { ensureWorkspace } from "@/lib/workspace";
+import { isEnterpriseEntitled } from "@/lib/uiMode";
 import { WorkspaceSidebar } from "./WorkspaceSidebar";
 import { ConsolidationProvider } from "./ConsolidationContext";
 import { MockPermissionsProvider } from "./MockPermissionsContext";
@@ -17,6 +18,12 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
   const supabase = createClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return redirect("/login");
+
+  // Enterprise (this whole workspace app) is a paid tier and locked for now.
+  // Gate the entire route tree here — every /workspace/* page renders through
+  // this layout, so a non-entitled user can't reach any of it by URL. They go
+  // to Creator Studio instead.
+  if (!isEnterpriseEntitled(user)) return redirect("/studio");
 
   // Safety net: guarantee the user has a workspace on first entry to the app,
   // regardless of which auth path confirmed them. The /auth/callback creates

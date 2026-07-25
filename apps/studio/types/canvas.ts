@@ -154,6 +154,14 @@ export interface ChatConfig {
   allowedSources?: string[];   // Scope restriction — undefined means full KB access
   branding?: ChatBranding;
   placeholder?: string;
+  /**
+   * Force a light/dark palette independent of `mode`. Chat historically
+   * derived its palette purely from `mode` ("dashboard" = dark), which left
+   * the fully-implemented light theme unreachable. Creator Studio renders chat
+   * on a paper background and needs light; pass "light" there. Omitted =
+   * previous behavior (derive from `mode`), so existing callers are unchanged.
+   */
+  appearance?: "light" | "dark";
   modelTier?: ModelTier;       // Dashboard only — speed/capability tier sent to the worker
   useOuroboros?: boolean;      // Dashboard only — ground replies in docs/ouroboros.md (Canvas onboarding)
   hideModelSwitcher?: boolean; // Dashboard only — suppress the in-chat tier picker when the host page has its own model control (e.g. Canvas's settings drawer)

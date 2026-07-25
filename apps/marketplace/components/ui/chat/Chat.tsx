@@ -8,6 +8,11 @@ import { MarkdownContent } from "./MarkdownContent";
 
 const SOURCES_SENTINEL = "\n\n__SOURCES__";
 const META_SENTINEL = "\n\n__META__";
+// Retrieval replies self-identify with a leading __MODE__ marker — the very first
+// bytes of the stream, with NO "\n\n" prefix — and carry ranked sources but no
+// written answer. Synthesis replies (the original behavior) stream prose first,
+// then the __SOURCES__/__META__ machine blocks.
+const MODE_SENTINEL = "__MODE__";
 
 const MODELS = [
   { id: "gemini-3-flash", label: "Flash", hint: "Fast · Default" },
@@ -57,6 +62,36 @@ function extractMeta(content: string): ChatMeta | null {
   } catch {
     return null;
   }
+}
+
+type ChatMode = "retrieval" | "synthesis";
+
+type ParsedChat = {
+  mode: ChatMode;
+  answer: string; // "" in retrieval mode
+  sources: CitedSource[];
+  meta: ChatMeta | null;
+};
+
+// One place that decides how to render a reply. A retrieval reply leads with
+// __MODE__ and has no prose — we must never print that marker as answer text and
+// must tolerate it arriving split across chunks. Everything after the leading
+// marker (the __SOURCES__/__META__ blocks) is shared with synthesis, so the
+// existing extractors handle both shapes unchanged.
+function parseChat(content: string): ParsedChat {
+  const trimmed = content.trimStart();
+  const retrieval = trimmed.startsWith(MODE_SENTINEL);
+  // While the leading __MODE__ is still streaming in (e.g. "__MO"), suppress it
+  // too so a partial marker never flashes as answer text before we know the mode.
+  const partialMode = !retrieval && trimmed.length > 0 && MODE_SENTINEL.startsWith(trimmed);
+  return {
+    mode: retrieval ? "retrieval" : "synthesis",
+    answer: retrieval || partialMode ? "" : displayContent(content),
+    sources: extractSources(content),
+    // Retrieval is LLM-free, so key_quote is absent — the renderer already
+    // treats it as optional.
+    meta: extractMeta(content),
+  };
 }
 
 function getMessageText(parts: any[]): string {
@@ -307,14 +342,14 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
             return <UserBubble key={msg.id} content={text} primaryColor={primaryColor} />;
           }
           const prevUser = messages.slice(0, i).reverse().find((m) => m.role === "user");
-          const assistantText = displayContent(text);
+          const parsed = parseChat(text);
           return (
             <div key={msg.id}>
-              <AssistantBubble content={assistantText} sources={extractSources(text)} meta={extractMeta(text)} streaming={false} theme={theme} />
+              <AssistantBubble content={parsed.answer} sources={parsed.sources} meta={parsed.meta} mode={parsed.mode} streaming={false} theme={theme} />
               {renderMessageFooter?.({
                 id: msg.id,
                 userText: prevUser ? getMessageText(prevUser.parts as any[]) : "",
-                assistantText,
+                assistantText: parsed.answer,
               })}
             </div>
           );
@@ -529,12 +564,14 @@ function AssistantBubble({
   content,
   sources,
   meta,
+  mode,
   streaming,
   theme,
 }: {
   content: string;
   sources: CitedSource[];
   meta: ChatMeta | null;
+  mode: ChatMode;
   streaming: boolean;
   theme: typeof THEME;
 }) {
@@ -542,31 +579,54 @@ function AssistantBubble({
   // rather than hiding them behind a collapsed toggle.
   const [sourcesOpen, setSourcesOpen] = useState(true);
   const hasSources = sources.length > 0;
+  // Retrieval replies have no prose — go straight to the source list. Empty
+  // retrieval results get an explicit "no results" state instead of a blank card.
+  const isRetrieval = mode === "retrieval";
 
   return (
     <div className="flex justify-start">
       <div className="max-w-[90%]">
-        <div
-          className="text-sm px-4 py-3 leading-relaxed"
-          style={{
-            background: theme.assistantBubbleBg,
-            border: `1px solid ${theme.assistantBubbleBorder}`,
-            borderRadius: "12px",
-            borderBottomLeftRadius: "3px",
-            color: theme.assistantText,
-            fontFamily: "DM Sans, sans-serif",
-            fontSize: "13px",
-            fontWeight: 300,
-          }}
-        >
-          <MarkdownContent content={content} linkColor="#3b82f6" />
-          {streaming && (
-            <span
-              className="inline-block w-1.5 h-4 ml-0.5 animate-pulse align-middle rounded-sm"
-              style={{ background: theme.dotColor }}
-            />
-          )}
-        </div>
+        {content.trim() && (
+          <div
+            className="text-sm px-4 py-3 leading-relaxed"
+            style={{
+              background: theme.assistantBubbleBg,
+              border: `1px solid ${theme.assistantBubbleBorder}`,
+              borderRadius: "12px",
+              borderBottomLeftRadius: "3px",
+              color: theme.assistantText,
+              fontFamily: "DM Sans, sans-serif",
+              fontSize: "13px",
+              fontWeight: 300,
+            }}
+          >
+            <MarkdownContent content={content} linkColor="#3b82f6" />
+            {streaming && (
+              <span
+                className="inline-block w-1.5 h-4 ml-0.5 animate-pulse align-middle rounded-sm"
+                style={{ background: theme.dotColor }}
+              />
+            )}
+          </div>
+        )}
+
+        {isRetrieval && !hasSources && (
+          <div
+            className="text-sm px-4 py-3 leading-relaxed"
+            style={{
+              background: theme.assistantBubbleBg,
+              border: `1px solid ${theme.assistantBubbleBorder}`,
+              borderRadius: "12px",
+              borderBottomLeftRadius: "3px",
+              color: theme.mutedText,
+              fontFamily: "DM Sans, sans-serif",
+              fontSize: "13px",
+              fontWeight: 300,
+            }}
+          >
+            No results found.
+          </div>
+        )}
 
         {/* Key quote — one memorable, grounded line, visually emphasized. */}
         {meta?.key_quote?.text && (

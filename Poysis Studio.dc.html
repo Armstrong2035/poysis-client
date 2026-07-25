@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: 'Hanken Grotesk', system-ui, sans-serif; background: #ECE7DB; color: #23261F; -webkit-font-smoothing: antialiased; overflow: hidden; }
+  a { color: #3C4A3A; text-decoration: none; }
+  a:hover { color: #2F3A2E; }
+  input, textarea, button { font-family: inherit; }
+  input:focus, textarea:focus { outline: none; }
+  button { border: none; background: none; cursor: pointer; color: inherit; }
+  .pz-scroll::-webkit-scrollbar { width: 9px; }
+  .pz-scroll::-webkit-scrollbar-thumb { background: rgba(35,38,31,.16); border-radius: 8px; }
+  .pz-scroll::-webkit-scrollbar-track { background: transparent; }
+  @keyframes pz-spin { to { transform: rotate(360deg); } }
+  @keyframes pz-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @keyframes pz-pop { from { opacity: 0; transform: scale(.96) translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes pz-dot { 0%,80%,100% { opacity:.25; } 40% { opacity:1; } }
+</style>
+</helmet>
+
+<div style="height:100vh; display:flex; flex-direction:column; background:#FBF9F3;">
+
+  <!-- ===== TOP CHROME ===== -->
+  <div style="height:60px; flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:0 20px; border-bottom:1px solid rgba(35,38,31,.09); background:#FBF9F3; z-index:5;">
+    <div style="display:flex; align-items:center; gap:15px; min-width:0;">
+      <img src="assets/poysis-icon.svg" alt="" style="width:24px; height:24px;">
+      <div style="width:1px; height:24px; background:rgba(35,38,31,.12);"></div>
+      <span style="font-family:'Source Serif 4',serif; font-size:18px; font-weight:600; color:#23261F; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ title }}</span>
+      <span style="font-size:12px; color:#8A8C80; background:#F0EDE3; border-radius:6px; padding:3px 9px; white-space:nowrap;">{{ savedLabel }}</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <sc-if value="{{ showCollab }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;">
+          <div style="width:30px; height:30px; border-radius:999px; background:#B9762F; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; border:2px solid #FBF9F3;">AK</div>
+          <div style="width:30px; height:30px; border-radius:999px; background:#3C4A3A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; border:2px solid #FBF9F3; margin-left:-8px;">JR</div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ published }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:#3C4A3A; background:#EBF0E5; border:1px solid #DCE4D2; border-radius:10px; padding:8px 14px;">● Published</div>
+      </sc-if>
+      <button onClick="{{ openPublish }}" style="display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:#fff; background:#3C4A3A; border-radius:10px; padding:10px 20px;">{{ publishBtnLabel }} ↗</button>
+    </div>
+  </div>
+
+  <!-- ===== 3 PANELS ===== -->
+  <div style="flex:1; display:flex; min-height:0;">
+
+    <!-- ===== LEFT: SOURCES ===== -->
+    <div style="width:300px; flex:0 0 auto; border-right:1px solid rgba(35,38,31,.09); display:flex; flex-direction:column; background:#F7F4EC;">
+      <div style="padding:16px 18px 12px; display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-size:12px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:#6B6D62;">Sources</span>
+        <button onClick="{{ toggleAdd }}" style="font-size:13px; color:#3C4A3A; font-weight:600; display:flex; align-items:center; gap:5px;">+ Add</button>
+      </div>
+
+      <!-- add tray -->
+      <sc-if value="{{ addOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="margin:0 14px 12px; background:#fff; border:1px solid rgba(35,38,31,.12); border-radius:12px; padding:12px; box-shadow:0 12px 24px -16px rgba(35,38,31,.4); animation:pz-fade .18s ease;">
+          <div style="display:flex; gap:7px; margin-bottom:11px;">
+            <button onClick="{{ addUpload }}" style="flex:1; font-size:12px; font-weight:600; color:#3C4A3A; background:#EBF0E5; border:1px solid #DCE4D2; border-radius:8px; padding:9px 4px;">↑ Upload</button>
+            <button onClick="{{ addUrl }}" style="flex:1; font-size:12px; font-weight:600; color:#3C4A3A; background:#EBF0E5; border:1px solid #DCE4D2; border-radius:8px; padding:9px 4px;">◧ Link</button>
+            <button onClick="{{ addText }}" style="flex:1; font-size:12px; font-weight:600; color:#3C4A3A; background:#EBF0E5; border:1px solid #DCE4D2; border-radius:8px; padding:9px 4px;">✎ Text</button>
+          </div>
+          <div style="font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#9A9C90; margin-bottom:7px;">Or add an example</div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <sc-for list="{{ library }}" as="lib" hint-placeholder-count="3">
+              <button onClick="{{ lib.add }}" style="display:flex; gap:9px; align-items:center; text-align:left; background:#F7F4EC; border:1px solid rgba(35,38,31,.08); border-radius:8px; padding:8px 10px; width:100%;">
+                <span style="width:20px; height:20px; flex:0 0 auto; border-radius:5px; background:{{ lib.tint }}; color:{{ lib.ink }}; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700;">{{ lib.badge }}</span>
+                <span style="font-size:12.5px; color:#3A3C33; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ lib.title }}</span>
+                <span style="margin-left:auto; font-size:14px; color:#3C4A3A;">+</span>
+              </button>
+            </sc-for>
+            <sc-if value="{{ libraryEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:12px; color:#9A9C90; padding:6px 2px;">All examples added.</div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- source list -->
+      <div class="pz-scroll" style="flex:1; overflow-y:auto; padding:0 14px 8px; display:flex; flex-direction:column; gap:8px;">
+        <sc-if value="{{ noSources }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1.5px dashed rgba(35,38,31,.18); border-radius:12px; padding:26px 16px; text-align:center; color:#8A8C80;">
+            <div style="font-size:26px; margin-bottom:8px;">◧</div>
+            <div style="font-size:13.5px; font-weight:600; color:#5B5D52; margin-bottom:3px;">No sources yet</div>
+            <div style="font-size:12.5px; line-height:1.5;">Add a file, link, or note. Everything Poysis writes will be grounded in them.</div>
+            <button onClick="{{ openAdd }}" style="margin-top:12px; font-size:13px; font-weight:600; color:#fff; background:#3C4A3A; border-radius:9px; padding:9px 16px;">Add your first source</button>
+          </div>
+        </sc-if>
+        <sc-for list="{{ sources }}" as="s" hint-placeholder-count="4">
+          <div style="display:flex; gap:11px; align-items:flex-start; background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:10px; padding:11px 12px; animation:pz-fade .2s ease;">
+            <div style="width:26px; height:26px; flex:0 0 auto; border-radius:6px; background:{{ s.tint }}; color:{{ s.ink }}; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;">{{ s.badge }}</div>
+            <div style="min-width:0; flex:1;">
+              <div style="font-size:13.5px; font-weight:500; color:#23261F; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ s.title }}</div>
+              <div style="font-size:11.5px; color:#9A9C90;">{{ s.meta }}</div>
+            </div>
+            <button onClick="{{ s.remove }}" style="font-size:15px; color:#B7B9AD; padding:0 2px; line-height:1;">×</button>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="flex:0 0 auto; padding:13px 18px; border-top:1px solid rgba(35,38,31,.08); font-size:12px; color:#9A9C90;">{{ groundLabel }}</div>
+    </div>
+
+    <!-- ===== MIDDLE: TEST & CHAT ===== -->
+    <div style="flex:1; min-width:0; display:flex; flex-direction:column; background:#FBF9F3;">
+
+      <sc-if value="{{ noSources }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 48px; text-align:center;">
+          <img src="assets/poysis-icon.svg" alt="" style="width:44px; height:44px; opacity:.5; margin-bottom:22px;">
+          <h2 style="font-family:'Source Serif 4',serif; font-size:34px; font-weight:600; letter-spacing:-.02em; margin:0 0 10px; color:#23261F;">Add a source to begin.</h2>
+          <p style="margin:0; font-size:16px; color:#6B6D62; max-width:440px; line-height:1.5;">Drop in what you know — a PDF, a link, your notes — and Poysis drafts a notebook you can question, shape, and publish in under a minute.</p>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ hasSources }}" hint-placeholder-val="{{ true }}">
+        <div class="pz-scroll" style="flex:1; overflow-y:auto; padding:30px 44px 14px;">
+
+          <!-- generating -->
+          <sc-if value="{{ generating }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:70px 0; gap:16px;">
+              <div style="width:34px; height:34px; border-radius:999px; border:3px solid #DCE4D2; border-top-color:#3C4A3A; animation:pz-spin .8s linear infinite;"></div>
+              <div style="font-size:15px; color:#6B6D62;">Reading {{ sourceCount }} sources &amp; drafting your notebook…</div>
+            </div>
+          </sc-if>
+
+          <!-- notebook body -->
+          <sc-if value="{{ ready }}" hint-placeholder-val="{{ true }}">
+            <div style="max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:20px;">
+              <div style="animation:pz-fade .35s ease;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                  <div style="font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:{{ accent }};">Overview · auto-generated</div>
+                  <button onClick="{{ regenerate }}" style="font-size:12.5px; color:#8A8C80; display:flex; align-items:center; gap:5px;">↻ Regenerate</button>
+                </div>
+                <h1 style="font-family:'Source Serif 4',serif; font-size:30px; font-weight:600; margin:0 0 12px; letter-spacing:-.01em; color:#23261F;">{{ title }}</h1>
+                <p style="margin:0; font-size:16px; line-height:1.62; color:#3A3C33; text-wrap:pretty;">Across the trials in your sources, a reduced-hours week held output roughly flat while sharply improving wellbeing and retention. The strongest results came from teams that <span style="background:#EBF0E5; border-bottom:1.5px solid #3C4A3A;">redesigned meetings</span> rather than simply compressing five days into four.</p>
+              </div>
+
+              <div style="display:flex; gap:12px;">
+                <div style="flex:1; background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:12px; padding:14px 16px;"><div style="font-family:'Source Serif 4',serif; font-size:22px; font-weight:600; color:{{ accent }};">~0%</div><div style="font-size:12.5px; color:#6B6D62; margin-top:2px;">avg. output change</div></div>
+                <div style="flex:1; background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:12px; padding:14px 16px;"><div style="font-family:'Source Serif 4',serif; font-size:22px; font-weight:600; color:{{ accent }};">+62%</div><div style="font-size:12.5px; color:#6B6D62; margin-top:2px;">reported wellbeing</div></div>
+                <div style="flex:1; background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:12px; padding:14px 16px;"><div style="font-family:'Source Serif 4',serif; font-size:22px; font-weight:600; color:{{ accent }};">57 → 71</div><div style="font-size:12.5px; color:#6B6D62; margin-top:2px;">eNPS after 6 mo</div></div>
+              </div>
+
+              <!-- suggested -->
+              <sc-if value="{{ noMessages }}" hint-placeholder-val="{{ true }}">
+                <div style="margin-top:4px;">
+                  <div style="font-size:12.5px; color:#8A8C80; margin-bottom:9px;">Test your notebook — ask what a reader might:</div>
+                  <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                    <sc-for list="{{ suggestions }}" as="q" hint-placeholder-count="3">
+                      <button onClick="{{ q.ask }}" style="font-size:13.5px; color:#3A4A38; background:#fff; border:1px solid #DCE4D2; border-radius:999px; padding:8px 15px;">{{ q.text }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+
+              <!-- chat -->
+              <div style="display:flex; flex-direction:column; gap:14px; margin-top:2px;">
+                <sc-for list="{{ messages }}" as="m" hint-placeholder-count="0">
+                  <div style="{{ m.wrap }}">
+                    <div style="{{ m.bubble }}">
+                      {{ m.text }}
+                      <sc-if value="{{ m.hasCites }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:9px;">
+                          <sc-for list="{{ m.cites }}" as="c" hint-placeholder-count="2">
+                            <span style="font-size:11px; font-weight:600; color:#3C4A3A; background:#EBF0E5; border-radius:6px; padding:2px 8px;">{{ c }}</span>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ thinking }}" hint-placeholder-val="{{ false }}">
+                  <div style="align-self:flex-start; background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:14px 14px 14px 4px; padding:14px 16px; display:flex; gap:5px;">
+                    <span style="width:7px; height:7px; border-radius:999px; background:#3C4A3A; animation:pz-dot 1.2s infinite;"></span>
+                    <span style="width:7px; height:7px; border-radius:999px; background:#3C4A3A; animation:pz-dot 1.2s infinite .2s;"></span>
+                    <span style="width:7px; height:7px; border-radius:999px; background:#3C4A3A; animation:pz-dot 1.2s infinite .4s;"></span>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <!-- ask bar -->
+        <div style="flex:0 0 auto; padding:12px 44px 20px;">
+          <div style="max-width:720px; margin:0 auto; background:#fff; border:1.5px solid rgba(35,38,31,.14); border-radius:14px; box-shadow:0 8px 20px -14px rgba(35,38,31,.4); padding:8px 8px 8px 18px; display:flex; align-items:center; gap:12px;">
+            <input value="{{ draft }}" onInput="{{ onDraft }}" onKeyDown="{{ onKey }}" placeholder="Ask anything about your sources…" style="flex:1; border:none; background:transparent; font-size:15px; color:#23261F; padding:8px 0;">
+            <span style="font-size:12px; color:#8A8C80; background:#F0EDE3; border-radius:6px; padding:4px 8px; white-space:nowrap;">{{ sourceCount }} sources</span>
+            <button onClick="{{ send }}" style="width:38px; height:38px; flex:0 0 auto; border-radius:10px; background:#3C4A3A; color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px;">↑</button>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <!-- ===== RIGHT: NOTEBOOK CONFIG ===== -->
+    <div style="width:330px; flex:0 0 auto; border-left:1px solid rgba(35,38,31,.09); display:flex; flex-direction:column; background:#F7F4EC;">
+      <div style="padding:16px 18px 4px;"><span style="font-size:12px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:#6B6D62;">Notebook</span></div>
+
+      <div class="pz-scroll" style="flex:1; overflow-y:auto; padding:12px 16px 16px; display:flex; flex-direction:column; gap:20px;">
+
+        <!-- title + desc -->
+        <div style="display:flex; flex-direction:column; gap:9px;">
+          <div>
+            <div style="font-size:11.5px; font-weight:600; color:#8A8C80; margin-bottom:5px;">Title</div>
+            <input value="{{ title }}" onInput="{{ onTitle }}" style="width:100%; font-family:'Source Serif 4',serif; font-size:16px; font-weight:600; color:#23261F; background:#fff; border:1px solid rgba(35,38,31,.12); border-radius:9px; padding:10px 12px;">
+          </div>
+          <div>
+            <div style="font-size:11.5px; font-weight:600; color:#8A8C80; margin-bottom:5px;">Description</div>
+            <textarea value="{{ desc }}" onInput="{{ onDesc }}" rows="2" placeholder="One line readers see first…" style="width:100%; resize:none; font-size:13.5px; color:#3A3C33; background:#fff; border:1px solid rgba(35,38,31,.12); border-radius:9px; padding:10px 12px; line-height:1.4;"></textarea>
+          </div>
+        </div>
+
+        <!-- sections -->
+        <div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:9px;">
+            <span style="font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#8A8C80;">Sections</span>
+            <span style="font-size:12px; color:#9A9C90;">{{ visibleCount }} shown</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:7px;">
+            <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="5">
+              <div style="display:flex; align-items:center; gap:10px; background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:9px; padding:9px 11px;">
+                <span style="color:#C3C5B9; font-size:13px; cursor:grab;">⋮⋮</span>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:13.5px; font-weight:600; color:{{ sec.nameColor }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ sec.name }}</div>
+                </div>
+                <button onClick="{{ sec.redo }}" style="font-size:12px; color:#9A9C90;">↻</button>
+                <button onClick="{{ sec.toggle }}" style="width:36px; height:21px; flex:0 0 auto; border-radius:999px; background:{{ sec.trackBg }}; position:relative; transition:background .15s;">
+                  <span style="position:absolute; top:2px; left:{{ sec.knobLeft }}; width:17px; height:17px; background:#fff; border-radius:999px; box-shadow:0 1px 2px rgba(0,0,0,.2); transition:left .15s;"></span>
+                </button>
+              </div>
+            </sc-for>
+            <button onClick="{{ addSection }}" style="display:flex; align-items:center; gap:6px; justify-content:center; font-size:13px; font-weight:600; color:#3C4A3A; border:1.5px dashed rgba(35,38,31,.18); border-radius:9px; padding:9px;">+ Add section</button>
+          </div>
+        </div>
+
+        <!-- appearance -->
+        <div>
+          <div style="font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#8A8C80; margin-bottom:9px;">Appearance</div>
+          <div style="display:flex; gap:9px;">
+            <sc-for list="{{ themes }}" as="t" hint-placeholder-count="3">
+              <button onClick="{{ t.pick }}" style="flex:1; border:1.5px solid {{ t.border }}; border-radius:10px; padding:9px 6px 8px; background:#fff; display:flex; flex-direction:column; align-items:center; gap:6px;">
+                <span style="width:100%; height:24px; border-radius:6px; background:{{ t.swatch }};"></span>
+                <span style="font-size:11.5px; font-weight:600; color:{{ t.labelColor }};">{{ t.name }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- sharing -->
+        <div>
+          <div style="font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#8A8C80; margin-bottom:9px;">Who can see it</div>
+          <div style="display:flex; flex-direction:column; gap:7px;">
+            <sc-for list="{{ visOptions }}" as="v" hint-placeholder-count="3">
+              <button onClick="{{ v.pick }}" style="display:flex; align-items:flex-start; gap:10px; text-align:left; background:{{ v.bg }}; border:1.5px solid {{ v.border }}; border-radius:10px; padding:11px 12px;">
+                <span style="width:16px; height:16px; flex:0 0 auto; margin-top:1px; border-radius:999px; border:2px solid {{ v.ring }}; display:flex; align-items:center; justify-content:center;"><span style="width:8px; height:8px; border-radius:999px; background:{{ v.dot }};"></span></span>
+                <span><span style="display:block; font-size:13.5px; font-weight:600; color:#23261F;">{{ v.label }}</span><span style="display:block; font-size:12px; color:#8A8C80; margin-top:1px;">{{ v.sub }}</span></span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <!-- sticky publish/share card -->
+      <div style="flex:0 0 auto; margin:0 16px 16px; background:#3C4A3A; border-radius:14px; padding:15px; color:#EDEFE7;">
+        <sc-if value="{{ published }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:pz-fade .25s ease;">
+            <div style="font-family:'Source Serif 4',serif; font-size:16px; font-weight:600; color:#fff; margin-bottom:8px;">● Live</div>
+            <div style="display:flex; align-items:center; gap:8px; background:#33402F; border-radius:9px; padding:9px 11px; margin-bottom:9px;">
+              <span style="font-size:12.5px; color:#C7CFBE; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ shareUrl }}</span>
+              <button onClick="{{ copyLink }}" style="font-size:12px; font-weight:600; color:#EAEFE2;">{{ copyLabel }}</button>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button onClick="{{ openPublish }}" style="flex:1; font-size:13px; font-weight:600; color:#3C4A3A; background:#EAEFE2; border-radius:9px; padding:9px;">Share options</button>
+              <button onClick="{{ unpublish }}" style="font-size:13px; font-weight:600; color:#EAEFE2; border:1px solid #6E7D62; border-radius:9px; padding:9px 12px;">Unpublish</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ notPublished }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="font-family:'Source Serif 4',serif; font-size:16px; font-weight:600; color:#fff; margin-bottom:3px;">Ready to publish</div>
+            <div style="font-size:12.5px; color:#C3CBBB; line-height:1.5; margin-bottom:12px;">{{ visSummary }}</div>
+            <button onClick="{{ openPublish }}" style="width:100%; font-size:14px; font-weight:700; color:#3C4A3A; background:#EAEFE2; border-radius:10px; padding:11px;">Publish notebook ↗</button>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PUBLISH MODAL ===== -->
+  <sc-if value="{{ publishOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closePublish }}" style="position:fixed; inset:0; background:rgba(35,38,31,.42); display:flex; align-items:center; justify-content:center; z-index:50; padding:24px;">
+      <div onClick="{{ stop }}" style="width:480px; max-width:100%; background:#FBF9F3; border-radius:18px; box-shadow:0 40px 80px -30px rgba(35,38,31,.6); overflow:hidden; animation:pz-pop .22s ease;">
+        <div style="padding:24px 26px 18px; border-bottom:1px solid rgba(35,38,31,.08);">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+            <div>
+              <h3 style="font-family:'Source Serif 4',serif; font-size:22px; font-weight:600; margin:0 0 3px; color:#23261F;">{{ modalTitle }}</h3>
+              <p style="margin:0; font-size:14px; color:#6B6D62;">{{ modalSub }}</p>
+            </div>
+            <button onClick="{{ closePublish }}" style="font-size:20px; color:#9A9C90; line-height:1;">×</button>
+          </div>
+        </div>
+        <div style="padding:20px 26px 8px;">
+          <div style="display:flex; align-items:center; gap:12px; background:#fff; border:1px solid rgba(35,38,31,.12); border-radius:12px; padding:14px 16px; margin-bottom:16px;">
+            <span style="font-size:13px; color:#23261F; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ shareUrl }}</span>
+            <button onClick="{{ copyLink }}" style="font-size:13px; font-weight:600; color:#fff; background:#3C4A3A; border-radius:8px; padding:8px 14px;">{{ copyLabel }}</button>
+          </div>
+          <div style="display:flex; gap:10px; margin-bottom:6px;">
+            <div style="flex:1; background:#fff; border:1px solid rgba(35,38,31,.1); border-radius:11px; padding:13px 14px;">
+              <div style="font-size:14px; font-weight:600; color:#23261F; margin-bottom:2px;">◧ Embed</div>
+              <div style="font-size:12px; color:#8A8C80;">Drop into any site</div>
+            </div>
+            <div style="flex:1; background:#fff; border:1px solid rgba(35,38,31,.1); border-radius:11px; padding:13px 14px;">
+              <div style="font-size:14px; font-weight:600; color:#23261F; margin-bottom:2px;">↓ Export PDF</div>
+              <div style="font-size:12px; color:#8A8C80;">Cited &amp; formatted</div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:14px 26px 22px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+          <span style="font-size:13px; color:#8A8C80;">{{ visSummary }}</span>
+          <sc-if value="{{ notPublished }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ confirmPublish }}" style="font-size:15px; font-weight:700; color:#fff; background:#3C4A3A; border-radius:11px; padding:12px 24px; box-shadow:0 10px 24px -12px rgba(60,74,58,.7);">Publish →</button>
+          </sc-if>
+          <sc-if value="{{ published }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ closePublish }}" style="font-size:15px; font-weight:700; color:#fff; background:#3C4A3A; border-radius:11px; padding:12px 24px;">Done</button>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- toast -->
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#23261F; color:#F3F1E8; font-size:13.5px; font-weight:500; padding:11px 20px; border-radius:999px; box-shadow:0 16px 32px -12px rgba(0,0,0,.5); z-index:60; animation:pz-pop .2s ease;">{{ toast }}</div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;sage&quot;,&quot;paper&quot;,&quot;ink&quot;],&quot;default&quot;:&quot;sage&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;seedExample&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Demo&quot;},&quot;showCollaborators&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Demo&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const LIB = [
+      { id:'p1', kind:'pdf',  title:'4dayweek_global_trial.pdf', meta:'Autonomy Institute · 38 pp', badge:'PDF', tint:'rgba(185,66,47,.13)', ink:'#B9422F' },
+      { id:'p2', kind:'link', title:"Iceland's 2015–19 study",     meta:'bbc.com · article',          badge:'◧',  tint:'rgba(60,74,58,.12)',  ink:'#3C4A3A' },
+      { id:'p3', kind:'xls',  title:'Productivity_metrics.xlsx',   meta:'spreadsheet · 6 sheets',     badge:'▤',  tint:'rgba(185,118,47,.15)', ink:'#B9762F' },
+      { id:'p4', kind:'note', title:'My interview notes',          meta:'note · pasted text',         badge:'✎',  tint:'rgba(60,74,58,.12)',  ink:'#3C4A3A' },
+      { id:'p5', kind:'link', title:'Buffer 4-day-week retro',     meta:'buffer.com · blog',          badge:'◧',  tint:'rgba(60,74,58,.12)',  ink:'#3C4A3A' },
+      { id:'p6', kind:'link', title:'Microsoft Japan trial',       meta:'theverge.com · article',     badge:'◧',  tint:'rgba(60,74,58,.12)',  ink:'#3C4A3A' },
+    ];
+    this.LIB = LIB;
+    const seed = props.seedExample !== false;
+    const seededIds = ['p1','p2','p3','p4'];
+    this.state = {
+      sources: seed ? LIB.filter(l => seededIds.includes(l.id)) : [],
+      libIds: seed ? LIB.filter(l => !seededIds.includes(l.id)).map(l=>l.id) : LIB.map(l=>l.id),
+      addOpen: false,
+      generating: false,
+      title: 'The Four-Day Week',
+      desc: 'What the trials actually show — and where a shorter week strains.',
+      sections: [
+        { id:'s1', name:'Overview', on:true },
+        { id:'s2', name:'Key evidence', on:true },
+        { id:'s3', name:'Objections & limits', on:true },
+        { id:'s4', name:'Recommendation', on:false },
+        { id:'s5', name:'FAQ', on:false },
+      ],
+      theme: props.theme || 'sage',
+      visibility: 'link',
+      published: false,
+      publishOpen: false,
+      messages: [],
+      draft: '',
+      thinking: false,
+      copyLabel: 'Copy',
+      toast: '',
+    };
+    this._nid = 100;
+  }
+
+  _flash(msg){ this.setState({ toast: msg }); clearTimeout(this._t); this._t = setTimeout(()=>this.setState({toast:''}), 1900); }
+
+  _generate(){
+    this.setState({ generating:true });
+    clearTimeout(this._g);
+    this._g = setTimeout(()=>this.setState({ generating:false }), 1300);
+  }
+
+  addSource(id){
+    const lib = this.LIB.find(l=>l.id===id);
+    if(!lib) return;
+    const first = this.state.sources.length===0;
+    this.setState(s=>({ sources:[...s.sources, lib], libIds:s.libIds.filter(x=>x!==id) }));
+    if(first) this._generate();
+  }
+  addNew(kind){
+    const first = this.state.sources.length===0;
+    const map={upload:{title:'Untitled.pdf',meta:'uploaded · just now',badge:'PDF',tint:'rgba(185,66,47,.13)',ink:'#B9422F'},
+               url:{title:'Pasted link',meta:'web · just now',badge:'◧',tint:'rgba(60,74,58,.12)',ink:'#3C4A3A'},
+               text:{title:'Pasted text',meta:'note · just now',badge:'✎',tint:'rgba(60,74,58,.12)',ink:'#3C4A3A'}};
+    const item={ id:'n'+(this._nid++), ...map[kind] };
+    this.setState(s=>({ sources:[...s.sources, item] }));
+    if(first) this._generate();
+    this._flash('Source added');
+  }
+  removeSource(id){ this.setState(s=>{
+    const removed=s.sources.find(x=>x.id===id);
+    const back = removed && this.LIB.some(l=>l.id===id) ? [id] : [];
+    return { sources:s.sources.filter(x=>x.id!==id), libIds:[...s.libIds, ...back] };
+  }); }
+
+  _answer(text){
+    const t=text.toLowerCase();
+    if(/(drop|industr|worse|dip|decline)/.test(t)) return { text:'Only client-services firms with hard billable-hour targets reported a measurable dip (around 4–7%). Manufacturing and software teams held output steady.', cites:['◧ Iceland study','PDF p.24'] };
+    if(/(evidence|strong|proof|data|best)/.test(t)) return { text:'The largest signal is Iceland’s 2015–19 study (~2,500 workers, output maintained). The 2022 global trial adds breadth: of 61 companies, 92% chose to continue afterward.', cites:['PDF p.12','▤ Productivity data'] };
+    if(/(objection|limit|risk|concern|against|downside)/.test(t)) return { text:'Three recurring strains: coverage roles that need someone on every weekday, client-billing models tied to hours, and heavier onboarding load early on. All three surface in your interview notes.', cites:['✎ Interview notes','PDF p.31'] };
+    if(/(meeting)/.test(t)) return { text:'Teams that won cut meeting time first — shorter, fewer, and more asynchronous. Simply compressing five days of meetings into four is where trials stalled.', cites:['PDF p.18','◧ Iceland study'] };
+    return { text:'Grounded in your '+this.state.sources.length+' sources: a reduced-hours week generally held output flat while improving wellbeing and retention, with the clearest gains where teams redesigned how they work rather than just shortening the week.', cites:['PDF p.12','◧ Iceland study'] };
+  }
+  ask(text){
+    const q=(text||'').trim(); if(!q) return;
+    this.setState(s=>({ messages:[...s.messages, {role:'user', text:q}], draft:'', thinking:true }));
+    clearTimeout(this._a);
+    this._a=setTimeout(()=>{
+      const a=this._answer(q);
+      this.setState(s=>({ thinking:false, messages:[...s.messages, {role:'assistant', ...a}] }));
+    }, 950);
+  }
+
+  toggleSection(id){ this.setState(s=>({ sections:s.sections.map(x=>x.id===id?{...x,on:!x.on}:x) })); }
+  addSection(){ this.setState(s=>({ sections:[...s.sections, {id:'s'+(this._nid++), name:'New section', on:true}] })); this._flash('Section added'); }
+
+  _visMeta(){
+    return {
+      private:{ label:'Private', sub:'Only you and invited collaborators', summary:'Only you and invited collaborators can open it.' },
+      link:{ label:'Anyone with the link', sub:'No sign-in needed to view', summary:'Anyone with the link can view — no sign-in.' },
+      public:{ label:'Public on the web', sub:'Discoverable & indexable', summary:'Listed publicly and indexable by search.' },
+    };
+  }
+
+  renderVals(){
+    const s=this.state;
+    const themeAccent={ sage:'#3C4A3A', paper:'#B9762F', ink:'#23261F' };
+    const themeSwatch={ sage:'linear-gradient(135deg,#3C4A3A,#6E8060)', paper:'linear-gradient(135deg,#E4D8BE,#B9762F)', ink:'linear-gradient(135deg,#3A3C33,#23261F)' };
+    const accent=themeAccent[s.theme]||'#3C4A3A';
+    const hasSources=s.sources.length>0;
+    const ready=hasSources && !s.generating;
+    const visMeta=this._visMeta();
+    const vis=visMeta[s.visibility];
+    const visibleCount=s.sections.filter(x=>x.on).length;
+
+    return {
+      // brand / props
+      showCollab: this.props.showCollaborators !== false,
+      accent,
+      // header
+      title:s.title,
+      savedLabel: s.published ? 'Auto-saved' : 'Draft · saves as you go',
+      published:s.published,
+      notPublished:!s.published,
+      publishBtnLabel: s.published ? 'Share' : 'Publish',
+      // sources
+      addOpen:s.addOpen,
+      toggleAdd:()=>this.setState(x=>({addOpen:!x.addOpen})),
+      openAdd:()=>this.setState({addOpen:true}),
+      addUpload:()=>this.addNew('upload'),
+      addUrl:()=>this.addNew('url'),
+      addText:()=>this.addNew('text'),
+      library: s.libIds.map(id=>{ const l=this.LIB.find(x=>x.id===id); return {...l, add:()=>this.addSource(id)}; }),
+      libraryEmpty: s.libIds.length===0,
+      sources: s.sources.map(src=>({ ...src, remove:()=>this.removeSource(src.id) })),
+      noSources: !hasSources,
+      hasSources,
+      sourceCount:s.sources.length,
+      groundLabel: hasSources ? s.sources.length+' sources · grounding every answer' : 'Add sources to start',
+      // middle
+      generating:s.generating,
+      ready,
+      noMessages: s.messages.length===0,
+      messages: s.messages.map(m=>{
+        const user=m.role==='user';
+        return {
+          wrap: user ? 'align-self:flex-end; max-width:76%;' : 'align-self:flex-start; max-width:86%;',
+          bubble: user
+            ? 'background:#3C4A3A; color:#F3F1E8; border-radius:14px 14px 4px 14px; padding:11px 15px; font-size:14.5px; line-height:1.5;'
+            : 'background:#fff; border:1px solid rgba(35,38,31,.08); border-radius:14px 14px 14px 4px; padding:13px 16px; font-size:14.5px; line-height:1.6; color:#3A3C33;',
+          text:m.text,
+          hasCites: !user && !!(m.cites && m.cites.length),
+          cites: m.cites||[],
+        };
+      }),
+      thinking:s.thinking,
+      suggestions:[
+        {text:'Which industries saw output drop?', ask:()=>this.ask('Which industries saw output drop?')},
+        {text:'Summarize the strongest evidence', ask:()=>this.ask('Summarize the strongest evidence')},
+        {text:'What are the main objections?', ask:()=>this.ask('What are the main objections?')},
+      ],
+      regenerate:()=>{ this._generate(); this._flash('Regenerating overview…'); },
+      draft:s.draft,
+      onDraft:(e)=>this.setState({draft:e.target.value}),
+      onKey:(e)=>{ if(e.key==='Enter'){ e.preventDefault(); this.ask(this.state.draft); } },
+      send:()=>this.ask(this.state.draft),
+      // config
+      onTitle:(e)=>this.setState({title:e.target.value}),
+      desc:s.desc,
+      onDesc:(e)=>this.setState({desc:e.target.value}),
+      visibleCount,
+      sections: s.sections.map(sec=>({
+        name:sec.name,
+        nameColor: sec.on ? '#23261F' : '#9A9C90',
+        trackBg: sec.on ? '#8FA57E' : 'rgba(35,38,31,.18)',
+        knobLeft: sec.on ? '18px' : '2px',
+        toggle:()=>this.toggleSection(sec.id),
+        redo:()=>this._flash('Redrafting “'+sec.name+'”…'),
+      })),
+      addSection:()=>this.addSection(),
+      themes:['sage','paper','ink'].map(k=>({
+        name: k==='sage'?'Sage':k==='paper'?'Paper':'Ink',
+        swatch: themeSwatch[k],
+        border: s.theme===k ? '#3C4A3A' : 'rgba(35,38,31,.12)',
+        labelColor: s.theme===k ? '#23261F' : '#8A8C80',
+        pick:()=>this.setState({theme:k}),
+      })),
+      visOptions:['private','link','public'].map(k=>{
+        const active=s.visibility===k;
+        return {
+          label:visMeta[k].label, sub:visMeta[k].sub,
+          bg: active?'#EBF0E5':'#fff',
+          border: active?'#3C4A3A':'rgba(35,38,31,.1)',
+          ring: active?'#3C4A3A':'rgba(35,38,31,.25)',
+          dot: active?'#3C4A3A':'transparent',
+          pick:()=>this.setState({visibility:k}),
+        };
+      }),
+      visSummary: vis.summary,
+      // publish
+      shareUrl:'poys.is/n/four-day-week',
+      copyLabel:s.copyLabel,
+      copyLink:()=>{ try{navigator.clipboard&&navigator.clipboard.writeText('https://poys.is/n/four-day-week');}catch(e){} this.setState({copyLabel:'Copied'}); this._flash('Link copied'); clearTimeout(this._c); this._c=setTimeout(()=>this.setState({copyLabel:'Copy'}),1500); },
+      openPublish:()=>this.setState({publishOpen:true}),
+      closePublish:()=>this.setState({publishOpen:false}),
+      stop:(e)=>e.stopPropagation(),
+      publishOpen:s.publishOpen,
+      confirmPublish:()=>{ this.setState({published:true}); this._flash('Published · your notebook is live'); },
+      unpublish:()=>{ this.setState({published:false}); this._flash('Unpublished'); },
+      modalTitle: s.published ? 'Share this notebook' : 'Publish this notebook',
+      modalSub: s.published ? 'It’s live. Share the link or export.' : 'Give it a home readers can open.',
+      toast:s.toast,
+    };
+  }
+}
+</script>
+</body>
+</html>

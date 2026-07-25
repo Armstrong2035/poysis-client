@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { setUiMode } from "@/lib/actions";
 import { useConsolidation } from "./ConsolidationContext";
 import { QuickAskModal } from "./QuickAskModal";
 import { GettingStartedPanel } from "./GettingStartedPanel";
@@ -17,6 +18,7 @@ const NAV = [
 
 export function WorkspaceSidebar({ email }: { email: string }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { connections } = useConsolidation();
   const { done } = useOnboarding();
   const [collapsed, setCollapsed] = useState(false);
@@ -70,6 +72,14 @@ export function WorkspaceSidebar({ email }: { email: string }) {
   const activeSourceCount = connections.length;
   const initials = email ? email[0].toUpperCase() : "?";
 
+  // Switch to the new Creator Studio: persist the choice server-side (so it's
+  // also the post-login landing) and navigate there. The workspace is the
+  // "enterprise" mode; this is how users leave it for the streamlined UI.
+  const goCreator = () => {
+    void setUiMode("creator");
+    router.push("/studio");
+  };
+
   const toastCopy: Record<string, string> = {
     connected: `✓ Drive connected${toastDocs > 0 ? ` · ${toastDocs.toLocaleString()} docs` : ""}`,
     denied: "Drive connection cancelled",
@@ -114,6 +124,15 @@ export function WorkspaceSidebar({ email }: { email: string }) {
           >
             <span style={{ color: "#C99A5C", fontSize: "15px" }}>✦</span>
           </button>
+          <button
+            onClick={goCreator}
+            className="w-8 h-8 rounded flex items-center justify-center transition-colors"
+            style={{ background: "#3C4A3A", color: "#F1EEE2", fontSize: "12px", fontWeight: 700 }}
+            title="Switch to the new Creator Studio"
+          >
+            C
+          </button>
+          <div style={{ width: "20px", height: "1px", background: "#3C4A3A" }} />
           {NAV.map(({ id, href, label, glyph, exact }) => {
             const active = exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
             return (
@@ -148,6 +167,29 @@ export function WorkspaceSidebar({ email }: { email: string }) {
                 <polyline points="8,3 4,7 8,11" />
               </svg>
             </button>
+          </div>
+
+          {/* Creator / Enterprise mode toggle — Enterprise (this workspace) is
+              active here; Creator jumps to the new Studio and remembers it. */}
+          <div className="px-2 pb-3">
+            <div className="flex gap-1 p-1 rounded-lg" style={{ background: "#243021" }}>
+              <button
+                onClick={goCreator}
+                className="flex-1 py-1.5 rounded-md transition-colors"
+                style={{ background: "transparent", color: "#B7C0B4", fontSize: "12.5px", fontWeight: 600 }}
+                title="Switch to the new Creator Studio"
+              >
+                Creator
+              </button>
+              <button
+                onClick={() => void setUiMode("enterprise")}
+                className="flex-1 py-1.5 rounded-md transition-colors"
+                style={{ background: "#3C4A3A", color: "#FAF8F0", fontSize: "12.5px", fontWeight: 600 }}
+                title="You're in the workspace (Enterprise)"
+              >
+                Enterprise
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 px-2 flex flex-col gap-0.5" style={{ overflowY: "auto", scrollbarWidth: "none" }}>

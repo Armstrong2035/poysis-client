@@ -1,13 +1,15 @@
 import { createClient } from "@/utils/supabase/server";
 import { ensureWorkspace } from "@/lib/workspace";
+import { landingPathForUser } from "@/lib/uiMode";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  // if "next" is in search params, use it as the redirection URL
-  const next = searchParams.get("next") ?? "/workspace";
+  // An explicit "next" always wins; otherwise fall back to the user's chosen
+  // app, resolved after the session exchange below.
+  const explicitNext = searchParams.get("next");
 
   if (code) {
     const cookieStore = await cookies();
@@ -20,6 +22,8 @@ export async function GET(request: Request) {
       if (data.user) {
         await ensureWorkspace(supabase, data.user.id);
       }
+
+      const next = explicitNext ?? landingPathForUser(data.user);
 
       const forwardedHost = request.headers.get("x-forwarded-host"); // confirmed with supabase docs
       const isLocalEnv = process.env.NODE_ENV === "development";

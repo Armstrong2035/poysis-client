@@ -5,6 +5,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { ensureWorkspace } from "./workspace";
+import { landingPathForUser } from "./uiMode";
 
 /**
  * Base URL for auth email redirects. Prefer the configured site URL so the
@@ -28,7 +29,7 @@ export async function login(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -39,7 +40,8 @@ export async function login(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
-  return redirect("/workspace");
+  // Land the user in their chosen app; non-entitled users always get Creator.
+  return redirect(landingPathForUser(data.user));
 }
 
 /**
@@ -72,7 +74,7 @@ export async function signup(formData: FormData) {
     await ensureWorkspace(supabase, data.session.user.id);
 
     revalidatePath("/", "layout");
-    return redirect("/workspace");
+    return redirect("/studio");
   }
 
   // Email confirmation is enabled — no session yet. The workspace is created

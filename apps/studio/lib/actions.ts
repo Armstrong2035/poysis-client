@@ -3,6 +3,7 @@
 import { createClient } from "../utils/supabase/server";
 import { createClient as createPublicClient } from "@supabase/supabase-js";
 import { ensureWorkspace } from "./workspace";
+import { isEnterpriseEntitled, type UiMode } from "./uiMode";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -374,6 +375,62 @@ export async function updateNotebookSlug(id: string, slug: string): Promise<stri
   }
 
   revalidatePath("/workspace");
+  return null;
+}
+
+/**
+ * Persists the user's UI mode (creator ↔ enterprise) in Supabase auth
+ * `user_metadata`. Server-side and per-user, so it drives the post-login
+ * landing and survives across sessions/devices — the toggle is not client-only.
+ */
+export async function setUiMode(mode: UiMode): Promise<void> {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  // Enterprise is a paid tier — never let a non-entitled user set it (the UI
+  // shows it locked, but this is the server-side backstop against a crafted
+  // request setting the mode directly).
+  if (mode === "enterprise" && !isEnterpriseEntitled(user)) {
+    throw new Error("Enterprise isn't available on your plan.");
+  }
+
+  const { error } = await supabase.auth.updateUser({ data: { ui_mode: mode } });
+  if (error) {
+    console.error("Error setting UI mode:", error.message);
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/", "layout");
+}
+
+/**
+ * Clears a notebook's slug, taking its public/marketplace link offline.
+ * The inverse of updateNotebookSlug — Creator Studio's "Unpublish". Returns an
+ * error string on failure, null on success.
+ */
+export async function unpublishNotebook(id: string): Promise<string | null> {
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { error } = await supabase
+    .from("notebooks")
+    .update({ slug: null, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("Error unpublishing notebook:", error.message);
+    return error.message;
+  }
+
+  revalidatePath("/workspace");
+  revalidatePath("/", "layout");
   return null;
 }
 

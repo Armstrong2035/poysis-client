@@ -6,11 +6,18 @@ export async function getWorkspaceId(
   supabase: SupabaseClient,
   userId: string
 ): Promise<string | null> {
+  // Not .single(): a user with more than one workspace row makes .single()
+  // error and return null, which surfaces as a spurious "Workspace not found"
+  // 404 even though rows exist (duplicates crept in before a unique constraint
+  // existed). Pick one deterministically so the app stays functional; dedupe
+  // the extra rows separately.
   const { data } = await supabase
     .from("workspaces")
     .select("workspace_id")
     .eq("user_id", userId)
-    .single();
+    .order("workspace_id", { ascending: true })
+    .limit(1)
+    .maybeSingle();
   return data?.workspace_id ?? null;
 }
 

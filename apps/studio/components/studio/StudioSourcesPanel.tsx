@@ -44,6 +44,20 @@ const CLUSTER_BADGE = {
   ink: "#B9762F",
 };
 
+// Connections are workspace-level and change rarely, but /api/youtube/status
+// round-trips to the worker (slow). Cache the resolved list per session so a
+// reopened panel paints instantly, then revalidate in the background.
+const CONNECTIONS_CACHE_KEY = "pz-studio-connections";
+function readConnectionsCache(): Connection[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = sessionStorage.getItem(CONNECTIONS_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as Connection[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 interface StudioSourcesPanelProps {
   /** Prefixed tags currently attached to the notebook (`conn:` / `topic:`). */
   sources: string[];
@@ -64,8 +78,10 @@ export function StudioSourcesPanel({
   onToast,
   onCategoriesImported,
 }: StudioSourcesPanelProps) {
-  const [connections, setConnections] = useState<Connection[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Hydrate from the session cache on first render so a reopened panel paints
+  // instantly; only a first-ever load with no cache starts in the loading state.
+  const [connections, setConnections] = useState<Connection[]>(readConnectionsCache);
+  const [loading, setLoading] = useState(() => connections.length === 0);
   const [addOpen, setAddOpen] = useState(false);
 
   const fetchConnections = useCallback(async () => {
@@ -102,7 +118,13 @@ export function StudioSourcesPanel({
           channelId: c.channel_id,
         }),
       );
-      setConnections([...driveConns, ...ytConns]);
+      const combined = [...driveConns, ...ytConns];
+      setConnections(combined);
+      try {
+        sessionStorage.setItem(CONNECTIONS_CACHE_KEY, JSON.stringify(combined));
+      } catch {
+        /* storage full/blocked — cache is best-effort */
+      }
     } catch {
       /* keep prior state */
     } finally {
@@ -111,8 +133,9 @@ export function StudioSourcesPanel({
   }, []);
 
   useEffect(() => {
-    // Load-once on mount; the setState lives inside the async fetch, not the
-    // effect body, so it doesn't cascade renders.
+    // Revalidate on mount; the initial paint already came from the session
+    // cache (or the skeleton, on the first-ever load). setState lives inside the
+    // async fetch, not the effect body, so it doesn't cascade renders.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchConnections();
   }, [fetchConnections]);
@@ -226,6 +249,10 @@ export function StudioSourcesPanel({
         background: "#F7F4EC",
       }}
     >
+      <style>{`
+        @keyframes pz-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .pz-skel { background: linear-gradient(90deg, #ECE8DE 0%, #F5F2EA 50%, #ECE8DE 100%); background-size: 200% 100%; animation: pz-shimmer 1.2s ease-in-out infinite; border-radius: 6px; }
+      `}</style>
       <div
         style={{
           padding: "16px 18px 12px",
@@ -360,7 +387,14 @@ export function StudioSourcesPanel({
           gap: "8px",
         }}
       >
-        {noSources && !addOpen && (
+        {loading && (
+          <>
+            <SourceSkeleton />
+            <SourceSkeleton />
+          </>
+        )}
+
+        {!loading && noSources && !addOpen && (
           <div
             style={{
               border: "1.5px dashed rgba(35,38,31,.18)",
@@ -584,6 +618,58 @@ function AddRow({
   );
 }
 
+/* Shimmer placeholders shown while the first connection/playlist fetch is in
+ * flight (the worker round-trip is the slow part). */
+function SourceSkeleton() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: "11px",
+        alignItems: "center",
+        background: "#fff",
+        border: "1px solid rgba(35,38,31,.08)",
+        borderRadius: "10px",
+        padding: "11px 12px",
+      }}
+    >
+      <div
+        className="pz-skel"
+        style={{ width: "26px", height: "26px", borderRadius: "6px", flex: "0 0 auto" }}
+      />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
+        <div className="pz-skel" style={{ width: "68%", height: "11px" }} />
+        <div className="pz-skel" style={{ width: "42%", height: "9px" }} />
+      </div>
+    </div>
+  );
+}
+
+function PlaylistRowSkeleton() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: "9px",
+        alignItems: "center",
+        background: "#F7F4EC",
+        border: "1px solid rgba(35,38,31,.08)",
+        borderRadius: "8px",
+        padding: "7px 9px",
+      }}
+    >
+      <div
+        className="pz-skel"
+        style={{ width: "16px", height: "16px", borderRadius: "4px", flex: "0 0 auto" }}
+      />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "5px" }}>
+        <div className="pz-skel" style={{ width: "72%", height: "10px" }} />
+        <div className="pz-skel" style={{ width: "35%", height: "8px" }} />
+      </div>
+    </div>
+  );
+}
+
 /* Organize-by-playlist — turns a connected channel's YouTube playlists into
  * locked topic categories. Lists them lazily on first open (Data-API backed, so
  * it works even before transcripts exist), lets the owner pick several, and
@@ -710,9 +796,11 @@ function ChannelPlaylists({
         <div style={{ marginTop: "8px" }}>
           {loading && (
             <div
-              style={{ fontSize: "12px", color: "#9A9C90", padding: "6px 2px" }}
+              style={{ display: "flex", flexDirection: "column", gap: "5px" }}
             >
-              Loading playlists…
+              <PlaylistRowSkeleton />
+              <PlaylistRowSkeleton />
+              <PlaylistRowSkeleton />
             </div>
           )}
           {error && (

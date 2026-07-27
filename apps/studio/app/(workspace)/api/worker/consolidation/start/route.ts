@@ -24,13 +24,30 @@ export async function POST(req: NextRequest) {
   // The worker now requires a non-empty `sources` and ingests only what's
   // listed, so send the workspace's actual connections instead of a hardcoded
   // default (which excluded YouTube and 401'd YouTube-only workspaces).
-  const sources = await resolveWorkspaceSources(supabase, workspaceId, userId);
-  if (sources.length === 0) {
+  const connected = await resolveWorkspaceSources(supabase, workspaceId, userId);
+  if (connected.length === 0) {
     return NextResponse.json(
       {
         error:
           "No sources connected. Connect Google Drive or a YouTube channel first.",
       },
+      { status: 400 },
+    );
+  }
+
+  // A per-source "Sync" passes the specific type(s) to reindex; honor only the
+  // ones actually connected. No override → snapshot everything ("Build Map").
+  const body = await req.json().catch(() => ({}));
+  const requested: string[] = Array.isArray(body?.sources)
+    ? body.sources.filter((s: unknown): s is string => typeof s === "string")
+    : [];
+  const sources =
+    requested.length > 0
+      ? connected.filter((s) => requested.includes(s))
+      : connected;
+  if (sources.length === 0) {
+    return NextResponse.json(
+      { error: "That source isn't connected." },
       { status: 400 },
     );
   }

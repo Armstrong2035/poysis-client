@@ -9,7 +9,7 @@ import {
 import type { ClusterOption } from "@/components/notebook/SourcesDrawer";
 
 /* A connected platform (whole account/channel), tagged `conn:<id>` on the
- * notebook. Clusters are tagged `topic:<id>`. Both are just prefixed strings in
+ * notebook. Clustersg  are tagged `topic:<id>`. Both are just prefixed strings in
  * the notebook's `sources` array; this panel resolves them to labelled cards. */
 type Kind = "drive" | "youtube";
 interface Connection {
@@ -17,13 +17,32 @@ interface Connection {
   label: string;
   kind: Kind;
   docCount?: number;
+  /** The YouTube channel id (UC…), used to scope playlists to this channel. */
+  channelId?: string;
 }
 
-const KIND_BADGE: Record<Kind, { badge: string; tint: string; ink: string; label: string }> = {
-  drive: { badge: "GD", tint: "rgba(60,74,58,.12)", ink: "#3C4A3A", label: "Google Drive" },
-  youtube: { badge: "YT", tint: "rgba(185,66,47,.13)", ink: "#B9422F", label: "YouTube" },
+const KIND_BADGE: Record<
+  Kind,
+  { badge: string; tint: string; ink: string; label: string }
+> = {
+  drive: {
+    badge: "GD",
+    tint: "rgba(60,74,58,.12)",
+    ink: "#3C4A3A",
+    label: "Google Drive",
+  },
+  youtube: {
+    badge: "YT",
+    tint: "rgba(185,66,47,.13)",
+    ink: "#B9422F",
+    label: "YouTube",
+  },
 };
-const CLUSTER_BADGE = { badge: "◈", tint: "rgba(185,118,47,.15)", ink: "#B9762F" };
+const CLUSTER_BADGE = {
+  badge: "◈",
+  tint: "rgba(185,118,47,.15)",
+  ink: "#B9762F",
+};
 
 interface StudioSourcesPanelProps {
   /** Prefixed tags currently attached to the notebook (`conn:` / `topic:`). */
@@ -52,11 +71,19 @@ export function StudioSourcesPanel({
   const fetchConnections = useCallback(async () => {
     try {
       const [drive, youtube] = await Promise.all([
-        fetch("/api/drive/status").then((r) => (r.ok ? r.json() : { connections: [] })),
-        fetch("/api/youtube/status").then((r) => (r.ok ? r.json() : { connections: [] })),
+        fetch("/api/drive/status").then((r) =>
+          r.ok ? r.json() : { connections: [] },
+        ),
+        fetch("/api/youtube/status").then((r) =>
+          r.ok ? r.json() : { connections: [] },
+        ),
       ]);
       const driveConns: Connection[] = (drive.connections ?? []).map(
-        (c: { id: string; google_account_email?: string; doc_count?: number }) => ({
+        (c: {
+          id: string;
+          google_account_email?: string;
+          doc_count?: number;
+        }) => ({
           id: c.id,
           label: c.google_account_email ?? "Google Drive",
           docCount: c.doc_count,
@@ -64,10 +91,15 @@ export function StudioSourcesPanel({
         }),
       );
       const ytConns: Connection[] = (youtube.connections ?? []).map(
-        (c: { id: string; channel_name?: string | null; channel_id: string }) => ({
+        (c: {
+          id: string;
+          channel_name?: string | null;
+          channel_id: string;
+        }) => ({
           id: c.id,
           label: c.channel_name ?? c.channel_id,
           kind: "youtube" as const,
+          channelId: c.channel_id,
         }),
       );
       setConnections([...driveConns, ...ytConns]);
@@ -99,7 +131,14 @@ export function StudioSourcesPanel({
         return {
           tag,
           title: c.label,
-          meta: [b.label, c.docCount != null ? `${c.docCount} docs` : ""].filter(Boolean).join(" · "),
+          meta: [b.label, c.docCount != null ? `${c.docCount} docs` : ""]
+            .filter(Boolean)
+            .join(" · "),
+          // Worker source type — drives the per-source "Sync" (reindex). Only
+          // connections can be reindexed; clusters are derived, so they omit it.
+          sourceType: c.kind === "youtube" ? "youtube" : "google_drive",
+          // Channel id (YouTube only) — scopes the playlist list to this card.
+          channelId: c.kind === "youtube" ? c.channelId : undefined,
           ...b,
         };
       }
@@ -110,6 +149,8 @@ export function StudioSourcesPanel({
           tag,
           title: c.label,
           meta: `Cluster · ${c.doc_count} doc${c.doc_count === 1 ? "" : "s"}`,
+          sourceType: undefined,
+          channelId: undefined,
           ...CLUSTER_BADGE,
         };
       }
@@ -119,6 +160,8 @@ export function StudioSourcesPanel({
     tag: string;
     title: string;
     meta: string;
+    sourceType?: string;
+    channelId?: string;
     badge: string;
     tint: string;
     ink: string;
@@ -133,14 +176,43 @@ export function StudioSourcesPanel({
     sources.filter((s) => s.startsWith("topic:")).map((s) => s.slice(6)),
   );
   const availableConns = connections.filter((c) => !attachedConnIds.has(c.id));
-  const availableClusters = rootClusters.filter((c) => !attachedTopicIds.has(c.topic_id));
-  const hasYoutube = connections.some((c) => c.kind === "youtube");
+  const availableClusters = rootClusters.filter(
+    (c) => !attachedTopicIds.has(c.topic_id),
+  );
 
   const noSources = attached.length === 0;
 
   const handleYoutubeConnected = () => {
     fetchConnections();
     onToast("YouTube channel added");
+  };
+
+  // Reindex a source: re-run a consolidation snapshot scoped to that source's
+  // type so its latest content is pulled in. Keyed by tag for a per-card
+  // spinner. (Scopes to the type, not a single connection — a workspace with
+  // two YouTube channels reindexes both; that's the worker's granularity.)
+  const [syncing, setSyncing] = useState<Set<string>>(new Set());
+  const handleSync = async (tag: string, sourceType: string) => {
+    if (syncing.has(tag)) return;
+    setSyncing((prev) => new Set(prev).add(tag));
+    try {
+      const res = await fetch("/api/worker/consolidation/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sources: [sourceType] }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Couldn't start sync");
+      onToast("Sync started — reindexing this source");
+    } catch (err) {
+      onToast(err instanceof Error ? err.message : "Couldn't start sync");
+    } finally {
+      setSyncing((prev) => {
+        const next = new Set(prev);
+        next.delete(tag);
+        return next;
+      });
+    }
   };
 
   return (
@@ -162,12 +234,27 @@ export function StudioSourcesPanel({
           justifyContent: "space-between",
         }}
       >
-        <span style={{ fontSize: "12px", fontWeight: 700, letterSpacing: ".09em", textTransform: "uppercase", color: "#6B6D62" }}>
+        <span
+          style={{
+            fontSize: "12px",
+            fontWeight: 700,
+            letterSpacing: ".09em",
+            textTransform: "uppercase",
+            color: "#6B6D62",
+          }}
+        >
           Sources
         </span>
         <button
           onClick={() => setAddOpen((o) => !o)}
-          style={{ fontSize: "13px", color: "#3C4A3A", fontWeight: 600, display: "flex", alignItems: "center", gap: "5px" }}
+          style={{
+            fontSize: "13px",
+            color: "#3C4A3A",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            gap: "5px",
+          }}
         >
           + Add
         </button>
@@ -185,10 +272,15 @@ export function StudioSourcesPanel({
             animation: "pz-fade .18s ease",
           }}
         >
-          <YoutubeConnectForm onConnected={handleYoutubeConnected} onToast={onToast} />
+          <YoutubeConnectForm
+            onConnected={handleYoutubeConnected}
+            onToast={onToast}
+          />
 
           <button
-            onClick={() => { window.location.href = "/api/auth/google-drive"; }}
+            onClick={() => {
+              window.location.href = "/api/auth/google-drive";
+            }}
             style={{
               width: "100%",
               marginTop: "9px",
@@ -204,16 +296,23 @@ export function StudioSourcesPanel({
             + Connect Google Drive
           </button>
 
-          {hasYoutube && (
-            <PlaylistImporter onToast={onToast} onImported={onCategoriesImported} />
-          )}
-
           {(availableConns.length > 0 || availableClusters.length > 0) && (
             <>
-              <div style={{ fontSize: "11px", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#9A9C90", margin: "12px 0 7px" }}>
+              <div
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  letterSpacing: ".06em",
+                  textTransform: "uppercase",
+                  color: "#9A9C90",
+                  margin: "12px 0 7px",
+                }}
+              >
                 Add an existing source
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "5px" }}
+              >
                 {availableConns.map((c) => {
                   const b = KIND_BADGE[c.kind];
                   return (
@@ -223,7 +322,10 @@ export function StudioSourcesPanel({
                       tint={b.tint}
                       ink={b.ink}
                       title={c.label}
-                      onClick={() => { onToggleSource(`conn:${c.id}`); onToast("Source added"); }}
+                      onClick={() => {
+                        onToggleSource(`conn:${c.id}`);
+                        onToast("Source added");
+                      }}
                     />
                   );
                 })}
@@ -234,7 +336,10 @@ export function StudioSourcesPanel({
                     tint={CLUSTER_BADGE.tint}
                     ink={CLUSTER_BADGE.ink}
                     title={c.label}
-                    onClick={() => { onToggleSource(`topic:${c.topic_id}`); onToast("Cluster added"); }}
+                    onClick={() => {
+                      onToggleSource(`topic:${c.topic_id}`);
+                      onToast("Cluster added");
+                    }}
                   />
                 ))}
               </div>
@@ -246,7 +351,14 @@ export function StudioSourcesPanel({
       {/* Source list */}
       <div
         className="pz-scroll"
-        style={{ flex: 1, overflowY: "auto", padding: "0 14px 8px", display: "flex", flexDirection: "column", gap: "8px" }}
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "0 14px 8px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+        }}
       >
         {noSources && !addOpen && (
           <div
@@ -259,13 +371,31 @@ export function StudioSourcesPanel({
             }}
           >
             <div style={{ fontSize: "26px", marginBottom: "8px" }}>◧</div>
-            <div style={{ fontSize: "13.5px", fontWeight: 600, color: "#5B5D52", marginBottom: "3px" }}>No sources yet</div>
+            <div
+              style={{
+                fontSize: "13.5px",
+                fontWeight: 600,
+                color: "#5B5D52",
+                marginBottom: "3px",
+              }}
+            >
+              No sources yet
+            </div>
             <div style={{ fontSize: "12.5px", lineHeight: 1.5 }}>
-              Add a YouTube channel, Drive, or a cluster. Everything Poysis answers is grounded in them.
+              Add a YouTube channel, Drive, or a cluster. Everything Poysis
+              answers is grounded in them.
             </div>
             <button
               onClick={() => setAddOpen(true)}
-              style={{ marginTop: "12px", fontSize: "13px", fontWeight: 600, color: "#fff", background: "#3C4A3A", borderRadius: "9px", padding: "9px 16px" }}
+              style={{
+                marginTop: "12px",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#fff",
+                background: "#3C4A3A",
+                borderRadius: "9px",
+                padding: "9px 16px",
+              }}
             >
               Add your first source
             </button>
@@ -276,9 +406,6 @@ export function StudioSourcesPanel({
           <div
             key={s.tag}
             style={{
-              display: "flex",
-              gap: "11px",
-              alignItems: "flex-start",
               background: "#fff",
               border: "1px solid rgba(35,38,31,.08)",
               borderRadius: "10px",
@@ -286,6 +413,13 @@ export function StudioSourcesPanel({
               animation: "pz-fade .2s ease",
             }}
           >
+            <div
+              style={{
+                display: "flex",
+                gap: "11px",
+                alignItems: "flex-start",
+              }}
+            >
             <div
               style={{
                 width: "26px",
@@ -304,23 +438,80 @@ export function StudioSourcesPanel({
               {s.badge}
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: "13.5px", fontWeight: 500, color: "#23261F", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div
+                style={{
+                  fontSize: "13.5px",
+                  fontWeight: 500,
+                  color: "#23261F",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
                 {s.title}
               </div>
-              <div style={{ fontSize: "11.5px", color: "#9A9C90" }}>{s.meta}</div>
+              <div style={{ fontSize: "11.5px", color: "#9A9C90" }}>
+                {s.meta}
+              </div>
             </div>
+            {s.sourceType && (
+              <button
+                onClick={() => handleSync(s.tag, s.sourceType!)}
+                disabled={syncing.has(s.tag)}
+                title="Sync — reindex the latest content from this source"
+                style={{
+                  fontSize: "14px",
+                  color: "#3C4A3A",
+                  padding: "0 3px",
+                  lineHeight: 1,
+                  opacity: syncing.has(s.tag) ? 0.5 : 1,
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-block",
+                    animation: syncing.has(s.tag)
+                      ? "pz-spin .8s linear infinite"
+                      : "none",
+                  }}
+                >
+                  ⟳
+                </span>
+              </button>
+            )}
             <button
               onClick={() => onToggleSource(s.tag)}
               title="Remove from notebook"
-              style={{ fontSize: "15px", color: "#B7B9AD", padding: "0 2px", lineHeight: 1 }}
+              style={{
+                fontSize: "15px",
+                color: "#B7B9AD",
+                padding: "0 2px",
+                lineHeight: 1,
+              }}
             >
               ×
             </button>
+            </div>
+            {s.sourceType === "youtube" && s.channelId && (
+              <ChannelPlaylists
+                channelId={s.channelId}
+                onToast={onToast}
+                onImported={onCategoriesImported}
+              />
+            )}
           </div>
         ))}
       </div>
 
-      <div style={{ flex: "0 0 auto", padding: "13px 18px", borderTop: "1px solid rgba(35,38,31,.08)", fontSize: "12px", color: "#9A9C90" }}>
+      <div
+        style={{
+          flex: "0 0 auto",
+          padding: "13px 18px",
+          borderTop: "1px solid rgba(35,38,31,.08)",
+          fontSize: "12px",
+          color: "#9A9C90",
+        }}
+      >
         {loading && attached.length === 0
           ? "Loading sources…"
           : noSources
@@ -376,7 +567,16 @@ function AddRow({
       >
         {badge}
       </span>
-      <span style={{ fontSize: "12.5px", color: "#3A3C33", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>
+      <span
+        style={{
+          fontSize: "12.5px",
+          color: "#3A3C33",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          flex: 1,
+        }}
+      >
         {title}
       </span>
       <span style={{ fontSize: "14px", color: "#3C4A3A" }}>+</span>
@@ -399,10 +599,12 @@ interface Playlist {
   channel_name: string;
 }
 
-function PlaylistImporter({
+function ChannelPlaylists({
+  channelId,
   onToast,
   onImported,
 }: {
+  channelId: string;
   onToast: (msg: string) => void;
   onImported?: () => void;
 }) {
@@ -412,6 +614,12 @@ function PlaylistImporter({
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
+
+  // The playlists endpoint returns the whole workspace's playlists; show only
+  // the ones belonging to this card's channel.
+  const channelPlaylists = (playlists ?? []).filter(
+    (p) => p.channel_id === channelId,
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -486,23 +694,63 @@ function PlaylistImporter({
         }}
       >
         <span>◈ Organize by playlist</span>
-        <span style={{ fontSize: "10px", color: "#8A8C80", transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }}>▾</span>
+        <span
+          style={{
+            fontSize: "10px",
+            color: "#8A8C80",
+            transform: open ? "rotate(180deg)" : "none",
+            transition: "transform .15s",
+          }}
+        >
+          ▾
+        </span>
       </button>
 
       {open && (
         <div style={{ marginTop: "8px" }}>
-          {loading && <div style={{ fontSize: "12px", color: "#9A9C90", padding: "6px 2px" }}>Loading playlists…</div>}
-          {error && <div style={{ fontSize: "11px", color: "#B9422F", padding: "4px 2px" }}>{error}</div>}
-          {!loading && !error && playlists?.length === 0 && (
-            <div style={{ fontSize: "12px", color: "#9A9C90", padding: "6px 2px", lineHeight: 1.5 }}>
-              No playlists found on your connected channels.
+          {loading && (
+            <div
+              style={{ fontSize: "12px", color: "#9A9C90", padding: "6px 2px" }}
+            >
+              Loading playlists…
             </div>
           )}
+          {error && (
+            <div
+              style={{ fontSize: "11px", color: "#B9422F", padding: "4px 2px" }}
+            >
+              {error}
+            </div>
+          )}
+          {!loading &&
+            !error &&
+            playlists !== null &&
+            channelPlaylists.length === 0 && (
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#9A9C90",
+                  padding: "6px 2px",
+                  lineHeight: 1.5,
+                }}
+              >
+                No playlists on this channel.
+              </div>
+            )}
 
-          {playlists && playlists.length > 0 && (
+          {channelPlaylists.length > 0 && (
             <>
-              <div className="pz-scroll" style={{ display: "flex", flexDirection: "column", gap: "5px", maxHeight: "220px", overflowY: "auto" }}>
-                {playlists.map((p) => {
+              <div
+                className="pz-scroll"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "5px",
+                  maxHeight: "220px",
+                  overflowY: "auto",
+                }}
+              >
+                {channelPlaylists.map((p) => {
                   const checked = selected.has(p.playlist_id);
                   return (
                     <button
@@ -537,11 +785,26 @@ function PlaylistImporter({
                         {checked ? "✓" : ""}
                       </span>
                       <span style={{ minWidth: 0, flex: 1 }}>
-                        <span style={{ display: "block", fontSize: "12.5px", color: "#23261F", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        <span
+                          style={{
+                            display: "block",
+                            fontSize: "12.5px",
+                            color: "#23261F",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
                           {p.title}
                         </span>
-                        <span style={{ display: "block", fontSize: "10.5px", color: "#9A9C90" }}>
-                          {p.item_count} video{p.item_count === 1 ? "" : "s"} · {p.channel_name}
+                        <span
+                          style={{
+                            display: "block",
+                            fontSize: "10.5px",
+                            color: "#9A9C90",
+                          }}
+                        >
+                          {p.item_count} video{p.item_count === 1 ? "" : "s"}
                         </span>
                       </span>
                     </button>
@@ -606,7 +869,10 @@ function YoutubeConnectForm({
       const res = await fetch("/api/youtube/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ channelUrl: url.trim(), maxVideoMinutes: minutes }),
+        body: JSON.stringify({
+          channelUrl: url.trim(),
+          maxVideoMinutes: minutes,
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -615,7 +881,8 @@ function YoutubeConnectForm({
       setUrl("");
       onConnected();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Couldn't add that channel";
+      const msg =
+        err instanceof Error ? err.message : "Couldn't add that channel";
       setError(msg);
       onToast(msg);
     } finally {
@@ -625,7 +892,16 @@ function YoutubeConnectForm({
 
   return (
     <form onSubmit={handleSubmit}>
-      <div style={{ fontSize: "11px", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#9A9C90", marginBottom: "7px" }}>
+      <div
+        style={{
+          fontSize: "11px",
+          fontWeight: 700,
+          letterSpacing: ".06em",
+          textTransform: "uppercase",
+          color: "#9A9C90",
+          marginBottom: "7px",
+        }}
+      >
         Add a YouTube channel
       </div>
       <div style={{ display: "flex", gap: "7px" }}>
@@ -661,8 +937,14 @@ function YoutubeConnectForm({
           {submitting ? "Adding…" : "Add"}
         </button>
       </div>
-      {error && <div style={{ fontSize: "11px", color: "#B9422F", marginTop: "6px" }}>{error}</div>}
-      <div style={{ fontSize: "10.5px", color: "#9A9C90", marginTop: "6px" }}>Public channels only — no sign-in.</div>
+      {error && (
+        <div style={{ fontSize: "11px", color: "#B9422F", marginTop: "6px" }}>
+          {error}
+        </div>
+      )}
+      <div style={{ fontSize: "10.5px", color: "#9A9C90", marginTop: "6px" }}>
+        Public channels only — no sign-in.
+      </div>
     </form>
   );
 }

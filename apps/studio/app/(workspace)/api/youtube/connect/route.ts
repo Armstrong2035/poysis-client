@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { getWorkspaceId } from "@/lib/workspace";
 import { getAuthUser } from "@/lib/getAuthUser";
 import { MAX_VIDEO_MINUTES_ERROR, parseMaxVideoMinutes } from "@/lib/youtube";
+import { resolveWorkspaceSources } from "@/lib/workspaceSources";
 
 const WORKER_URL = process.env.WORKER_URL ?? process.env.LOCAL_WORKER_URL ?? "";
 if (!WORKER_URL) throw new Error("WORKER_URL environment variable is not set");
@@ -66,12 +67,39 @@ export async function POST(req: NextRequest) {
     });
 
     const text = await workerRes.text();
+
+    // On a successful connect, kick off a consolidation snapshot so the new
+    // channel starts ingesting/clustering without the user clicking "Build
+    // Map". "youtube" is definitely connected now (we just added it); union in
+    // any other connected sources so a single snapshot covers Drive + YouTube
+    // together. Best-effort — a snapshot failure must not fail the connect.
+    if (workerRes.ok) {
+      try {
+        const sources = Array.from(
+          new Set(["youtube", ...(await resolveWorkspaceSources(supabase, workspaceId, user.id))]),
+        );
+        const snapRes = await fetch(`${WORKER_URL}/consolidation/snapshot`, {
+          method: "POST",
+          headers: { "X-User-ID": user.id, "Content-Type": "application/json" },
+          body: JSON.stringify({ workspace_id: workspaceId, sources }),
+        });
+        if (!snapRes.ok) {
+          console.error(
+            `[youtube/connect] snapshot trigger failed: ${snapRes.status} ${(await snapRes.text()).slice(0, 200)}`,
+          );
+        }
+      } catch (err) {
+        console.error("[youtube/connect] snapshot trigger error:", err);
+      }
+    }
+
     try {
       return NextResponse.json(JSON.parse(text), { status: workerRes.status });
     } catch {
       return NextResponse.json({ error: text }, { status: workerRes.status });
     }
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message ?? "Failed to reach worker" }, { status: 500 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to reach worker";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

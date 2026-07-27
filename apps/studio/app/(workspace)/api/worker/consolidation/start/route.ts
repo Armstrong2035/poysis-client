@@ -3,6 +3,7 @@ import { createClient } from "../../../../../../utils/supabase/server";
 import { cookies } from "next/headers";
 import { getWorkspaceId } from "@/lib/workspace";
 import { getAuthUser } from "@/lib/getAuthUser";
+import { resolveWorkspaceSources } from "@/lib/workspaceSources";
 
 const WORKER_URL = process.env.WORKER_URL ?? process.env.LOCAL_WORKER_URL ?? "";
 if (!WORKER_URL) throw new Error("WORKER_URL environment variable is not set");
@@ -20,6 +21,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
   const userId = user.id;
 
+  // The worker now requires a non-empty `sources` and ingests only what's
+  // listed, so send the workspace's actual connections instead of a hardcoded
+  // default (which excluded YouTube and 401'd YouTube-only workspaces).
+  const sources = await resolveWorkspaceSources(supabase, workspaceId, userId);
+  if (sources.length === 0) {
+    return NextResponse.json(
+      {
+        error:
+          "No sources connected. Connect Google Drive or a YouTube channel first.",
+      },
+      { status: 400 },
+    );
+  }
+
   try {
     const res = await fetch(`${WORKER_URL}/consolidation/snapshot`, {
       method: "POST",
@@ -29,7 +44,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         workspace_id: workspaceId,
-        sources: ["google_drive"],
+        sources,
       }),
     });
 
@@ -41,8 +56,9 @@ export async function POST(req: NextRequest) {
 
     const data = await res.json();
     return NextResponse.json(data);
-  } catch (err: any) {
+  } catch (err) {
     console.error("[consolidation/start] Fetch error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Failed to reach worker";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

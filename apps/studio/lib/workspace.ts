@@ -27,10 +27,19 @@ export async function ensureWorkspace(
   if (existing) return existing;
 
   const workspaceId = crypto.randomUUID();
-  await supabase.from("workspaces").insert({
+  const { error } = await supabase.from("workspaces").insert({
     workspace_id: workspaceId,
     user_id: userId,
     name: "My Workspace",
   });
+  if (error) {
+    // The app uses the publishable (anon) key under RLS, so the authenticated
+    // user must be allowed to INSERT their own workspace row. A swallowed error
+    // here is exactly what strands an account on "Workspace not found" — log it
+    // loudly (it shows in Vercel function logs) instead of returning an id for
+    // a row that was never written.
+    console.error(`[ensureWorkspace] insert failed for user ${userId}: ${error.message}`);
+    throw new Error(`Could not create workspace: ${error.message}`);
+  }
   return workspaceId;
 }

@@ -14,6 +14,8 @@ import { StudioConfigPanel, type Visibility } from "@/components/studio/StudioCo
 import { StudioPublishModal } from "@/components/studio/StudioPublishModal";
 import { useStudioNotebook } from "@/components/studio/useStudioNotebook";
 import { setUiMode } from "@/lib/actions";
+import { useConsolidationProgress } from "@/app/hooks/useConsolidationProgress";
+import { ConsolidationProgressPane } from "@/components/studio/ConsolidationProgressPane";
 
 type StudioMode = "creator" | "enterprise";
 
@@ -34,6 +36,7 @@ const VIS_SUMMARY: Record<Visibility, string> = {
 function StudioInner() {
   const searchParams = useSearchParams();
   const { topics, refreshKnowledge } = useConsolidation();
+  const progress = useConsolidationProgress();
   const { notebooks, createNotebook, deployNotebook, patchLocal } = useNotebooks();
 
   const [manualNotebookId, setManualNotebookId] = useState<string | null>(null);
@@ -58,6 +61,12 @@ function StudioInner() {
   useEffect(() => {
     if (topics === null) refreshKnowledge();
   }, [topics, refreshKnowledge]);
+
+  // When a snapshot finishes, pull the fresh topic map so the new clusters /
+  // categories show up in the sources panel without a manual refresh.
+  useEffect(() => {
+    if (progress.phase === "done") refreshKnowledge();
+  }, [progress.phase, refreshKnowledge]);
 
   const flashToast = useCallback((msg: string) => {
     setToast(msg);
@@ -273,6 +282,7 @@ function StudioInner() {
             clusters={topics ?? []}
             onToast={flashToast}
             onCategoriesImported={refreshKnowledge}
+            onConsolidationStarted={progress.watch}
           />
 
           {/* Middle — Test & Chat */}
@@ -373,6 +383,10 @@ function StudioInner() {
         >
           {toast}
         </div>
+      )}
+
+      {progress.visible && (
+        <ConsolidationProgressPane progress={progress} onDismiss={progress.dismiss} />
       )}
     </>
   );

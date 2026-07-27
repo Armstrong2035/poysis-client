@@ -69,6 +69,9 @@ interface StudioSourcesPanelProps {
   /** Called after playlists are imported as categories, so the parent can
    *  refresh consolidation topics and surface them in the cluster list. */
   onCategoriesImported?: () => void;
+  /** Called when a snapshot run starts (connect / sync), with its job_id, so
+   *  the parent can stream progress in the bottom pane. */
+  onConsolidationStarted?: (jobId?: string | null) => void;
 }
 
 export function StudioSourcesPanel({
@@ -77,6 +80,7 @@ export function StudioSourcesPanel({
   clusters,
   onToast,
   onCategoriesImported,
+  onConsolidationStarted,
 }: StudioSourcesPanelProps) {
   // Hydrate from the session cache on first render so a reopened panel paints
   // instantly; only a first-ever load with no cache starts in the loading state.
@@ -205,9 +209,11 @@ export function StudioSourcesPanel({
 
   const noSources = attached.length === 0;
 
-  const handleYoutubeConnected = () => {
+  const handleYoutubeConnected = (jobId?: string | null) => {
     fetchConnections();
     onToast("YouTube channel added");
+    // Connect auto-starts a snapshot; stream its progress in the bottom pane.
+    onConsolidationStarted?.(jobId);
   };
 
   // Reindex a source: re-run a consolidation snapshot scoped to that source's
@@ -227,6 +233,7 @@ export function StudioSourcesPanel({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Couldn't start sync");
       onToast("Sync started — reindexing this source");
+      onConsolidationStarted?.(data.job_id);
     } catch (err) {
       onToast(err instanceof Error ? err.message : "Couldn't start sync");
     } finally {
@@ -936,7 +943,7 @@ function YoutubeConnectForm({
   onConnected,
   onToast,
 }: {
-  onConnected: () => void;
+  onConnected: (jobId?: string | null) => void;
   onToast: (msg: string) => void;
 }) {
   const [url, setUrl] = useState("");
@@ -966,8 +973,9 @@ function YoutubeConnectForm({
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error ?? "Couldn't add that channel");
       }
+      const data = await res.json().catch(() => ({}));
       setUrl("");
-      onConnected();
+      onConnected(data.snapshot_job_id ?? null);
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : "Couldn't add that channel";

@@ -18,9 +18,14 @@ export async function GET(req: NextRequest) {
   if (!workspaceId) return new Response("Workspace not found", { status: 404 });
   const userId = user.id;
 
-  const workerRes = await fetch(
-    `${WORKER_URL}/consolidation/snapshot/stream/${workspaceId}`,
-    {
+  // Passing job_id pins the stream to a specific run; without it the worker
+  // follows the workspace's latest job (which can briefly echo a prior result).
+  const jobId = req.nextUrl.searchParams.get("job_id");
+  const streamUrl = `${WORKER_URL}/consolidation/snapshot/stream/${workspaceId}${
+    jobId ? `?job_id=${encodeURIComponent(jobId)}` : ""
+  }`;
+
+  const workerRes = await fetch(streamUrl, {
       headers: {
         "X-User-ID": userId,
         "Accept": "text/event-stream",

@@ -73,6 +73,9 @@ export async function POST(req: NextRequest) {
     // Map". "youtube" is definitely connected now (we just added it); union in
     // any other connected sources so a single snapshot covers Drive + YouTube
     // together. Best-effort — a snapshot failure must not fail the connect.
+    // The started snapshot's job_id, returned to the client so it can stream
+    // that exact run's progress in the bottom pane.
+    let snapshotJobId: string | null = null;
     if (workerRes.ok) {
       try {
         const sources = Array.from(
@@ -83,9 +86,16 @@ export async function POST(req: NextRequest) {
           headers: { "X-User-ID": user.id, "Content-Type": "application/json" },
           body: JSON.stringify({ workspace_id: workspaceId, sources }),
         });
-        if (!snapRes.ok) {
+        const snapText = await snapRes.text();
+        if (snapRes.ok) {
+          try {
+            snapshotJobId = JSON.parse(snapText)?.job_id ?? null;
+          } catch {
+            /* non-JSON success body — no job_id to surface */
+          }
+        } else {
           console.error(
-            `[youtube/connect] snapshot trigger failed: ${snapRes.status} ${(await snapRes.text()).slice(0, 200)}`,
+            `[youtube/connect] snapshot trigger failed: ${snapRes.status} ${snapText.slice(0, 200)}`,
           );
         }
       } catch (err) {
@@ -94,7 +104,11 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      return NextResponse.json(JSON.parse(text), { status: workerRes.status });
+      const parsed = JSON.parse(text);
+      return NextResponse.json(
+        snapshotJobId ? { ...parsed, snapshot_job_id: snapshotJobId } : parsed,
+        { status: workerRes.status },
+      );
     } catch {
       return NextResponse.json({ error: text }, { status: workerRes.status });
     }

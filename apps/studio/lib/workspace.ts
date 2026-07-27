@@ -40,11 +40,14 @@ export async function ensureWorkspace(
     name: "My Workspace",
   });
   if (error) {
-    // The app uses the publishable (anon) key under RLS, so the authenticated
-    // user must be allowed to INSERT their own workspace row. A swallowed error
-    // here is exactly what strands an account on "Workspace not found" — log it
-    // loudly (it shows in Vercel function logs) instead of returning an id for
-    // a row that was never written.
+    // With the unique(user_id) constraint, a concurrent create loses the race
+    // and errors here — that's fine, re-resolve and use the winner's row.
+    const raced = await getWorkspaceId(supabase, userId);
+    if (raced) return raced;
+    // Otherwise the insert genuinely failed (e.g. an RLS INSERT-policy gap). A
+    // swallowed error here is what strands an account on "Workspace not found",
+    // so log it (shows in Vercel function logs) and surface it instead of
+    // returning an id for a row that was never written.
     console.error(`[ensureWorkspace] insert failed for user ${userId}: ${error.message}`);
     throw new Error(`Could not create workspace: ${error.message}`);
   }

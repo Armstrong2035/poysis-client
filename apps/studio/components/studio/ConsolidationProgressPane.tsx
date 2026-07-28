@@ -114,10 +114,11 @@ export function ConsolidationProgressPane({
         </div>
       )}
 
-      {/* Dismiss — always available; the run continues server-side if working. */}
+      {/* Hide — the run continues server-side and its status returns after a refresh. */}
       <button
         onClick={onDismiss}
-        title={isWorking ? "Hide — indexing continues in the background" : "Dismiss"}
+        aria-label="Hide consolidation status"
+        title={isWorking ? "Hide — indexing continues in the background" : "Hide"}
         style={{
           flex: "0 0 auto",
           fontSize: "16px",

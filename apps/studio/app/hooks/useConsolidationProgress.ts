@@ -49,6 +49,31 @@ type SnapshotEvent = {
 };
 
 const HIDDEN: ConsolidationProgress = { phase: "idle", visible: false };
+const JOB_STORAGE_KEY = "pz-consolidation-last-job";
+const LATEST_JOB = "__latest__";
+
+function saveJobForThisSession(jobId?: string | null) {
+  if (typeof window === "undefined") return;
+  try {
+    // A job id lets us reconnect to the exact run after a page refresh. When a
+    // caller cannot provide one, following the workspace's latest run is still
+    // better than dropping the status pane altogether.
+    sessionStorage.setItem(JOB_STORAGE_KEY, jobId ?? LATEST_JOB);
+  } catch {
+    // Private browsing / disabled storage: progress still works for this view.
+  }
+}
+
+function readSavedJobForThisSession(): string | null | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const value = sessionStorage.getItem(JOB_STORAGE_KEY);
+    if (!value) return undefined;
+    return value === LATEST_JOB ? null : value;
+  } catch {
+    return undefined;
+  }
+}
 
 export function useConsolidationProgress() {
   const [state, setState] = useState<ConsolidationProgress>(HIDDEN);
@@ -67,9 +92,16 @@ export function useConsolidationProgress() {
   // Start streaming a snapshot run. Pass the job_id from the POST that started
   // it so we watch that exact run rather than the workspace's latest.
   const watch = useCallback(
-    (jobId?: string | null) => {
+    (jobId?: string | null, silentlyProbeLatest = false) => {
       close();
-      setState({ phase: "running", visible: true });
+      if (!silentlyProbeLatest) {
+        saveJobForThisSession(jobId);
+        setState({ phase: "running", visible: true });
+      }
+
+      // An unpinned stream can report a historical completed job. During the
+      // first-load probe, only reveal it after we know it is actually active.
+      let sawActiveJob = false;
 
       const url = jobId
         ? `/api/worker/consolidation/stream?job_id=${encodeURIComponent(jobId)}`
@@ -87,6 +119,11 @@ export function useConsolidationProgress() {
 
         // The POST never created a job — surface it, don't spin forever.
         if (data.status === "not_started") {
+          if (silentlyProbeLatest && !sawActiveJob) {
+            setState(HIDDEN);
+            close();
+            return;
+          }
           setState({
             phase: "not_started",
             visible: true,
@@ -97,6 +134,11 @@ export function useConsolidationProgress() {
         }
 
         if (data.status === "failed") {
+          if (silentlyProbeLatest && !sawActiveJob) {
+            setState(HIDDEN);
+            close();
+            return;
+          }
           setState((s) => ({
             ...s,
             phase: "failed",
@@ -109,6 +151,11 @@ export function useConsolidationProgress() {
 
         // Final event carries mcp_url and the finished counters.
         if (data.type === "complete" || data.status === "done") {
+          if (silentlyProbeLatest && !sawActiveJob) {
+            setState(HIDDEN);
+            close();
+            return;
+          }
           setState((s) => ({
             ...s,
             phase: "done",
@@ -125,6 +172,10 @@ export function useConsolidationProgress() {
         }
 
         // running / clustering — counters update as batches flush.
+        sawActiveJob = true;
+        // We discovered an in-flight job that pre-dates this client. Keep
+        // following the workspace's latest run on future refreshes.
+        if (silentlyProbeLatest) saveJobForThisSession(jobId);
         setState((s) => ({
           ...s,
           visible: true,
@@ -144,6 +195,18 @@ export function useConsolidationProgress() {
     },
     [close],
   );
+
+  // The pane is deliberately restored after a refresh. Consolidation continues
+  // server-side, so losing the browser view must not make a run look lost. If
+  // this browser has no saved id yet, quietly check the workspace's latest job
+  // so a run that started before this client was deployed can still be found.
+  useEffect(() => {
+    const savedJobId = readSavedJobForThisSession();
+    const restoreTimer = window.setTimeout(() => {
+      watch(savedJobId ?? null, savedJobId === undefined);
+    }, 0);
+    return () => window.clearTimeout(restoreTimer);
+  }, [watch]);
 
   useEffect(() => close, [close]);
 

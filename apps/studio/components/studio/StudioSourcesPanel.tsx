@@ -17,6 +17,8 @@ interface Connection {
   label: string;
   kind: Kind;
   docCount?: number;
+  /** Whether the worker can actively ingest this connection. */
+  enabled?: boolean;
   /** The YouTube channel id (UC…), used to scope playlists to this channel. */
   channelId?: string;
 }
@@ -115,11 +117,13 @@ export function StudioSourcesPanel({
           id: string;
           channel_name?: string | null;
           channel_id: string;
+          enabled?: boolean;
         }) => ({
           id: c.id,
           label: c.channel_name ?? c.channel_id,
           kind: "youtube" as const,
           channelId: c.channel_id,
+          enabled: c.enabled,
         }),
       );
       const combined = [...driveConns, ...ytConns];
@@ -166,6 +170,7 @@ export function StudioSourcesPanel({
           sourceType: c.kind === "youtube" ? "youtube" : "google_drive",
           // Channel id (YouTube only) — scopes the playlist list to this card.
           channelId: c.kind === "youtube" ? c.channelId : undefined,
+          connectionStatus: c.kind === "youtube" ? c.enabled : undefined,
           ...b,
         };
       }
@@ -178,6 +183,7 @@ export function StudioSourcesPanel({
           meta: `Cluster · ${c.doc_count} doc${c.doc_count === 1 ? "" : "s"}`,
           sourceType: undefined,
           channelId: undefined,
+          connectionStatus: undefined,
           ...CLUSTER_BADGE,
         };
       }
@@ -189,6 +195,7 @@ export function StudioSourcesPanel({
     meta: string;
     sourceType?: string;
     channelId?: string;
+    connectionStatus?: boolean;
     badge: string;
     tint: string;
     ink: string;
@@ -281,6 +288,9 @@ export function StudioSourcesPanel({
         </span>
         <button
           onClick={() => setAddOpen((o) => !o)}
+          aria-expanded={addOpen}
+          aria-controls="add-source-panel"
+          title={addOpen ? "Close add sources" : "Add a source"}
           style={{
             fontSize: "13px",
             color: "#3C4A3A",
@@ -290,12 +300,13 @@ export function StudioSourcesPanel({
             gap: "5px",
           }}
         >
-          + Add
+          {addOpen ? "− Close" : "+ Add"}
         </button>
       </div>
 
       {addOpen && (
         <div
+          id="add-source-panel"
           style={{
             margin: "0 14px 12px",
             background: "#fff",
@@ -356,6 +367,7 @@ export function StudioSourcesPanel({
                       tint={b.tint}
                       ink={b.ink}
                       title={c.label}
+                      status={c.kind === "youtube" ? c.enabled : undefined}
                       onClick={() => {
                         onToggleSource(`conn:${c.id}`);
                         onToast("Source added");
@@ -494,6 +506,9 @@ export function StudioSourcesPanel({
               <div style={{ fontSize: "11.5px", color: "#9A9C90" }}>
                 {s.meta}
               </div>
+              {s.sourceType === "youtube" && (
+                <ConnectionStatus enabled={s.connectionStatus} />
+              )}
             </div>
             {s.sourceType && (
               <button
@@ -568,12 +583,14 @@ function AddRow({
   tint,
   ink,
   title,
+  status,
   onClick,
 }: {
   badge: string;
   tint: string;
   ink: string;
   title: string;
+  status?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -620,8 +637,52 @@ function AddRow({
       >
         {title}
       </span>
+      {status !== undefined && <ConnectionStatus enabled={status} compact />}
       <span style={{ fontSize: "14px", color: "#3C4A3A" }}>+</span>
     </button>
+  );
+}
+
+function ConnectionStatus({
+  enabled,
+  compact = false,
+}: {
+  enabled?: boolean;
+  compact?: boolean;
+}) {
+  const isConnected = enabled === true;
+  const label = isConnected ? "Connected" : enabled === false ? "Needs attention" : "Checking status";
+  const color = isConnected ? "#3C4A3A" : enabled === false ? "#B9422F" : "#9A6E2C";
+  const background = isConnected ? "#EBF0E5" : enabled === false ? "#F8E8E5" : "#FBF3E4";
+
+  return (
+    <span
+      title={label}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "4px",
+        marginTop: compact ? 0 : "5px",
+        padding: compact ? "2px 5px" : "3px 6px",
+        borderRadius: "999px",
+        background,
+        color,
+        fontSize: compact ? "9px" : "10px",
+        fontWeight: 700,
+        lineHeight: 1,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span
+        style={{
+          width: "5px",
+          height: "5px",
+          borderRadius: "999px",
+          background: color,
+        }}
+      />
+      {label}
+    </span>
   );
 }
 

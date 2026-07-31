@@ -12,10 +12,12 @@ import { useNotebooks, type NotebookRow } from "../workspace/NotebooksContext";
 import { StudioSourcesPanel } from "@/components/studio/StudioSourcesPanel";
 import { StudioConfigPanel, type Visibility } from "@/components/studio/StudioConfigPanel";
 import { StudioPublishModal } from "@/components/studio/StudioPublishModal";
+import { LockGlyph } from "@/components/studio/LockGlyph";
 import { useStudioNotebook } from "@/components/studio/useStudioNotebook";
 import { setUiMode } from "@/lib/actions";
 import { useConsolidationProgress } from "@/app/hooks/useConsolidationProgress";
-import { ConsolidationProgressPane } from "@/components/studio/ConsolidationProgressPane";
+import { useNotebookSummary, hasSummaryContent } from "@/app/hooks/useNotebookSummary";
+import { NotebookProof } from "@/components/studio/NotebookProof";
 
 type StudioMode = "creator" | "enterprise";
 
@@ -38,6 +40,24 @@ function StudioInner() {
   const { topics, refreshKnowledge } = useConsolidation();
   const progress = useConsolidationProgress();
   const { notebooks, createNotebook, deployNotebook, patchLocal } = useNotebooks();
+
+  // Stable bar: what's settled in the notebook. Re-reads its totals whenever a
+  // run finishes — completedAt changes even if the phase was already "done".
+  const summary = useNotebookSummary({
+    workspaceId: progress.workspaceId,
+    topics,
+    refreshKey: `${progress.phase}:${progress.completedAt ?? ""}`,
+  });
+
+  /**
+   * The proof of what's been built leads the middle pane and stays there. It
+   * only disappears on a notebook that has genuinely never indexed anything.
+   *
+   * Deliberately ignores the hook's own `visible`, which reveals only a run this
+   * browser started or one that settled minutes ago — fine for a notification,
+   * wrong for the thing the screen is about.
+   */
+  const showProof = hasSummaryContent(summary) || progress.phase !== "idle";
 
   const [manualNotebookId, setManualNotebookId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -264,12 +284,27 @@ function StudioInner() {
                   ● Published
                 </div>
               )}
-              <button
-                onClick={openPublish}
-                style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "#fff", background: "#3C4A3A", borderRadius: "10px", padding: "10px 20px" }}
-              >
-                {nb.published ? "Share" : "Publish"} ↗
-              </button>
+              {/* Sharing is locked for now: the padlock replaces the ↗ so the
+                  control still reads as itself, just not yet open. Publishing is
+                  untouched — only the share affordance is gated. */}
+              {nb.published ? (
+                <button
+                  disabled
+                  title="Sharing isn't available yet"
+                  aria-label="Share — not available yet"
+                  style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "rgba(255,255,255,.72)", background: "#8A8C80", borderRadius: "10px", padding: "10px 20px", cursor: "not-allowed" }}
+                >
+                  Share
+                  <LockGlyph />
+                </button>
+              ) : (
+                <button
+                  onClick={openPublish}
+                  style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", fontWeight: 600, color: "#fff", background: "#3C4A3A", borderRadius: "10px", padding: "10px 20px" }}
+                >
+                  Publish ↗
+                </button>
+              )}
             </>
           }
         />
@@ -285,8 +320,16 @@ function StudioInner() {
             onConsolidationStarted={progress.watch}
           />
 
-          {/* Middle — Test & Chat */}
+          {/* Middle — what's in the notebook, then Test & Chat */}
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "#FBF9F3" }}>
+            {showProof && (
+              <div style={{ flex: "0 0 auto", padding: "18px 44px 0" }}>
+                <div style={{ maxWidth: "720px", margin: "0 auto" }}>
+                  <NotebookProof progress={progress} summary={summary} />
+                </div>
+              </div>
+            )}
+
             {!hasSources ? (
               <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 48px", textAlign: "center" }}>
                 <span style={{ color: "#C99A5C", fontSize: "40px", opacity: 0.5, marginBottom: "18px" }}>✦</span>
@@ -323,6 +366,7 @@ function StudioInner() {
                 </div>
               </>
             )}
+
           </div>
 
           <StudioConfigPanel
@@ -385,9 +429,6 @@ function StudioInner() {
         </div>
       )}
 
-      {progress.visible && (
-        <ConsolidationProgressPane progress={progress} onDismiss={progress.dismiss} />
-      )}
     </>
   );
 }

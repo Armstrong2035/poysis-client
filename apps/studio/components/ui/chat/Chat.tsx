@@ -7,6 +7,12 @@ import type { ChatConfig, ModelTier } from "../../../types/canvas";
 import { MarkdownContent } from "./MarkdownContent";
 
 const SENTINEL = "\n\n__SOURCES__";
+// The worker appends a __META__ block (scale/themes/key_quote) AFTER __SOURCES__.
+// It has to be sliced off before parsing, or JSON.parse chokes on the trailing
+// marker and every reply silently loses its sources. Studio doesn't render meta
+// yet, but it must still parse around it. See the marketplace Chat for the
+// renderer that consumes it.
+const META_SENTINEL = "\n\n__META__";
 // Retrieval replies self-identify with a leading __MODE__ marker — the very first
 // bytes of the stream, with NO "\n\n" prefix — and carry ranked sources but no
 // written answer. Synthesis replies (the original behavior) stream prose first,
@@ -41,10 +47,16 @@ type CitedSource = {
 };
 
 function extractSources(content: string): CitedSource[] {
-  const idx = content.indexOf(SENTINEL);
-  if (idx === -1) return [];
+  const start = content.indexOf(SENTINEL);
+  if (start === -1) return [];
+  const from = start + SENTINEL.length;
+  // Sources JSON runs up to the __META__ block (if present) — parsing past it
+  // throws, which drops every source and, in retrieval mode (no prose answer),
+  // renders the whole reply as "No results found."
+  const metaAt = content.indexOf(META_SENTINEL, from);
+  const raw = metaAt === -1 ? content.slice(from) : content.slice(from, metaAt);
   try {
-    return JSON.parse(content.slice(idx + SENTINEL.length));
+    return JSON.parse(raw);
   } catch {
     return [];
   }
@@ -194,7 +206,11 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
             .map((s) => s.slice(5));
 
           const body = {
-            workspace_id: c.notebookId,
+            // The notebook's own row is what resolves the workspace server-side
+            // (same as the marketplace route). This used to be sent as
+            // `workspace_id`, which was simply the wrong name for it — the value
+            // has always been a notebook id.
+            notebook_id: c.notebookId,
             query,
             top_k: 5,
             min_score: 0.4,

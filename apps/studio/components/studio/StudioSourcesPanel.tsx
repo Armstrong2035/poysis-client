@@ -72,7 +72,7 @@ interface StudioSourcesPanelProps {
    *  refresh consolidation topics and surface them in the cluster list. */
   onCategoriesImported?: () => void;
   /** Called when a snapshot run starts (connect / sync), with its job_id, so
-   *  the parent can stream progress in the bottom pane. */
+   *  the parent can follow that run's progress in the bottom pane. */
   onConsolidationStarted?: (jobId?: string | null) => void;
 }
 
@@ -559,10 +559,13 @@ export function StudioSourcesPanel({
         ))}
       </div>
 
+      {/* What's attached here — nothing more. The settled notebook summary
+          (videos / passages / categories) lives in the status card in the
+          middle pane; showing it twice made the two compete. */}
       <div
         style={{
           flex: "0 0 auto",
-          padding: "13px 18px",
+          padding: "12px 18px",
           borderTop: "1px solid rgba(35,38,31,.08)",
           fontSize: "12px",
           color: "#9A9C90",

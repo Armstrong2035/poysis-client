@@ -1,6 +1,7 @@
 "use client";
 
 import type { MemoryMode, ModelTier } from "../../app/(workspace)/workspace/NotebooksContext";
+import { LockGlyph } from "./LockGlyph";
 
 /* The right rail: the notebook's existing config (title, description, persona,
  * model, memory, visibility) plus the sticky publish/share card. Replaces the
@@ -257,7 +258,17 @@ export function StudioConfigPanel(props: StudioConfigPanelProps) {
               <button onClick={onCopy} style={{ fontSize: "12px", fontWeight: 600, color: "#EAEFE2" }}>{copyLabel}</button>
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
-              <button onClick={onOpenPublish} style={{ flex: 1, fontSize: "13px", fontWeight: 600, color: "#3C4A3A", background: "#EAEFE2", borderRadius: "9px", padding: "9px" }}>Share options</button>
+              {/* Locked alongside the top bar's Share button — both are the same
+                  gate, so leaving this one live would make the padlock cosmetic. */}
+              <button
+                disabled
+                title="Sharing isn't available yet"
+                aria-label="Share options — not available yet"
+                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", fontSize: "13px", fontWeight: 600, color: "#8A9483", background: "#E3E7DC", borderRadius: "9px", padding: "9px", cursor: "not-allowed" }}
+              >
+                Share options
+                <LockGlyph size={12} />
+              </button>
               <button onClick={onUnpublish} style={{ fontSize: "13px", fontWeight: 600, color: "#EAEFE2", border: "1px solid #6E7D62", borderRadius: "9px", padding: "9px 12px" }}>Unpublish</button>
             </div>
           </div>

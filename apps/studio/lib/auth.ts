@@ -50,7 +50,7 @@ export async function login(formData: FormData) {
 
   revalidatePath("/", "layout");
   // Land the user in their chosen app; non-entitled users always get Creator.
-  return redirect(landingPathForUser(data.user));
+  return redirect(await landingPathForUser(supabase, data.user));
 }
 
 /**

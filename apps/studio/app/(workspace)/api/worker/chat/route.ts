@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { query, notebook_id, top_k = 5, min_score = 0.4, model, allowed_topic_ids, allowed_connection_ids, useOuroboros } = body;
+    const { query, notebook_id, top_k = 5, min_score = 0.4, model, allowed_topic_ids, allowed_connection_ids, useOuroboros, history, sources_first } = body;
 
     if (!query?.trim()) {
       return NextResponse.json({ error: "Query is required" }, { status: 400 });
@@ -93,6 +93,11 @@ export async function POST(req: NextRequest) {
         ...(instructions ? { instructions } : {}),
         ...(allowed_topic_ids?.length > 0 ? { allowed_topic_ids } : {}),
         ...(allowed_connection_ids?.length > 0 ? { allowed_connection_ids } : {}),
+        // Conversation memory and sources-first ordering are client-owned: the
+        // worker stores no transcript, so anything this proxy drops is simply
+        // lost. Both are inert unless the client asks for them.
+        ...(history?.length > 0 ? { history } : {}),
+        ...(sources_first ? { sources_first: true } : {}),
       }),
     });
 

@@ -5,94 +5,12 @@ import { useChat } from "@ai-sdk/react";
 import { TextStreamChatTransport } from "ai";
 import type { ChatConfig } from "../../../types/canvas";
 import { MarkdownContent } from "./MarkdownContent";
-
-const SOURCES_SENTINEL = "\n\n__SOURCES__";
-const META_SENTINEL = "\n\n__META__";
-// Retrieval replies self-identify with a leading __MODE__ marker — the very first
-// bytes of the stream, with NO "\n\n" prefix — and carry ranked sources but no
-// written answer. Synthesis replies (the original behavior) stream prose first,
-// then the __SOURCES__/__META__ machine blocks.
-const MODE_SENTINEL = "__MODE__";
+import { parseChat, type ChatMeta, type ChatMode, type CitedSource } from "@/lib/chatStream";
 
 const MODELS = [
   { id: "gemini-3-flash", label: "Flash", hint: "Fast · Default" },
   { id: "gemini-3-pro",   label: "Pro",   hint: "Smarter · Slower" },
 ] as const;
-
-function displayContent(content: string): string {
-  // The worker appends machine blocks (__SOURCES__ then __META__) after the answer.
-  // Visible text ends at the first one that appears.
-  const idx = content.indexOf(SOURCES_SENTINEL);
-  return idx !== -1 ? content.slice(0, idx) : content;
-}
-
-type CitedSource = {
-  file: string;
-  score: number;
-  snippet?: string;
-  url?: string;
-  title?: string;
-};
-
-type ChatMeta = {
-  scale?: { sources: number; excerpts: number };
-  themes?: string[];
-  key_quote?: { text: string; title?: string; url?: string; start_time?: string } | null;
-};
-
-function extractSources(content: string): CitedSource[] {
-  const start = content.indexOf(SOURCES_SENTINEL);
-  if (start === -1) return [];
-  const from = start + SOURCES_SENTINEL.length;
-  // Sources JSON runs up to the __META__ block (if present) — parsing past it fails.
-  const metaAt = content.indexOf(META_SENTINEL, from);
-  const raw = metaAt === -1 ? content.slice(from) : content.slice(from, metaAt);
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-
-function extractMeta(content: string): ChatMeta | null {
-  const idx = content.indexOf(META_SENTINEL);
-  if (idx === -1) return null;
-  try {
-    return JSON.parse(content.slice(idx + META_SENTINEL.length));
-  } catch {
-    return null;
-  }
-}
-
-type ChatMode = "retrieval" | "synthesis";
-
-type ParsedChat = {
-  mode: ChatMode;
-  answer: string; // "" in retrieval mode
-  sources: CitedSource[];
-  meta: ChatMeta | null;
-};
-
-// One place that decides how to render a reply. A retrieval reply leads with
-// __MODE__ and has no prose — we must never print that marker as answer text and
-// must tolerate it arriving split across chunks. Everything after the leading
-// marker (the __SOURCES__/__META__ blocks) is shared with synthesis, so the
-// existing extractors handle both shapes unchanged.
-function parseChat(content: string): ParsedChat {
-  const trimmed = content.trimStart();
-  const retrieval = trimmed.startsWith(MODE_SENTINEL);
-  // While the leading __MODE__ is still streaming in (e.g. "__MO"), suppress it
-  // too so a partial marker never flashes as answer text before we know the mode.
-  const partialMode = !retrieval && trimmed.length > 0 && MODE_SENTINEL.startsWith(trimmed);
-  return {
-    mode: retrieval ? "retrieval" : "synthesis",
-    answer: retrieval || partialMode ? "" : displayContent(content),
-    sources: extractSources(content),
-    // Retrieval is LLM-free, so key_quote is absent — the renderer already
-    // treats it as optional.
-    meta: extractMeta(content),
-  };
-}
 
 function getMessageText(parts: any[]): string {
   return (parts ?? [])
@@ -194,6 +112,34 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
             .filter((s) => s.startsWith("conn:"))
             .map((s) => s.slice(5));
 
+          // The worker is stateless, so the transcript travels with each turn or
+          // a follow-up ("tell me more about that") embeds to noise — its
+          // subject lives in the previous turn. Everything except the current
+          // query, oldest first; the worker trims to its own window.
+          const history = messages
+            .slice(0, -1)
+            .filter((m) => m.role === "user" || m.role === "assistant")
+            .map((m) => ({
+              role: m.role as "user" | "assistant",
+              // Assistant turns still carry the machine blocks here; send the
+              // prose only, or the transcript is mostly JSON.
+              content:
+                m.role === "assistant"
+                  ? parseChat(getMessageText(m.parts as any[])).answer
+                  : getMessageText(m.parts as any[]),
+            }))
+            .filter((m) => m.content.trim() !== "");
+
+          // Source cards land as soon as retrieval finishes instead of waiting
+          // for the whole answer. Safe only because parseChat reads
+          // __SOURCES__ wherever it appears in the stream.
+          const shared = {
+            sources_first: true,
+            ...(history.length > 0 ? { history } : {}),
+            ...(topicIds.length > 0 ? { allowed_topic_ids: topicIds } : {}),
+            ...(connIds.length > 0 ? { allowed_connection_ids: connIds } : {}),
+          };
+
           const body =
             c.mode === "dashboard"
               ? {
@@ -203,8 +149,7 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
                   min_score: 0.4,
                   model: modelRef.current,
                   ...(c.useOuroboros ? { useOuroboros: true } : {}),
-                  ...(topicIds.length > 0 ? { allowed_topic_ids: topicIds } : {}),
-                  ...(connIds.length > 0 ? { allowed_connection_ids: connIds } : {}),
+                  ...shared,
                 }
               : {
                   notebook_id: c.notebookId,
@@ -213,8 +158,7 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
                   ...(c.branding?.systemPrompt
                     ? { instructions: c.branding.systemPrompt }
                     : {}),
-                  ...(topicIds.length > 0 ? { allowed_topic_ids: topicIds } : {}),
-                  ...(connIds.length > 0 ? { allowed_connection_ids: connIds } : {}),
+                  ...shared,
                 };
 
           return { body };
@@ -346,6 +290,23 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
           return (
             <div key={msg.id}>
               <AssistantBubble content={parsed.answer} sources={parsed.sources} meta={parsed.meta} mode={parsed.mode} streaming={false} theme={theme} />
+              {/* A run that fails mid-stream sends __ERROR__ instead of the rest
+                  of the answer. The transport still counts that as success, so
+                  without this the bubble just stops — no message, no retry cue. */}
+              {parsed.error && (
+                <div
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl mt-2"
+                  style={{
+                    background: theme.errorBg,
+                    border: `1px solid ${theme.errorBorder}`,
+                    color: theme.errorText,
+                    fontFamily: "DM Sans, sans-serif",
+                    fontSize: "13px",
+                  }}
+                >
+                  <span>{parsed.error}</span>
+                </div>
+              )}
               {renderMessageFooter?.({
                 id: msg.id,
                 userText: prevUser ? getMessageText(prevUser.parts as any[]) : "",

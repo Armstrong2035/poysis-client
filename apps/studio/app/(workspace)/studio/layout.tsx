@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { Source_Serif_4, Hanken_Grotesk } from "next/font/google";
 import { createClient } from "../../../utils/supabase/server";
 import { ensureWorkspace } from "@/lib/workspace";
+import { isEnterpriseEntitled } from "@/lib/uiMode";
+import { EntitlementsProvider } from "../workspace/EntitlementsContext";
 import { ConsolidationProvider } from "../workspace/ConsolidationContext";
 import { MockPermissionsProvider } from "../workspace/MockPermissionsContext";
 import { NotebooksProvider, type NotebookRow } from "../workspace/NotebooksContext";
@@ -50,25 +52,27 @@ export default async function StudioLayout({ children }: { children: React.React
   }
 
   return (
-    <ConsolidationProvider>
-      <MockPermissionsProvider>
-        <NotebooksProvider initial={(notebookRows ?? []) as NotebookRow[]}>
-          <OnboardingProvider>
-            <div
-              className={`${sourceSerif.variable} ${hankenGrotesk.variable}`}
-              style={{
-                height: "100vh",
-                overflow: "hidden",
-                background: "#FBF9F3",
-                color: "#23261F",
-                fontFamily: "var(--font-hanken), system-ui, sans-serif",
-              }}
-            >
-              {children}
-            </div>
-          </OnboardingProvider>
-        </NotebooksProvider>
-      </MockPermissionsProvider>
-    </ConsolidationProvider>
+    <EntitlementsProvider value={{ enterprise: await isEnterpriseEntitled(supabase, user) }}>
+      <ConsolidationProvider>
+        <MockPermissionsProvider>
+          <NotebooksProvider initial={(notebookRows ?? []) as NotebookRow[]}>
+            <OnboardingProvider>
+              <div
+                className={`${sourceSerif.variable} ${hankenGrotesk.variable}`}
+                style={{
+                  height: "100vh",
+                  overflow: "hidden",
+                  background: "#FBF9F3",
+                  color: "#23261F",
+                  fontFamily: "var(--font-hanken), system-ui, sans-serif",
+                }}
+              >
+                {children}
+              </div>
+            </OnboardingProvider>
+          </NotebooksProvider>
+        </MockPermissionsProvider>
+      </ConsolidationProvider>
+    </EntitlementsProvider>
   );
 }

@@ -113,11 +113,15 @@ export function useStudioNotebook(selectedNotebookId: string | null) {
   /* ── The single write path (mirrors Canvas.persistNow). Reads getState() at
    * call time with an id guard so a notebook switch mid-flight can never save
    * one notebook's state under another's id. ────────────────────────────── */
-  const persistNow = useCallback(async () => {
+  const persistNow = useCallback(async (canvasOverride?: Partial<CanvasMeta>) => {
     if (!row || !canvasMeta) return;
     const id = row.id;
     const s = useNotebookStore.getState();
     if (s.notebookId !== id) return;
+    // `canvasOverride` writes a canvasMeta change in the same save that carries
+    // it, for callers that must not wait a render for setCanvasMeta to land —
+    // publish sets ceiling: "public" and persists in one step.
+    const canvas = canvasOverride ? { ...canvasMeta, ...canvasOverride } : canvasMeta;
     const config = {
       ...extraConfigRef.current,
       name: s.name,
@@ -126,12 +130,15 @@ export function useStudioNotebook(selectedNotebookId: string | null) {
       uiComponents: s.uiComponents,
       appScreens: s.appScreens,
       theme: s.theme,
-      canvas: canvasMeta,
+      canvas,
       ...(Object.keys(marketplaceMeta).length > 0 ? { marketplace: marketplaceMeta } : {}),
     };
     setSaveStatus({ state: "saving" });
     try {
       await saveNotebook(id, config);
+      // Fold an override into local state once it's durable, so the next
+      // debounced autosave doesn't write the pre-override value back over it.
+      if (canvasOverride) setCanvasMeta(canvas);
       const { name: savedName, ...rest } = config;
       patchLocal(id, {
         name: savedName,
@@ -194,10 +201,6 @@ export function useStudioNotebook(selectedNotebookId: string | null) {
     setCanvasMeta((m) => (m ? { ...m, memory: mode } : m));
   }, []);
 
-  const setCeiling = useCallback((next: Ceiling) => {
-    setCanvasMeta((m) => (m ? { ...m, ceiling: next } : m));
-  }, []);
-
   const rename = useCallback(
     (newName: string) => {
       if (!row) return;
@@ -232,7 +235,6 @@ export function useStudioNotebook(selectedNotebookId: string | null) {
     setPersona,
     setModelTier,
     setMemory,
-    setCeiling,
     setMarketplaceMeta,
     rename,
   };

@@ -1,16 +1,17 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Chat } from "@/components/ui/chat/Chat";
 import { MARKETPLACE_URL } from "@/lib/marketplace";
 import { publishReadiness, canPublish } from "@/lib/publishReadiness";
 import { unpublishNotebook } from "@/lib/actions";
 import { useConsolidation } from "../workspace/ConsolidationContext";
-import { useNotebooks, type NotebookRow } from "../workspace/NotebooksContext";
+import { useNotebooks, type AppType, type NotebookRow } from "../workspace/NotebooksContext";
+import { useEntitlements } from "../workspace/EntitlementsContext";
 import { StudioSourcesPanel } from "@/components/studio/StudioSourcesPanel";
-import { StudioConfigPanel, type Visibility } from "@/components/studio/StudioConfigPanel";
+import { StudioConfigPanel } from "@/components/studio/StudioConfigPanel";
 import { StudioPublishModal } from "@/components/studio/StudioPublishModal";
 import { LockGlyph } from "@/components/studio/LockGlyph";
 import { useStudioNotebook } from "@/components/studio/useStudioNotebook";
@@ -29,35 +30,18 @@ export default function StudioPage() {
   );
 }
 
-const VIS_SUMMARY: Record<Visibility, string> = {
-  private: "Only you can open it.",
-  link: "Anyone with the link can view — no sign-in.",
-  public: "Listed publicly in the marketplace directory.",
-};
+// Publishing is what makes a notebook reachable, and a published notebook is
+// public — there's no visibility dial to summarize any more.
+const PUBLISH_SUMMARY =
+  "Anyone with the link can open it — no sign-in. Appearing in the marketplace directory is a separate review.";
 
 function StudioInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const { enterprise: enterpriseUnlocked } = useEntitlements();
   const { topics, refreshKnowledge } = useConsolidation();
   const progress = useConsolidationProgress();
-  const { notebooks, createNotebook, deployNotebook, patchLocal } = useNotebooks();
-
-  // Stable bar: what's settled in the notebook. Re-reads its totals whenever a
-  // run finishes — completedAt changes even if the phase was already "done".
-  const summary = useNotebookSummary({
-    workspaceId: progress.workspaceId,
-    topics,
-    refreshKey: `${progress.phase}:${progress.completedAt ?? ""}`,
-  });
-
-  /**
-   * The proof of what's been built leads the middle pane and stays there. It
-   * only disappears on a notebook that has genuinely never indexed anything.
-   *
-   * Deliberately ignores the hook's own `visible`, which reveals only a run this
-   * browser started or one that settled minutes ago — fine for a notification,
-   * wrong for the thing the screen is about.
-   */
-  const showProof = hasSummaryContent(summary) || progress.phase !== "idle";
+  const { notebooks, createNotebook, deployNotebook, renameSlug, patchLocal } = useNotebooks();
 
   const [manualNotebookId, setManualNotebookId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -75,6 +59,34 @@ function StudioInner() {
       : (notebooks[0]?.id ?? null));
 
   const nb = useStudioNotebook(selectedNotebookId);
+
+  // Stable bar: what's settled in THIS notebook. Re-reads its totals whenever a
+  // run finishes — completedAt changes even if the phase was already "done".
+  // Scoped to the notebook's own clusters: `topics` is the whole workspace's
+  // list, so without the scope every notebook showed the same figures.
+  const summary = useNotebookSummary({
+    workspaceId: progress.workspaceId,
+    topics,
+    notebookId: selectedNotebookId,
+    clusterIds: nb.clusterIds,
+    connectionIds: nb.connectionIds,
+    refreshKey: `${progress.phase}:${progress.completedAt ?? ""}`,
+  });
+
+  /**
+   * The proof of what's been built leads the middle pane and stays there. It
+   * only disappears on a notebook that has genuinely never indexed anything.
+   *
+   * A notebook with no sources has nothing to be proof of — showing the pane
+   * there is what made a freshly-opened notebook look like it still held the
+   * previous one's contents.
+   *
+   * Deliberately ignores the hook's own `visible`, which reveals only a run this
+   * browser started or one that settled minutes ago — fine for a notification,
+   * wrong for the thing the screen is about.
+   */
+  const showProof =
+    nb.sources.length > 0 && (hasSummaryContent(summary) || progress.phase !== "idle");
 
   // Clusters need consolidation topics; fetch once if a consumer opens Studio
   // before the knowledge map has been visited.
@@ -119,12 +131,21 @@ function StudioInner() {
     }
   };
 
-  // Enterprise (the workspace app) is a locked paid tier — the switch shows it
-  // as such and never navigates there. Picking Creator just re-affirms the
+  // Enterprise (the workspace app) is a paid tier, open to admins and to
+  // accounts explicitly granted it — for everyone else the switch renders
+  // locked and refuses to navigate. Picking Creator just re-affirms the
   // current app (and keeps it as the post-login landing).
+  //
+  // The toast branch is UX, not enforcement: /workspace re-checks the same
+  // entitlement server-side, as does setUiMode.
   const switchMode = (m: StudioMode) => {
     if (m === "enterprise") {
-      flashToast("Enterprise is a paid plan — not available yet.");
+      if (!enterpriseUnlocked) {
+        flashToast("Enterprise is a paid plan — not available yet.");
+        return;
+      }
+      void setUiMode("enterprise");
+      router.push("/workspace");
       return;
     }
     void setUiMode("creator");
@@ -136,7 +157,7 @@ function StudioInner() {
       <>
         <StudioGlobalStyles />
         <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#FBF9F3" }}>
-          <StudioTopBar mode="creator" onMode={switchMode} left={<StudioMark />} right={null} />
+          <StudioTopBar mode="creator" onMode={switchMode} enterpriseUnlocked={enterpriseUnlocked} left={<StudioMark />} right={null} />
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "18px", padding: "0 48px", textAlign: "center" }}>
             <span style={{ color: "#C99A5C", fontSize: "34px" }}>✦</span>
             <h2 style={{ fontFamily: "var(--font-source-serif), serif", fontSize: "30px", fontWeight: 600, letterSpacing: "-.02em", margin: 0, color: "#23261F" }}>
@@ -169,10 +190,6 @@ function StudioInner() {
   });
   const publishAllowed = canPublish(readiness);
 
-  const visibility: Visibility = nb.published
-    ? (nb.ceiling === "public" ? "public" : "link")
-    : "private";
-
   const shareUrl = row.slug
     ? `${MARKETPLACE_URL}/${row.slug}`
     : (typeof window !== "undefined" ? `${window.location.origin}/preview?id=${row.id}` : `/preview?id=${row.id}`);
@@ -183,23 +200,7 @@ function StudioInner() {
     : nb.saveStatus.state === "error" ? "Save failed"
     : "Draft · saves as you go";
 
-  /* ── Publish / visibility actions ─────────────────────────────────────── */
-
-  const handleVisibility = (v: Visibility) => {
-    if (v === "private") {
-      nb.setCeiling("private");
-      if (nb.published) void handleUnpublish();
-      return;
-    }
-    nb.setCeiling(v === "public" ? "public" : "private");
-    if (!nb.published) {
-      if (!publishAllowed) {
-        flashToast("Add a source first — answers need something to ground in.");
-        return;
-      }
-      setPublishOpen(true);
-    }
-  };
+  /* ── Publish actions ──────────────────────────────────────────────────── */
 
   const handleConfirmPublish = async () => {
     if (publishing) return;
@@ -209,8 +210,13 @@ function StudioInner() {
     }
     setPublishing(true);
     try {
-      // Flush pending edits so the published notebook reflects what's on screen.
-      if (nb.saveStatus.state !== "saving") await nb.persistNow();
+      // Flush pending edits so the published notebook reflects what's on
+      // screen, and pin the ceiling public in the same write. The marketplace
+      // 404s any slug whose notebook isn't public (see isPublic in
+      // apps/marketplace/lib/creators.ts), so without this a notebook created
+      // before the public default would publish to a dead link — and Studio no
+      // longer has a control to fix it with.
+      await nb.persistNow({ ceiling: "public" });
       const res = await deployNotebook(row.id);
       if ("slug" in res) {
         flashToast("Published — your notebook is live");
@@ -221,6 +227,15 @@ function StudioInner() {
     } finally {
       setPublishing(false);
     }
+  };
+
+  // Manual link edit from the Listing section. renameSlug sanitizes and
+  // patches local state itself, so this only has to surface the error.
+  const handleSaveSlug = async (next: string): Promise<string | null> => {
+    const res = await renameSlug(row.id, next);
+    if ("error" in res) return res.error;
+    flashToast("Link updated");
+    return null;
   };
 
   const handleUnpublish = async () => {
@@ -260,6 +275,7 @@ function StudioInner() {
         <StudioTopBar
           mode="creator"
           onMode={switchMode}
+          enterpriseUnlocked={enterpriseUnlocked}
           left={
             <>
               <StudioMark />
@@ -380,8 +396,13 @@ function StudioInner() {
             onModelTier={nb.setModelTier}
             memory={nb.memory}
             onMemory={nb.setMemory}
-            visibility={visibility}
-            onVisibility={handleVisibility}
+            blockId={nb.activeBlock?.id ?? null}
+            appType={(nb.activeBlock?.blockTypeId as AppType) ?? "chat"}
+            notebookId={row.id}
+            marketplace={nb.marketplaceMeta}
+            onMarketplace={nb.setMarketplaceMeta}
+            slug={row.slug}
+            onSaveSlug={handleSaveSlug}
             published={nb.published}
             publishAllowed={publishAllowed}
             shareUrl={shareUrl}
@@ -399,7 +420,7 @@ function StudioInner() {
           publishing={publishing}
           shareUrl={shareUrl}
           copyLabel={copyLabel}
-          visibilitySummary={VIS_SUMMARY[visibility]}
+          visibilitySummary={PUBLISH_SUMMARY}
           onCopy={handleCopy}
           onConfirmPublish={() => void handleConfirmPublish()}
           onClose={() => setPublishOpen(false)}
@@ -576,11 +597,13 @@ function StudioNotebookMenu({
 function StudioTopBar({
   mode,
   onMode,
+  enterpriseUnlocked,
   left,
   right,
 }: {
   mode: StudioMode;
   onMode: (m: StudioMode) => void;
+  enterpriseUnlocked: boolean;
   left: React.ReactNode;
   right: React.ReactNode;
 }) {
@@ -599,19 +622,26 @@ function StudioTopBar({
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "15px", minWidth: 0, flex: 1 }}>{left}</div>
-      <ModeSwitch mode={mode} onMode={onMode} />
+      <ModeSwitch mode={mode} onMode={onMode} enterpriseUnlocked={enterpriseUnlocked} />
       <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, justifyContent: "flex-end" }}>{right}</div>
     </div>
   );
 }
 
-const MODES: { id: StudioMode; label: string; locked?: boolean }[] = [
+const MODES: { id: StudioMode; label: string }[] = [
   { id: "creator", label: "Creator" },
-  // Enterprise is a paid tier — rendered locked, never navigates.
-  { id: "enterprise", label: "Enterprise", locked: true },
+  { id: "enterprise", label: "Enterprise" },
 ];
 
-function ModeSwitch({ mode, onMode }: { mode: StudioMode; onMode: (m: StudioMode) => void }) {
+function ModeSwitch({
+  mode,
+  onMode,
+  enterpriseUnlocked,
+}: {
+  mode: StudioMode;
+  onMode: (m: StudioMode) => void;
+  enterpriseUnlocked: boolean;
+}) {
   return (
     <div
       style={{
@@ -626,7 +656,8 @@ function ModeSwitch({ mode, onMode }: { mode: StudioMode; onMode: (m: StudioMode
     >
       {MODES.map((m) => {
         const active = m.id === mode;
-        const locked = !!m.locked;
+        // Only Enterprise can be locked, and only for accounts without it.
+        const locked = m.id === "enterprise" && !enterpriseUnlocked;
         return (
           <button
             key={m.id}

@@ -5,88 +5,13 @@ import { useChat } from "@ai-sdk/react";
 import { TextStreamChatTransport } from "ai";
 import type { ChatConfig, ModelTier } from "../../../types/canvas";
 import { MarkdownContent } from "./MarkdownContent";
-
-const SENTINEL = "\n\n__SOURCES__";
-// The worker appends a __META__ block (scale/themes/key_quote) AFTER __SOURCES__.
-// It has to be sliced off before parsing, or JSON.parse chokes on the trailing
-// marker and every reply silently loses its sources. Studio doesn't render meta
-// yet, but it must still parse around it. See the marketplace Chat for the
-// renderer that consumes it.
-const META_SENTINEL = "\n\n__META__";
-// Retrieval replies self-identify with a leading __MODE__ marker — the very first
-// bytes of the stream, with NO "\n\n" prefix — and carry ranked sources but no
-// written answer. Synthesis replies (the original behavior) stream prose first,
-// then the __SOURCES__ block.
-const MODE_SENTINEL = "__MODE__";
+import { parseChat, type ChatMode, type CitedSource } from "@/lib/chatStream";
 
 const TIERS: { id: ModelTier; label: string; hint: string }[] = [
   { id: "quick",    label: "Quick",    hint: "Fast · Default" },
   { id: "thinking", label: "Thinking", hint: "Smarter · Slower" },
   { id: "expert",   label: "Expert",   hint: "Deepest reasoning" },
 ];
-
-function displayContent(content: string): string {
-  const idx = content.indexOf(SENTINEL);
-  if (idx !== -1) return content.slice(0, idx);
-  // Mid-stream the sentinel can straddle a chunk boundary, leaving a partial
-  // marker like "\n\n__SOU" that indexOf won't match. Hide any trailing
-  // fragment of it so it doesn't flash at the end of the answer before the
-  // rest arrives. (Trimming a trailing "\n\n" is invisible once rendered.)
-  for (let n = Math.min(SENTINEL.length - 1, content.length); n > 0; n--) {
-    if (content.endsWith(SENTINEL.slice(0, n))) return content.slice(0, -n);
-  }
-  return content;
-}
-
-type CitedSource = {
-  file: string;
-  score: number;
-  snippet?: string;
-  url?: string;
-  title?: string;
-};
-
-function extractSources(content: string): CitedSource[] {
-  const start = content.indexOf(SENTINEL);
-  if (start === -1) return [];
-  const from = start + SENTINEL.length;
-  // Sources JSON runs up to the __META__ block (if present) — parsing past it
-  // throws, which drops every source and, in retrieval mode (no prose answer),
-  // renders the whole reply as "No results found."
-  const metaAt = content.indexOf(META_SENTINEL, from);
-  const raw = metaAt === -1 ? content.slice(from) : content.slice(from, metaAt);
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-
-type ChatMode = "retrieval" | "synthesis";
-
-type ParsedChat = {
-  mode: ChatMode;
-  answer: string; // "" in retrieval mode
-  sources: CitedSource[];
-};
-
-// One place that decides how to render a reply. A retrieval reply leads with
-// __MODE__ and has no prose — we must never print that marker as answer text and
-// must tolerate it arriving split across chunks. Everything after the leading
-// marker (the __SOURCES__ block) is shared with synthesis, so extractSources
-// handles both shapes unchanged.
-function parseChat(content: string): ParsedChat {
-  const trimmed = content.trimStart();
-  const retrieval = trimmed.startsWith(MODE_SENTINEL);
-  // While the leading __MODE__ is still streaming in (e.g. "__MO"), suppress it
-  // too so a partial marker never flashes as answer text before we know the mode.
-  const partialMode = !retrieval && trimmed.length > 0 && MODE_SENTINEL.startsWith(trimmed);
-  return {
-    mode: retrieval ? "retrieval" : "synthesis",
-    answer: retrieval || partialMode ? "" : displayContent(content),
-    sources: extractSources(content),
-  };
-}
 
 function getMessageText(parts: any[]): string {
   return (parts ?? [])
@@ -205,6 +130,24 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
             .filter((s) => s.startsWith("conn:"))
             .map((s) => s.slice(5));
 
+          // The worker is stateless, so the transcript has to travel with each
+          // turn or a follow-up ("tell me more about that") embeds to noise —
+          // its subject lives in the previous turn. Everything except the
+          // current query, oldest first; the worker trims to its own window.
+          const history = messages
+            .slice(0, -1)
+            .filter((m) => m.role === "user" || m.role === "assistant")
+            .map((m) => ({
+              role: m.role as "user" | "assistant",
+              // Assistant turns still carry the machine blocks at this point;
+              // send the prose only, or the transcript is mostly JSON.
+              content:
+                m.role === "assistant"
+                  ? parseChat(getMessageText(m.parts as any[])).answer
+                  : getMessageText(m.parts as any[]),
+            }))
+            .filter((m) => m.content.trim() !== "");
+
           const body = {
             // The notebook's own row is what resolves the workspace server-side
             // (same as the marketplace route). This used to be sent as
@@ -215,6 +158,11 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
             top_k: 5,
             min_score: 0.4,
             model: tierRef.current,
+            // Source cards can land as soon as retrieval finishes instead of
+            // waiting for the whole answer to generate. Safe only because
+            // parseChat above reads __SOURCES__ wherever it appears.
+            sources_first: true,
+            ...(history.length > 0 ? { history } : {}),
             ...(c.useOuroboros ? { useOuroboros: true } : {}),
             ...(topicIds.length > 0 ? { allowed_topic_ids: topicIds } : {}),
             ...(connIds.length > 0 ? { allowed_connection_ids: connIds } : {}),
@@ -223,7 +171,6 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
           return { body };
         },
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [endpoint]
   );
 
@@ -335,6 +282,23 @@ export function Chat({ config, className, onCommand, quickPrompts, renderMessage
                 streaming={isLast && status === "streaming"}
                 theme={theme}
               />
+              {/* A run that fails mid-stream sends __ERROR__ instead of the rest
+                  of the answer. The transport still counts that as success, so
+                  without this the bubble just stops — no message, no retry cue. */}
+              {parsed.error && (
+                <div
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl mt-2"
+                  style={{
+                    background: theme.errorBg,
+                    border: `1px solid ${theme.errorBorder}`,
+                    color: theme.errorText,
+                    fontFamily: "DM Sans, sans-serif",
+                    fontSize: "13px",
+                  }}
+                >
+                  <span>{parsed.error}</span>
+                </div>
+              )}
               {renderMessageFooter?.({
                 id: msg.id,
                 userText: prevUser ? getMessageText(prevUser.parts as any[]) : "",

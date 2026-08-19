@@ -23,7 +23,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
   // Gate the entire route tree here — every /workspace/* page renders through
   // this layout, so a non-entitled user can't reach any of it by URL. They go
   // to Creator Studio instead.
-  if (!isEnterpriseEntitled(user)) return redirect("/studio");
+  if (!(await isEnterpriseEntitled(supabase, user))) return redirect("/studio");
 
   // Safety net: guarantee the user has a workspace on first entry to the app,
   // regardless of which auth path confirmed them. The /auth/callback creates

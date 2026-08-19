@@ -52,6 +52,8 @@ export async function POST(
       instructions,
       allowed_topic_ids,
       allowed_connection_ids,
+      history,
+      sources_first,
     } = body;
 
     if (!query?.trim()) {
@@ -159,6 +161,11 @@ export async function POST(
         ...((notebook.config?.theme?.appLabel ?? notebook.name)
           ? { creator_name: notebook.config?.theme?.appLabel ?? notebook.name }
           : {}),
+        // Conversation memory and sources-first ordering are client-owned: the
+        // worker stores no transcript, so anything this proxy drops is simply
+        // lost. Both are inert unless the visitor's client asks for them.
+        ...(history?.length > 0 ? { history } : {}),
+        ...(sources_first ? { sources_first: true } : {}),
         ...(effectiveTopicIds?.length ? { allowed_topic_ids: effectiveTopicIds } : {}),
         ...(effectiveConnectionIds?.length ? { allowed_connection_ids: effectiveConnectionIds } : {}),
       }),

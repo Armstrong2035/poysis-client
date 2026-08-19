@@ -163,7 +163,14 @@ function buildSeedConfig(opts: {
     // trap it in an empty guided-setup view in Canvas. Mark it complete.
     canvas: {
       ...DEFAULT_CANVAS_META,
-      ceiling: opts.ceiling ?? "private",
+      // New notebooks are public: a notebook only ever reaches the web once its
+      // author publishes it (that's what mints the slug), so the old private
+      // default just meant every freshly-published link 404'd until someone
+      // found the ceiling control. Seeded explicitly rather than by moving
+      // DEFAULT_CANVAS_META — that default is also the fallback for legacy rows
+      // with no `canvas` key, and flipping it there would retroactively expose
+      // every pre-existing notebook.
+      ceiling: opts.ceiling ?? "public",
       ...((opts.connectionIds?.length ?? 0) > 0
         ? { appTypeChosen: true, onboardingComplete: true }
         : {}),

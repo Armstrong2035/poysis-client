@@ -28,10 +28,15 @@ export function NotebookProof({
 
   // Settled totals describe the whole notebook; the job's counters only describe
   // the latest run, so they stand in solely until something has settled.
-  const videos = summary?.documents ?? progress.docsProcessed ?? null;
-  const passages = summary?.passages ?? progress.vectorsIndexed ?? null;
-  const categories = summary?.topLevel.length || progress.totalTopics || null;
-  const topLevel = summary?.topLevel ?? [];
+  //
+  // Except when the summary is scoped to this notebook's own clusters: the run
+  // counters are workspace-wide, so standing them in would overstate a notebook
+  // that only draws on part of the workspace. A missing figure is left missing.
+  const runFallback = summary?.scoped ? null : progress;
+  const videos = summary?.documents ?? runFallback?.docsProcessed ?? null;
+  const passages = summary?.passages ?? runFallback?.vectorsIndexed ?? null;
+  const categories = summary?.breakdown.length || runFallback?.totalTopics || null;
+  const breakdown = summary?.breakdown ?? [];
 
   const updated = relativeTime(summary?.lastUpdated ?? progress.completedAt ?? null);
 
@@ -72,7 +77,10 @@ export function NotebookProof({
 
   const note = failed
     ? (progress.error ?? "Something went wrong on the last run.")
-    : [updated && `Updated ${updated}`, isWorking && "still adding"]
+    : [
+        updated && `Updated ${updated}`,
+        isWorking && "still adding",
+      ]
         .filter(Boolean)
         .join(" · ");
 
@@ -158,9 +166,9 @@ export function NotebookProof({
 
           {/* Categories in full — what the notebook actually knows about. Open
               by default: hiding them behind a toggle buries the substance. */}
-          {topLevel.length > 0 && (
+          {breakdown.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "14px" }}>
-              {topLevel.map((category) => (
+              {breakdown.map((category) => (
                 <span
                   key={category.topicId}
                   title={category.summary}

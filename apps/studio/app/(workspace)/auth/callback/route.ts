@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
       // An explicit ?next wins; otherwise land the user in their chosen app
       // (non-entitled accounts always resolve to /studio).
-      const next = explicitNext ?? landingPathForUser(data.user);
+      const next = explicitNext ?? (await landingPathForUser(supabase, data.user));
 
       const forwardedHost = request.headers.get("x-forwarded-host"); // confirmed with supabase docs
       const isLocalEnv = process.env.NODE_ENV === "development";

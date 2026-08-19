@@ -393,7 +393,7 @@ export async function setUiMode(mode: UiMode): Promise<void> {
   // Enterprise is a paid tier — never let a non-entitled user set it (the UI
   // shows it locked, but this is the server-side backstop against a crafted
   // request setting the mode directly).
-  if (mode === "enterprise" && !isEnterpriseEntitled(user)) {
+  if (mode === "enterprise" && !(await isEnterpriseEntitled(supabase, user))) {
     throw new Error("Enterprise isn't available on your plan.");
   }
 

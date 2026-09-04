@@ -48,7 +48,7 @@ export type NotebookSummary = {
 
 /** Is there anything settled worth showing yet? */
 export function hasSummaryContent(summary: NotebookSummary) {
-  return summary.documents != null || summary.passages != null || summary.topLevel.length > 0;
+  return summary.documents != null || summary.passages != null || summary.breakdown.length > 0;
 }
 
 const EMPTY: NotebookSummary = {
@@ -57,7 +57,7 @@ const EMPTY: NotebookSummary = {
   passages: null,
   categories: null,
   lastUpdated: null,
-  topLevel: [],
+  breakdown: [],
   scoped: false,
 };
 

@@ -10,11 +10,12 @@ import { GettingStartedPanel } from "./GettingStartedPanel";
 import { useOnboarding } from "./OnboardingContext";
 
 const NAV = [
+  { id: "developer", href: "/workspace/developer", label: "Developer API", exact: false, glyph: "<>" },
   { id: "interpretations", href: "/workspace/interpretations", label: "Explanations", exact: false, glyph: "?" },
-  { id: "map", href: "/workspace", label: "Knowledge Map", exact: true, glyph: "◈" },
-  { id: "canvas", href: "/workspace/canvas", label: "Canvas", exact: false, glyph: "✎" },
-  { id: "sources", href: "/workspace/sources", label: "Sources", exact: false, glyph: "⇄" },
-  { id: "teams", href: "/workspace/teams", label: "Teams & Permissions", exact: false, glyph: "◎" },
+  { id: "map", href: "/workspace", label: "Knowledge Map", exact: true, glyph: "â—ˆ" },
+  { id: "canvas", href: "/workspace/canvas", label: "Canvas", exact: false, glyph: "âœŽ" },
+  { id: "sources", href: "/workspace/sources", label: "Sources", exact: false, glyph: "â‡„" },
+  { id: "teams", href: "/workspace/teams", label: "Teams & Permissions", exact: false, glyph: "â—Ž" },
 ] as const;
 
 export function WorkspaceSidebar({ email }: { email: string }) {
@@ -82,7 +83,7 @@ export function WorkspaceSidebar({ email }: { email: string }) {
   };
 
   const toastCopy: Record<string, string> = {
-    connected: `✓ Drive connected${toastDocs > 0 ? ` · ${toastDocs.toLocaleString()} docs` : ""}`,
+    connected: `âœ“ Drive connected${toastDocs > 0 ? ` Â· ${toastDocs.toLocaleString()} docs` : ""}`,
     denied: "Drive connection cancelled",
     error: "Drive connection failed",
   };
@@ -123,7 +124,7 @@ export function WorkspaceSidebar({ email }: { email: string }) {
             className="w-8 h-8 flex items-center justify-center"
             title="Expand ( [ )"
           >
-            <span style={{ color: "#C99A5C", fontSize: "15px" }}>✦</span>
+            <span style={{ color: "#C99A5C", fontSize: "15px" }}>âœ¦</span>
           </button>
           <button
             onClick={goCreator}
@@ -153,7 +154,7 @@ export function WorkspaceSidebar({ email }: { email: string }) {
         <>
           <div className="flex items-center justify-between px-2 pt-1 pb-5">
             <div className="flex items-center gap-2 px-2">
-              <span style={{ color: "#C99A5C", fontSize: "16px" }}>✦</span>
+              <span style={{ color: "#C99A5C", fontSize: "16px" }}>âœ¦</span>
               <span style={{ fontFamily: "var(--font-source-serif), serif", fontWeight: 600, fontSize: "19px", color: "#FAF8F0" }}>
                 poysis
               </span>
@@ -170,7 +171,7 @@ export function WorkspaceSidebar({ email }: { email: string }) {
             </button>
           </div>
 
-          {/* Creator / Enterprise mode toggle — Enterprise (this workspace) is
+          {/* Creator / Enterprise mode toggle â€” Enterprise (this workspace) is
               active here; Creator jumps to the new Studio and remembers it. */}
           <div className="px-2 pb-3">
             <div className="flex gap-1 p-1 rounded-lg" style={{ background: "#243021" }}>
@@ -219,7 +220,7 @@ export function WorkspaceSidebar({ email }: { email: string }) {
           <div className="px-2 pb-1">
             <div className="flex items-center gap-2 px-3 py-2 mb-3" style={{ fontSize: "11px", color: "#8A9488" }}>
               <span>{totalDocs > 0 ? `${totalDocs.toLocaleString()} docs` : "No docs yet"}</span>
-              <span>·</span>
+              <span>Â·</span>
               <span>{activeSourceCount > 0 ? `${activeSourceCount} source${activeSourceCount === 1 ? "" : "s"}` : "No sources"}</span>
             </div>
 
@@ -238,7 +239,7 @@ export function WorkspaceSidebar({ email }: { email: string }) {
                 fontWeight: 600,
               }}
             >
-              <span style={{ color: "#C99A5C" }}>✦</span> Quick Ask
+              <span style={{ color: "#C99A5C" }}>âœ¦</span> Quick Ask
             </button>
             <div style={{ fontSize: "11px", color: "#8A9488", padding: "0 4px 12px 4px" }}>
               Runs across everything you can access
@@ -260,7 +261,7 @@ export function WorkspaceSidebar({ email }: { email: string }) {
               }}
             >
               <span className="flex items-center gap-2">
-                <span style={{ color: "#849777" }}>◐</span> Getting Started
+                <span style={{ color: "#849777" }}>â—</span> Getting Started
               </span>
               <span style={{ fontSize: "11px", color: "#B7C0B4" }}>{onboardingDone}/{ONBOARDING_TOTAL}</span>
             </button>

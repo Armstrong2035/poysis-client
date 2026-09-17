@@ -49,6 +49,10 @@ export async function login(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
+  const hostname = (await headers()).get("host")?.split(":")[0].toLowerCase();
+  if (hostname === "developers.poysis.com") {
+    return redirect("/workspace/developer");
+  }
   // Land the user in their chosen app; non-entitled users always get Creator.
   return redirect(await landingPathForUser(supabase, data.user));
 }

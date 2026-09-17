@@ -27,6 +27,20 @@ function hasSessionCookie(request: NextRequest): boolean {
 }
 
 export async function middleware(request: NextRequest) {
+  const hostname = request.headers.get("host")?.split(":")[0].toLowerCase();
+  const developerHost = hostname === "developers.poysis.com";
+
+  if (
+    developerHost &&
+    (request.nextUrl.pathname === "/" ||
+      request.nextUrl.pathname === "/studio" ||
+      request.nextUrl.pathname === "/workspace")
+  ) {
+    const portalUrl = request.nextUrl.clone();
+    portalUrl.pathname = "/workspace/developer";
+    return NextResponse.redirect(portalUrl);
+  }
+
   // Supabase sometimes lands email-confirmation / recovery redirects on the
   // site root (e.g. https://www.poysis.com/?code=...) instead of
   // /auth/callback — this happens when the redirect falls back to the Site URL
@@ -115,6 +129,6 @@ export const config = {
     "/studio/:path*",
     "/workspace/:path*",
     // The site root runs only to forward a Supabase auth code to the callback.
-    { source: "/", has: [{ type: "query", key: "code" }] },
+    "/",
   ],
 };

@@ -10,7 +10,6 @@ import { GettingStartedPanel } from "./GettingStartedPanel";
 import { useOnboarding } from "./OnboardingContext";
 
 const NAV = [
-  { id: "developer", href: "/workspace/developer", label: "Developer API", exact: false, glyph: "<>" },
   { id: "interpretations", href: "/workspace/interpretations", label: "Explanations", exact: false, glyph: "?" },
   { id: "map", href: "/workspace", label: "Knowledge Map", exact: true, glyph: "◈" },
   { id: "canvas", href: "/workspace/canvas", label: "Canvas", exact: false, glyph: "✎" },
